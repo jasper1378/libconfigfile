@@ -5,7 +5,7 @@
 
 #include <cstddef>
 
-namespace conf_file
+namespace libconfigfile
 {
     class node
     {

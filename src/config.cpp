@@ -23,36 +23,36 @@
 #include <utility>
 #include <vector>
 
-conf_file::config::config()
+libconfigfile::config::config()
     : m_raw_file_contents{},
       m_values{}
 {
 }
 
-conf_file::config::config(const std::string& file_name)
+libconfigfile::config::config(const std::string& file_name)
     : m_raw_file_contents{ file_name, false },
       m_values{}
 {
     parse_file();
 }
 
-conf_file::config::config(const config& other)
+libconfigfile::config::config(const config& other)
     : m_raw_file_contents{ other.m_raw_file_contents },
       m_values{ other.m_values }
 {
 }
 
-conf_file::config::config(config&& other)
+libconfigfile::config::config(config&& other)
     : m_raw_file_contents{ std::move(other.m_raw_file_contents) },
       m_values{ std::move(other.m_values) }
 {
 }
 
-conf_file::config::~config()
+libconfigfile::config::~config()
 {
 }
 
-conf_file::config& conf_file::config::operator=(const config& other)
+libconfigfile::config& libconfigfile::config::operator=(const config& other)
 {
     if (this == &other)
     {
@@ -65,7 +65,7 @@ conf_file::config& conf_file::config::operator=(const config& other)
     return *this;
 }
 
-conf_file::config& conf_file::config::operator=(config&& other)
+libconfigfile::config& libconfigfile::config::operator=(config&& other)
 {
     if (this == &other)
     {
@@ -78,7 +78,7 @@ conf_file::config& conf_file::config::operator=(config&& other)
     return *this;
 }
 
-void conf_file::config::parse_file()
+void libconfigfile::config::parse_file()
 {
     static const auto is_whitespace{ [](char c)
     {
@@ -133,7 +133,7 @@ void conf_file::config::parse_file()
     }
 }
 
-void conf_file::config::parse_directive(file_pos& cur_pos)
+void libconfigfile::config::parse_directive(file_pos& cur_pos)
 {
     std::string directive_line{ m_raw_file_contents.get_line(cur_pos) };
     std::string::size_type line_pos{ cur_pos.get_char() };
@@ -183,7 +183,7 @@ void conf_file::config::parse_directive(file_pos& cur_pos)
     }
 }
 
-void conf_file::config::parse_include_directive(file_pos& cur_pos, const std::string& args)
+void libconfigfile::config::parse_include_directive(file_pos& cur_pos, const std::string& args)
 {
     if (args[0] != '"')
     {
@@ -192,12 +192,12 @@ void conf_file::config::parse_include_directive(file_pos& cur_pos, const std::st
     //TODO continue from here
 }
 
-bool conf_file::config::is_pos_located_on_occurence_of(const file_pos& pos, const std::string& str)
+bool libconfigfile::config::is_pos_located_on_occurence_of(const file_pos& pos, const std::string& str)
 {
     return ((pos.get_char()) == (m_raw_file_contents.get_line(pos).find(str, pos.get_char())));
 }
 
-std::string conf_file::config::get_substr_between_indices(const std::string& str, const std::string::size_type start, const std::string::size_type end)
+std::string libconfigfile::config::get_substr_between_indices(const std::string& str, const std::string::size_type start, const std::string::size_type end)
 {
     return str.substr((start), ((end - start) + 1));
 }

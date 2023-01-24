@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace conf_file
+namespace libconfigfile
 {
     class file_pos;
 

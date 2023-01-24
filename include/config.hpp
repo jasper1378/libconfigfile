@@ -18,7 +18,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace conf_file
+namespace libconfigfile
 {
     class config
     {

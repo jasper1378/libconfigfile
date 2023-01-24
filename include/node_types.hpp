@@ -1,7 +1,7 @@
 #ifndef CONF_FILE_NODE_TYPES_HPP
 #define CONF_FILE_NODE_TYPES_HPP
 
-namespace conf_file
+namespace libconfigfile
 {
     enum class actual_node_type
     {

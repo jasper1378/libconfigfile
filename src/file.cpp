@@ -8,56 +8,56 @@
 #include <vector>
 #include <utility>
 
-conf_file::file::file()
+libconfigfile::file::file()
     : m_file_path{},
       m_file_contents{}
 {
 }
 
-conf_file::file::file(const std::string& file_path, bool insert_newlines/*= true*/)
+libconfigfile::file::file(const std::string& file_path, bool insert_newlines/*= true*/)
     : m_file_path{ file_path },
       m_file_contents{ read_file(m_file_path, insert_newlines) }
 {
 }
 
-conf_file::file::file(std::string&& file_path, bool insert_newlines/*= true*/)
+libconfigfile::file::file(std::string&& file_path, bool insert_newlines/*= true*/)
     : m_file_path{ std::move(file_path) },
       m_file_contents{ read_file(m_file_path, insert_newlines) }
 {
 }
 
-conf_file::file::file(const file& other)
+libconfigfile::file::file(const file& other)
     : m_file_path{ other.m_file_path },
       m_file_contents{ other.m_file_contents }
 {
 }
 
-conf_file::file::file(file&& other)
+libconfigfile::file::file(file&& other)
     : m_file_path{ std::move(other.m_file_path) },
       m_file_contents{ std::move(other.m_file_contents) }
 {
 }
 
-conf_file::file::~file()
+libconfigfile::file::~file()
 {
 }
 
-bool conf_file::file::is_paired(const file_pos& pos) const
+bool libconfigfile::file::is_paired(const file_pos& pos) const
 {
     return (this == pos.get_paired_file());
 }
 
-std::string conf_file::file::get_file_path() const
+std::string libconfigfile::file::get_file_path() const
 {
     return m_file_path;
 }
 
-conf_file::file_pos conf_file::file::create_file_pos() const
+libconfigfile::file_pos libconfigfile::file::create_file_pos() const
 {
     return file_pos{ this };
 }
 
-const char& conf_file::file::get_char(const file_pos& pos) const
+const char& libconfigfile::file::get_char(const file_pos& pos) const
 {
     if (pos.get_paired_file() != this)
     {
@@ -77,7 +77,7 @@ const char& conf_file::file::get_char(const file_pos& pos) const
     return m_file_contents[pos.get_line()][pos.get_char()];
 }
 
-const std::string& conf_file::file::get_line(const file_pos& pos) const
+const std::string& libconfigfile::file::get_line(const file_pos& pos) const
 {
     if (pos.get_paired_file() != this)
     {
@@ -97,17 +97,17 @@ const std::string& conf_file::file::get_line(const file_pos& pos) const
     return m_file_contents[pos.get_line()];
 }
 
-const std::vector<std::string>& conf_file::file::get_array() const
+const std::vector<std::string>& libconfigfile::file::get_array() const
 {
     return m_file_contents;
 }
 
-std::vector<std::string>& conf_file::file::get_underlying()
+std::vector<std::string>& libconfigfile::file::get_underlying()
 {
     return m_file_contents;
 }
 
-conf_file::file& conf_file::file::operator=(const file& other)
+libconfigfile::file& libconfigfile::file::operator=(const file& other)
 {
     if (this == &other)
     {
@@ -120,7 +120,7 @@ conf_file::file& conf_file::file::operator=(const file& other)
     return *this;
 }
 
-conf_file::file& conf_file::file::operator=(file&& other)
+libconfigfile::file& libconfigfile::file::operator=(file&& other)
 {
     if (this == &other)
     {
@@ -133,7 +133,7 @@ conf_file::file& conf_file::file::operator=(file&& other)
     return *this;
 }
 
-const char& conf_file::file::operator[](const file_pos& pos) const
+const char& libconfigfile::file::operator[](const file_pos& pos) const
 {
     if (pos.get_paired_file() != this)
     {
@@ -153,7 +153,7 @@ const char& conf_file::file::operator[](const file_pos& pos) const
     return m_file_contents[pos.get_line()][pos.get_char()];
 }
 
-std::vector<std::string> conf_file::file::read_file(const std::string& file_path, const bool insert_newlines/*= false*/)
+std::vector<std::string> libconfigfile::file::read_file(const std::string& file_path, const bool insert_newlines/*= false*/)
 {
     std::ifstream input_file{ file_path };
 
@@ -180,7 +180,7 @@ std::vector<std::string> conf_file::file::read_file(const std::string& file_path
     return file_contents;
 }
 
-conf_file::file_pos::file_pos(const file* file_in_which_to_move)
+libconfigfile::file_pos::file_pos(const file* file_in_which_to_move)
     : m_file{ file_in_which_to_move },
       m_line{ 0 },
       m_char{ 0 },
@@ -193,7 +193,7 @@ conf_file::file_pos::file_pos(const file* file_in_which_to_move)
     }
 }
 
-conf_file::file_pos::file_pos(const file_pos& other)
+libconfigfile::file_pos::file_pos(const file_pos& other)
     : m_file{ other.m_file },
       m_line{ other.m_line },
       m_char{ other.m_char },
@@ -202,7 +202,7 @@ conf_file::file_pos::file_pos(const file_pos& other)
 {
 }
 
-conf_file::file_pos::file_pos(file_pos&& other)
+libconfigfile::file_pos::file_pos(file_pos&& other)
     : m_file{ std::move(other.m_file) },
       m_line{ std::move(other.m_line) },
       m_char{ std::move(other.m_char) },
@@ -211,41 +211,41 @@ conf_file::file_pos::file_pos(file_pos&& other)
 {
 }
 
-conf_file::file_pos::~file_pos()
+libconfigfile::file_pos::~file_pos()
 {
 }
 
-bool conf_file::file_pos::is_paired(const file& f) const
+bool libconfigfile::file_pos::is_paired(const file& f) const
 {
     return m_file == &f;
 }
 
-const conf_file::file* conf_file::file_pos::get_paired_file() const
+const libconfigfile::file* libconfigfile::file_pos::get_paired_file() const
 {
     return m_file;
 }
 
-bool conf_file::file_pos::is_bof() const
+bool libconfigfile::file_pos::is_bof() const
 {
     return m_bof;
 }
 
-bool conf_file::file_pos::is_eof() const
+bool libconfigfile::file_pos::is_eof() const
 {
     return m_eof;
 }
 
-size_t conf_file::file_pos::get_line() const
+size_t libconfigfile::file_pos::get_line() const
 {
     return m_line;
 }
 
-size_t conf_file::file_pos::get_char() const
+size_t libconfigfile::file_pos::get_char() const
 {
     return m_char;
 }
 
-void conf_file::file_pos::set_line(const size_t line_val)
+void libconfigfile::file_pos::set_line(const size_t line_val)
 {
     if (line_val >= m_file->get_array().size())
     {
@@ -257,7 +257,7 @@ void conf_file::file_pos::set_line(const size_t line_val)
     }
 }
 
-void conf_file::file_pos::set_char(const size_t char_val)
+void libconfigfile::file_pos::set_char(const size_t char_val)
 {
     if (char_val >= m_file->get_line(*this).size())
     {
@@ -269,7 +269,7 @@ void conf_file::file_pos::set_char(const size_t char_val)
     }
 }
 
-void conf_file::file_pos::goto_next_line(size_t lines_to_move/*= 1*/)
+void libconfigfile::file_pos::goto_next_line(size_t lines_to_move/*= 1*/)
 {
     if (lines_to_move == 0)
     {
@@ -295,7 +295,7 @@ void conf_file::file_pos::goto_next_line(size_t lines_to_move/*= 1*/)
     }
 }
 
-void conf_file::file_pos::goto_prev_line(size_t lines_to_move/*= 1*/)
+void libconfigfile::file_pos::goto_prev_line(size_t lines_to_move/*= 1*/)
 {
     if (lines_to_move == 0)
     {
@@ -321,7 +321,7 @@ void conf_file::file_pos::goto_prev_line(size_t lines_to_move/*= 1*/)
     }
 }
 
-void conf_file::file_pos::goto_next_char(size_t chars_to_move/*= 1*/)
+void libconfigfile::file_pos::goto_next_char(size_t chars_to_move/*= 1*/)
 {
     while (true)
     {
@@ -344,7 +344,7 @@ void conf_file::file_pos::goto_next_char(size_t chars_to_move/*= 1*/)
     }
 }
 
-void conf_file::file_pos::goto_prev_char(size_t chars_to_move/*= 1*/)
+void libconfigfile::file_pos::goto_prev_char(size_t chars_to_move/*= 1*/)
 {
     while (true)
     {
@@ -368,7 +368,7 @@ void conf_file::file_pos::goto_prev_char(size_t chars_to_move/*= 1*/)
     }
 }
 
-void conf_file::file_pos::goto_find_start(const std::string& to_find)
+void libconfigfile::file_pos::goto_find_start(const std::string& to_find)
 {
     if (m_eof == true)
     {
@@ -400,7 +400,7 @@ void conf_file::file_pos::goto_find_start(const std::string& to_find)
     }
 }
 
-void conf_file::file_pos::goto_find_end(const std::string& to_find)
+void libconfigfile::file_pos::goto_find_end(const std::string& to_find)
 {
     if (m_eof == true)
     {
@@ -411,7 +411,7 @@ void conf_file::file_pos::goto_find_end(const std::string& to_find)
     goto_next_char(to_find.size());
 }
 
-void conf_file::file_pos::goto_rfind_start(const std::string& to_find)
+void libconfigfile::file_pos::goto_rfind_start(const std::string& to_find)
 {
     if (m_bof == true)
     {
@@ -443,7 +443,7 @@ void conf_file::file_pos::goto_rfind_start(const std::string& to_find)
     }
 }
 
-void conf_file::file_pos::goto_rfind_end(const std::string& to_find)
+void libconfigfile::file_pos::goto_rfind_end(const std::string& to_find)
 {
     if (m_bof == true)
     {
@@ -454,7 +454,7 @@ void conf_file::file_pos::goto_rfind_end(const std::string& to_find)
     goto_next_char(to_find.size());
 }
 
-void conf_file::file_pos::goto_find_first_of(const std::string& to_find)
+void libconfigfile::file_pos::goto_find_first_of(const std::string& to_find)
 {
     if (m_eof == true)
     {
@@ -486,13 +486,13 @@ void conf_file::file_pos::goto_find_first_of(const std::string& to_find)
     }
 }
 
-void conf_file::file_pos::goto_find_first_of(const std::vector<char>& to_find)
+void libconfigfile::file_pos::goto_find_first_of(const std::vector<char>& to_find)
 {
     goto_find_first_of(std::string{ to_find.begin(), to_find.end() });
 }
 
 
-void conf_file::file_pos::goto_find_first_not_of(const std::string& to_find)
+void libconfigfile::file_pos::goto_find_first_not_of(const std::string& to_find)
 {
     if (m_eof == true)
     {
@@ -524,12 +524,12 @@ void conf_file::file_pos::goto_find_first_not_of(const std::string& to_find)
     }
 }
 
-void conf_file::file_pos::goto_find_first_not_of(const std::vector<char>& to_find)
+void libconfigfile::file_pos::goto_find_first_not_of(const std::vector<char>& to_find)
 {
     goto_find_first_not_of(std::string{ to_find.begin(), to_find.end() });
 }
 
-void conf_file::file_pos::goto_find_last_of(const std::string& to_find)
+void libconfigfile::file_pos::goto_find_last_of(const std::string& to_find)
 {
     if (m_bof == true)
     {
@@ -561,12 +561,12 @@ void conf_file::file_pos::goto_find_last_of(const std::string& to_find)
     }
 }
 
-void conf_file::file_pos::goto_find_last_of(const std::vector<char>& to_find)
+void libconfigfile::file_pos::goto_find_last_of(const std::vector<char>& to_find)
 {
     goto_find_last_of(std::string{ to_find.begin(), to_find.end() });
 }
 
-void conf_file::file_pos::goto_find_last_not_of(const std::string& to_find)
+void libconfigfile::file_pos::goto_find_last_not_of(const std::string& to_find)
 {
     if (m_bof == true)
     {
@@ -600,12 +600,12 @@ void conf_file::file_pos::goto_find_last_not_of(const std::string& to_find)
     }
 }
 
-void conf_file::file_pos::goto_find_last_not_of(const std::vector<char>& to_find)
+void libconfigfile::file_pos::goto_find_last_not_of(const std::vector<char>& to_find)
 {
     goto_find_last_not_of(std::string{ to_find.begin(), to_find.end() });
 }
 
-void conf_file::file_pos::goto_end_of_whitespace(const std::string& whitespace_chars/*= " \t"*/)
+void libconfigfile::file_pos::goto_end_of_whitespace(const std::string& whitespace_chars/*= " \t"*/)
 {
     if (m_eof == true)
     {
@@ -655,12 +655,12 @@ void conf_file::file_pos::goto_end_of_whitespace(const std::string& whitespace_c
     }
 }
 
-void conf_file::file_pos::goto_end_of_whitespace(const std::vector<char>& whitespace_chars)
+void libconfigfile::file_pos::goto_end_of_whitespace(const std::vector<char>& whitespace_chars)
 {
     goto_end_of_whitespace(std::string{ whitespace_chars.begin(), whitespace_chars.end() });
 }
 
-void conf_file::file_pos::goto_start_of_whitespace(const std::string& whitespace_chars/*= " \t"*/)
+void libconfigfile::file_pos::goto_start_of_whitespace(const std::string& whitespace_chars/*= " \t"*/)
 {
     if (m_bof == true)
     {
@@ -710,12 +710,12 @@ void conf_file::file_pos::goto_start_of_whitespace(const std::string& whitespace
     }
 }
 
-void conf_file::file_pos::goto_start_of_whitespace(const std::vector<char>& whitespace_chars)
+void libconfigfile::file_pos::goto_start_of_whitespace(const std::vector<char>& whitespace_chars)
 {
     goto_start_of_whitespace(std::string{ whitespace_chars.begin(), whitespace_chars.end() });
 }
 
-conf_file::file_pos& conf_file::file_pos::operator=(const file_pos& other)
+libconfigfile::file_pos& libconfigfile::file_pos::operator=(const file_pos& other)
 {
     if (this == &other)
     {
@@ -731,7 +731,7 @@ conf_file::file_pos& conf_file::file_pos::operator=(const file_pos& other)
     return *this;
 }
 
-conf_file::file_pos& conf_file::file_pos::operator=(file_pos&& other)
+libconfigfile::file_pos& libconfigfile::file_pos::operator=(file_pos&& other)
 {
     if (this == &other)
     {
@@ -747,87 +747,87 @@ conf_file::file_pos& conf_file::file_pos::operator=(file_pos&& other)
     return *this;
 }
 
-bool conf_file::file_pos::operator==(const file_pos& other) const
+bool libconfigfile::file_pos::operator==(const file_pos& other) const
 {
     return ((m_line == other.m_line) && (m_char == other.m_char));
 }
 
-bool conf_file::file_pos::operator!=(const file_pos& other) const
+bool libconfigfile::file_pos::operator!=(const file_pos& other) const
 {
     return (!(operator==(other)));
 }
 
-conf_file::file_pos& conf_file::file_pos::operator++()
+libconfigfile::file_pos& libconfigfile::file_pos::operator++()
 {
     goto_next_char();
     return *this;
 }
 
-conf_file::file_pos conf_file::file_pos::operator++(int)
+libconfigfile::file_pos libconfigfile::file_pos::operator++(int)
 {
     file_pos temp{ *this };
     operator++();
     return temp;
 }
 
-conf_file::file_pos& conf_file::file_pos::operator--()
+libconfigfile::file_pos& libconfigfile::file_pos::operator--()
 {
     goto_prev_char();
     return *this;
 }
 
-conf_file::file_pos conf_file::file_pos::operator--(int)
+libconfigfile::file_pos libconfigfile::file_pos::operator--(int)
 {
     file_pos temp{ *this };
     operator--();
     return temp;
 }
 
-conf_file::file_pos& conf_file::file_pos::operator+=(const size_t chars_to_move)
+libconfigfile::file_pos& libconfigfile::file_pos::operator+=(const size_t chars_to_move)
 {
     goto_next_char(chars_to_move);
     return *this;
 }
 
-conf_file::file_pos& conf_file::file_pos::operator-=(const size_t chars_to_move)
+libconfigfile::file_pos& libconfigfile::file_pos::operator-=(const size_t chars_to_move)
 {
     goto_prev_char(chars_to_move);
     return *this;
 }
 
-void conf_file::file_pos::set_bof()
+void libconfigfile::file_pos::set_bof()
 {
     m_bof = true;
     m_line = 0;
     m_char = 0;
 }
 
-void conf_file::file_pos::set_eof()
+void libconfigfile::file_pos::set_eof()
 {
     m_eof = true;
     m_line = (m_file->get_array().size() - 1);
     m_char = (m_file->get_line(*this).size() - 1);
 }
 
-conf_file::file_pos conf_file::operator+(file_pos pos, const size_t chars_to_move)
+libconfigfile::file_pos libconfigfile::operator+(file_pos pos, const size_t chars_to_move)
 {
     pos.goto_next_char(chars_to_move);
     return pos;
 }
 
-conf_file::file_pos conf_file::operator+(const size_t chars_to_move, file_pos pos)
+libconfigfile::file_pos libconfigfile::operator+(const size_t chars_to_move, file_pos pos)
 {
     pos.goto_next_char(chars_to_move);
     return pos;
 }
 
-conf_file::file_pos conf_file::operator-(file_pos pos, const size_t chars_to_move)
+libconfigfile::file_pos libconfigfile::operator-(file_pos pos, const size_t chars_to_move)
 {
     pos.goto_prev_char(chars_to_move);
     return pos;
 }
 
-conf_file::file_pos conf_file::operator-(const size_t chars_to_move, file_pos pos)
+libconfigfile::file_pos libconfigfile::operator-(const size_t chars_to_move, file_pos pos)
 {
     pos.goto_prev_char(chars_to_move);
     return pos;
