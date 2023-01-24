@@ -10,66 +10,66 @@
 #include <iostream>
 #include <utility>
 
-conf_file::integer_end_value_node::integer_end_value_node()
+libconfigfile::integer_end_value_node::integer_end_value_node()
     : m_value{}
 {
 }
 
-conf_file::integer_end_value_node::integer_end_value_node(const value_t value)
+libconfigfile::integer_end_value_node::integer_end_value_node(const value_t value)
     : m_value{ value }
 {
 }
 
-conf_file::integer_end_value_node::integer_end_value_node(const integer_end_value_node& other)
+libconfigfile::integer_end_value_node::integer_end_value_node(const integer_end_value_node& other)
     : m_value{ other.m_value }
 {
 }
 
-conf_file::integer_end_value_node::integer_end_value_node(integer_end_value_node&& other)
+libconfigfile::integer_end_value_node::integer_end_value_node(integer_end_value_node&& other)
     : m_value{ std::move(other.m_value) }
 {
 }
 
-conf_file::integer_end_value_node::~integer_end_value_node()
+libconfigfile::integer_end_value_node::~integer_end_value_node()
 {
 }
 
-conf_file::actual_node_type conf_file::integer_end_value_node::get_actual_node_type() const
+libconfigfile::actual_node_type libconfigfile::integer_end_value_node::get_actual_node_type() const
 {
     return actual_node_type::INTEGER_END_VALUE_NODE;
 }
 
-conf_file::integer_end_value_node* conf_file::integer_end_value_node::create_new() const
+libconfigfile::integer_end_value_node* libconfigfile::integer_end_value_node::create_new() const
 {
     return new integer_end_value_node{};
 }
 
-conf_file::integer_end_value_node* conf_file::integer_end_value_node::create_clone() const
+libconfigfile::integer_end_value_node* libconfigfile::integer_end_value_node::create_clone() const
 {
     return new integer_end_value_node{ *this };
 }
 
-conf_file::end_value_node_type conf_file::integer_end_value_node::get_end_value_node_type() const
+libconfigfile::end_value_node_type libconfigfile::integer_end_value_node::get_end_value_node_type() const
 {
     return end_value_node_type::INTEGER;
 }
 
-conf_file::integer_end_value_node::value_t conf_file::integer_end_value_node::get() const
+libconfigfile::integer_end_value_node::value_t libconfigfile::integer_end_value_node::get() const
 {
     return m_value;
 }
 
-conf_file::integer_end_value_node::value_t& conf_file::integer_end_value_node::get()
+libconfigfile::integer_end_value_node::value_t& libconfigfile::integer_end_value_node::get()
 {
     return m_value;
 }
 
-void conf_file::integer_end_value_node::set(const value_t value)
+void libconfigfile::integer_end_value_node::set(const value_t value)
 {
     m_value = value;
 }
 
-conf_file::integer_end_value_node& conf_file::integer_end_value_node::operator=(const integer_end_value_node& other)
+libconfigfile::integer_end_value_node& libconfigfile::integer_end_value_node::operator=(const integer_end_value_node& other)
 {
     if (this == &other)
     {
@@ -81,7 +81,7 @@ conf_file::integer_end_value_node& conf_file::integer_end_value_node::operator=(
     return *this;
 }
 
-conf_file::integer_end_value_node& conf_file::integer_end_value_node::operator=(integer_end_value_node&& other)
+libconfigfile::integer_end_value_node& libconfigfile::integer_end_value_node::operator=(integer_end_value_node&& other)
 {
     if (this == &other)
     {
@@ -93,25 +93,25 @@ conf_file::integer_end_value_node& conf_file::integer_end_value_node::operator=(
     return *this;
 }
 
-conf_file::integer_end_value_node& conf_file::integer_end_value_node::operator=(const value_t value)
+libconfigfile::integer_end_value_node& libconfigfile::integer_end_value_node::operator=(const value_t value)
 {
     m_value = value;
 
     return *this;
 }
 
-conf_file::integer_end_value_node::operator value_t() const
+libconfigfile::integer_end_value_node::operator value_t() const
 {
     return m_value;
 }
 
-std::ostream& conf_file::operator<<(std::ostream& out, const integer_end_value_node& i)
+std::ostream& libconfigfile::operator<<(std::ostream& out, const integer_end_value_node& i)
 {
     out << i.m_value;
     return out;
 }
 
-std::istream& conf_file::operator>>(std::istream& in, integer_end_value_node& i)
+std::istream& libconfigfile::operator>>(std::istream& in, integer_end_value_node& i)
 {
     in >> i.m_value;
     return in;

@@ -5,11 +5,11 @@
 #include <cstddef>
 #include <utility>
 
-conf_file::node::~node()
+libconfigfile::node::~node()
 {
 }
 
-conf_file::actual_node_type conf_file::node::get_actual_node_type() const
+libconfigfile::actual_node_type libconfigfile::node::get_actual_node_type() const
 {
     return actual_node_type::NODE;
 }

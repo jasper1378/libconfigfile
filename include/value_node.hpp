@@ -6,7 +6,7 @@
 
 #include <cstddef>
 
-namespace conf_file
+namespace libconfigfile
 {
     class value_node : public node
     {

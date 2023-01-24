@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 
-namespace conf_file
+namespace libconfigfile
 {
     class string_end_value_node : public end_value_node
     {

@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <iostream>
 
-namespace conf_file
+namespace libconfigfile
 {
     class integer_end_value_node : public end_value_node
     {

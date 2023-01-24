@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace conf_file
+namespace libconfigfile
 {
     class array_value_node : public value_node
     {

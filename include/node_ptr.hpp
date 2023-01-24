@@ -6,7 +6,7 @@
 #include <concepts>
 #include <utility>
 
-namespace conf_file
+namespace libconfigfile
 {
     template<typename node_t>
     concept is_node = std::derived_from<node_t, node>;

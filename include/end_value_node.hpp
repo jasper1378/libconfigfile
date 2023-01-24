@@ -7,7 +7,7 @@
 
 #include <cstddef>
 
-namespace conf_file
+namespace libconfigfile
 {
     class end_value_node : public value_node
     {

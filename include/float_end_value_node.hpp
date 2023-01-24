@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <iostream>
 
-namespace conf_file
+namespace libconfigfile
 {
     class float_end_value_node : public end_value_node
     {

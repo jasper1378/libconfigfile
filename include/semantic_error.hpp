@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace conf_file
+namespace libconfigfile
 {
     class semantic_error : public std::runtime_error
     {
