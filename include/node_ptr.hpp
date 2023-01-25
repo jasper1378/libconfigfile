@@ -1,5 +1,5 @@
-#ifndef CONF_FILE_NODE_PTR_HPP
-#define CONF_FILE_NODE_PTR_HPP
+#ifndef LIBCONFIGFILE_NODE_PTR_HPP
+#define LIBCONFIGFILE_NODE_PTR_HPP
 
 #include "node.hpp"
 

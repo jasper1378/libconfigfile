@@ -1,5 +1,5 @@
-#ifndef CONF_FILE_NODE_TYPES_HPP
-#define CONF_FILE_NODE_TYPES_HPP
+#ifndef LIBCONFIGFILE_NODE_TYPES_HPP
+#define LIBCONFIGFILE_NODE_TYPES_HPP
 
 namespace libconfigfile
 {

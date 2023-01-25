@@ -1,5 +1,5 @@
-#ifndef CONF_FILE_CONFIG_HPP
-#define CONF_FILE_CONFIG_HPP
+#ifndef LIBCONFIGFILE_CONFIG_HPP
+#define LIBCONFIGFILE_CONFIG_HPP
 
 #include "array_value_node.hpp"
 #include "end_value_node.hpp"
