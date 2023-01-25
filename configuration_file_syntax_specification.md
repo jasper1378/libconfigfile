@@ -35,8 +35,8 @@ Version: 0
 # full-line script-style comment
 
 key1 = "value"; # end-of-line script-style comment
-key2 = "value2"; // end-of-line C-style comment
-key3 /* mid-line C++-style comment */ = "value3";
+key2 /* mid-line C-style comment */ = "value";
+key3 = "value"; // end-of-line C++-style comment
 
 key4 = "/* string, not a comment */";
 ```
