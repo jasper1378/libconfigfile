@@ -1,5 +1,5 @@
-#ifndef CONF_FILE_SECTION_NODE_HPP
-#define CONF_FILE_SECTION_NODE_HPP
+#ifndef LIBCONFIGFILE_SECTION_NODE_HPP
+#define LIBCONFIGFILE_SECTION_NODE_HPP
 
 #include "node.hpp"
 #include "node_ptr.hpp"

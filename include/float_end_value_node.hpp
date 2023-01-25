@@ -1,5 +1,5 @@
-#ifndef CONF_FILE_FLOAT_END_VALUE_NODE_HPP
-#define CONF_FILE_FLOAT_END_VALUE_NODE_HPP
+#ifndef LIBCONFIGFILE_FLOAT_END_VALUE_NODE_HPP
+#define LIBCONFIGFILE_FLOAT_END_VALUE_NODE_HPP
 
 #include "end_value_node.hpp"
 #include "node.hpp"

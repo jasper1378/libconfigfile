@@ -1,5 +1,5 @@
-#ifndef CONF_FILE_VALUE_NODE_HPP
-#define CONF_FILE_VALUE_NODE_HPP
+#ifndef LIBCONFIGFILE_VALUE_NODE_HPP
+#define LIBCONFIGFILE_VALUE_NODE_HPP
 
 #include "node.hpp"
 #include "node_types.hpp"
