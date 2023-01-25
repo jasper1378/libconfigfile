@@ -99,7 +99,14 @@ void libconfigfile::config::parse_file()
     {
         cur_pos.goto_end_of_whitespace(m_k_whitespace_chars);
 
-        if (m_raw_file_contents[cur_pos] == m_k_comment_leader)
+        if (m_raw_file_contents[cur_pos] == m_k_comment_script)
+        {
+            cur_pos.goto_next_line();
+        }
+        else if () //c/c++ comments
+        {
+        }
+        else if (m_raw_file_contents[cur_pos] == m_k_comment_leader)
         {
             file_pos next_pos{ cur_pos + 1 };
 
