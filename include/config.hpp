@@ -32,12 +32,12 @@ namespace libconfigfile
             static constexpr std::string m_k_whitespace_chars{ " \t" };;
             static constexpr char m_k_newline{ '\n' };
 
-            static const char m_k_comment_leader{ '/' };
-            static constexpr std::string m_k_single_line_comment{ "//" };
-            static constexpr std::string m_k_multi_line_comment_start{ "/*" };
-            static constexpr std::string m_k_multi_line_comment_end{ "*/" };
+            static constexpr char m_k_comment_script{ '#' };
+            static constexpr std::string m_k_comment_cpp{ "//" };
+            static constexpr std::string m_k_c_start_comment{ "/*" };
+            static constexpr std::string m_k_c_end_comment{ "*/" };
 
-            static constexpr char m_k_directive_leader{ '#' };
+            static constexpr char m_k_directive_leader{ '@' };
 
         public:
 
