@@ -57,6 +57,11 @@ libconfigfile::file_pos libconfigfile::file::create_file_pos() const
     return file_pos{ this };
 }
 
+libconfigfile::file_pos libconfigfile::file::create_file_pos(const file_pos& start_pos) const
+{
+    return file_pos{ this, start_pos };
+}
+
 const char& libconfigfile::file::get_char(const file_pos& pos) const
 {
     if (pos.get_paired_file() != this)
@@ -186,6 +191,19 @@ libconfigfile::file_pos::file_pos(const file* file_in_which_to_move)
       m_char{ 0 },
       m_bof{ false },
       m_eof{ false }
+{
+    if (file_in_which_to_move == nullptr)
+    {
+        throw std::runtime_error{ "file cannot be null" };
+    }
+}
+
+libconfigfile::file_pos::file_pos(const file* file_in_which_to_move, const file_pos& start_pos)
+    : m_file{ file_in_which_to_move },
+      m_line{ start_pos.m_line },
+      m_char{ start_pos.m_char },
+      m_bof{ start_pos.m_bof },
+      m_eof{ start_pos.m_eof }
 {
     if (file_in_which_to_move == nullptr)
     {

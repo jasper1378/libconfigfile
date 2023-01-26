@@ -36,6 +36,7 @@ namespace libconfigfile
             std::string get_file_path() const;
 
             file_pos create_file_pos() const;
+            file_pos create_file_pos(const file_pos& start_pos) const;
 
             const char& get_char(const file_pos& pos) const;
             const std::string& get_line(const file_pos& pos) const;
@@ -68,6 +69,7 @@ namespace libconfigfile
         public:
 
             file_pos(const file* file_in_which_to_move);
+            file_pos(const file* file_in_which_to_move, const file_pos& start_pos);
             file_pos(const file_pos& other);
             file_pos(file_pos&& other);
 
