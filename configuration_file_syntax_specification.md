@@ -207,7 +207,6 @@ integers3 = [
 - Keys/sections may not share names with other keys/sections in the same direct scope.
 - Naming rules for sections are the same as for keys.
 - Empty sections are allowed and simply have no key-value pairs and/or sections within them.
-- The top-level section, also called the root section, starts at the beginning of the document and ends at end-of-file, encompassing everything else in its scope. Unlike other sections, it is nameless.
 ```
 (section)
 {
