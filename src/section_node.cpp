@@ -207,6 +207,91 @@ libconfigfile::section_node::const_iterator libconfigfile::section_node::find(co
     return m_contents.find(key);
 }
 
+std::pair<libconfigfile::section_node::iterator,libconfigfile::section_node::iterator> libconfigfile::section_node::equal_range(const key_type& key)
+{
+    return m_contents.equal_range(key);
+}
+
+std::pair<libconfigfile::section_node::const_iterator,libconfigfile::section_node::const_iterator> libconfigfile::section_node::equal_range(const key_type& key) const
+{
+    return m_contents.equal_range(key);
+}
+
+libconfigfile::section_node::local_iterator libconfigfile::section_node::begin(size_type n)
+{
+    return m_contents.begin(n);
+}
+
+libconfigfile::section_node::const_local_iterator libconfigfile::section_node::begin(size_type n) const
+{
+    return m_contents.begin(n);
+}
+
+libconfigfile::section_node::const_local_iterator libconfigfile::section_node::cbegin(size_type n) const
+{
+    return m_contents.cbegin(n);
+}
+
+libconfigfile::section_node::local_iterator libconfigfile::section_node::end(size_type n)
+{
+    return m_contents.end(n);
+}
+
+libconfigfile::section_node::const_local_iterator libconfigfile::section_node::end(size_type n) const
+{
+    return m_contents.end(n);
+}
+
+libconfigfile::section_node::const_local_iterator libconfigfile::section_node::cend(size_type n) const
+{
+    return m_contents.cend(n);
+}
+
+libconfigfile::section_node::size_type libconfigfile::section_node::bucket_count() const
+{
+    return m_contents.bucket_count();
+}
+
+libconfigfile::section_node::size_type libconfigfile::section_node::max_bucket_count() const
+{
+    return m_contents.max_bucket_count();
+}
+
+libconfigfile::section_node::size_type libconfigfile::section_node::bucket_size(size_type n) const
+{
+    return m_contents.bucket_size(n);
+}
+
+libconfigfile::section_node::size_type libconfigfile::section_node::bucket(const key_type& key) const
+{
+    return m_contents.bucket(key);
+}
+
+float libconfigfile::section_node::load_factor() const
+{
+    return m_contents.load_factor();
+}
+
+float libconfigfile::section_node::max_load_factor() const
+{
+    return m_contents.max_load_factor();
+}
+
+void libconfigfile::section_node::max_load_factor(float ml)
+{
+    m_contents.max_load_factor(ml);
+}
+
+void libconfigfile::section_node::rehash(size_type count)
+{
+    m_contents.rehash(count);
+}
+
+void libconfigfile::section_node::reserve(size_type count)
+{
+    m_contents.reserve(count);
+}
+
 libconfigfile::section_node& libconfigfile::section_node::operator=(const section_node& other)
 {
     if (this == &other)
