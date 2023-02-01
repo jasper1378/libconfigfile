@@ -4,49 +4,22 @@
 #include "node_types.hpp"
 
 #include <cstddef>
+#include <initializer_list>
 #include <string>
 #include <unordered_map>
 #include <utility>
 
 libconfigfile::section_node::section_node()
-    : m_name{},
-      m_value{}
-{
-}
-
-libconfigfile::section_node::section_node(const std::string& name, const value_t& value)
-    : m_name{ name },
-      m_value{ value }
-{
-}
-
-libconfigfile::section_node::section_node(const std::string& name, value_t&& value)
-    : m_name{ name },
-      m_value{ std::move(value) }
-{
-}
-
-libconfigfile::section_node::section_node(std::string&& name, const value_t& value)
-    : m_name{ std::move(name) },
-      m_value{ value }
-{
-}
-
-libconfigfile::section_node::section_node(std::string&& name, value_t&& value)
-    : m_name{ std::move(name) },
-      m_value{ std::move(value) }
 {
 }
 
 libconfigfile::section_node::section_node(const section_node& other)
-    : m_name{ other.m_name },
-      m_value{ other.m_value }
+    : m_contents{ other.m_contents }
 {
 }
 
 libconfigfile::section_node::section_node(section_node&& other)
-    : m_name{ std::move(other.m_name) },
-      m_value{ std::move(other.m_value) }
+    : m_contents{ std::move(other.m_contents) }
 {
 }
 
@@ -71,47 +44,167 @@ libconfigfile::section_node* libconfigfile::section_node::create_clone() const
 
 libconfigfile::node_type libconfigfile::section_node::get_node_type() const
 {
-    return node_type::SECTION;
+    return libconfigfile::node_type::SECTION;
 }
 
-const std::string& libconfigfile::section_node::get_name() const
+libconfigfile::section_node::iterator libconfigfile::section_node::begin()
 {
-    return m_name;
+    return m_contents.begin();
 }
 
-std::string& libconfigfile::section_node::get_name()
+libconfigfile::section_node::const_iterator libconfigfile::section_node::begin() const
 {
-    return m_name;
+    return m_contents.begin();
 }
 
-void libconfigfile::section_node::set_name(const std::string& name)
+libconfigfile::section_node::const_iterator libconfigfile::section_node::cbegin() const
 {
-    m_name = name;
+    return m_contents.cbegin();
 }
 
-void libconfigfile::section_node::set_name(std::string&& name)
+libconfigfile::section_node::iterator libconfigfile::section_node::end()
 {
-    m_name = std::move(name);
+    return m_contents.end();
 }
 
-const libconfigfile::section_node::value_t& libconfigfile::section_node::get() const
+libconfigfile::section_node::const_iterator libconfigfile::section_node::end() const
 {
-    return m_value;
+    return m_contents.end();
 }
 
-libconfigfile::section_node::value_t& libconfigfile::section_node::get()
+libconfigfile::section_node::const_iterator libconfigfile::section_node::cend() const
 {
-    return m_value;
+    return m_contents.cend();
 }
 
-void libconfigfile::section_node::set(const value_t& value)
+bool libconfigfile::section_node::empty() const
 {
-    m_value = value;
+    return m_contents.empty();
 }
 
-void libconfigfile::section_node::set(value_t&& value)
+libconfigfile::section_node::size_type libconfigfile::section_node::size() const
 {
-    m_value = std::move(value);
+    return m_contents.size();
+}
+
+libconfigfile::section_node::size_type libconfigfile::section_node::max_size() const
+{
+    return m_contents.max_size();
+}
+
+void libconfigfile::section_node::clear()
+{
+    m_contents.clear();
+}
+
+std::pair<libconfigfile::section_node::iterator,bool> libconfigfile::section_node::insert(const value_type& value)
+{
+    return m_contents.insert(value);
+}
+
+std::pair<libconfigfile::section_node::iterator,bool> libconfigfile::section_node::insert(value_type&& value)
+{
+    return m_contents.insert(std::move(value));
+}
+
+libconfigfile::section_node::iterator libconfigfile::section_node::insert(const_iterator hint, const value_type& value)
+{
+    return m_contents.insert(hint, value);
+}
+
+libconfigfile::section_node::iterator libconfigfile::section_node::insert(const_iterator hint, value_type&& value)
+{
+    return m_contents.insert(hint, std::move(value));
+}
+
+void libconfigfile::section_node::insert(std::initializer_list<value_type> ilist)
+{
+    m_contents.insert(ilist);
+}
+
+libconfigfile::section_node::insert_return_type libconfigfile::section_node::insert(map_node_type&& nh)
+{
+    return m_contents.insert(std::move(nh));
+}
+
+libconfigfile::section_node::iterator libconfigfile::section_node::insert(const_iterator hint, map_node_type&& nh)
+{
+    return m_contents.insert(hint, std::move(nh));
+}
+
+libconfigfile::section_node::iterator libconfigfile::section_node::erase(const_iterator pos)
+{
+    return m_contents.erase(pos);
+}
+
+libconfigfile::section_node::iterator libconfigfile::section_node::erase(const_iterator first, const_iterator last)
+{
+    return m_contents.erase(first, last);
+}
+
+libconfigfile::section_node::size_type libconfigfile::section_node::erase(const key_type& k)
+{
+    return m_contents.erase(k);
+}
+
+void libconfigfile::section_node::swap(section_node& other)
+{
+    m_contents.swap(other.m_contents);
+}
+
+libconfigfile::section_node::map_node_type libconfigfile::section_node::extract(const_iterator position)
+{
+    return m_contents.extract(position);
+}
+
+libconfigfile::section_node::map_node_type libconfigfile::section_node::extract(const key_type& k)
+{
+    return m_contents.extract(k);
+}
+
+void libconfigfile::section_node::merge(section_node& other)
+{
+    m_contents.merge(other.m_contents);
+}
+
+void libconfigfile::section_node::merge(section_node&& other)
+{
+    m_contents.merge(std::move(other.m_contents));
+}
+
+libconfigfile::section_node::mapped_type& libconfigfile::section_node::at(const key_type& key)
+{
+    return m_contents.at(key);
+}
+
+const libconfigfile::section_node::mapped_type& libconfigfile::section_node::at(const key_type& key) const
+{
+    return m_contents.at(key);
+}
+
+libconfigfile::section_node::mapped_type& libconfigfile::section_node::operator[](const key_type& key)
+{
+    return m_contents[key];
+}
+
+libconfigfile::section_node::mapped_type& libconfigfile::section_node::operator[](key_type&& key)
+{
+    return m_contents[std::move(key)];
+}
+
+libconfigfile::section_node::size_type libconfigfile::section_node::count(const key_type& key) const
+{
+    return m_contents.count(key);
+}
+
+libconfigfile::section_node::iterator libconfigfile::section_node::find(const key_type& key)
+{
+    return m_contents.find(key);
+}
+
+libconfigfile::section_node::const_iterator libconfigfile::section_node::find(const key_type& key) const
+{
+    return m_contents.find(key);
 }
 
 libconfigfile::section_node& libconfigfile::section_node::operator=(const section_node& other)
@@ -121,8 +214,7 @@ libconfigfile::section_node& libconfigfile::section_node::operator=(const sectio
         return *this;
     }
 
-    m_name = other.m_name;
-    m_value = other.m_value;
+    m_contents = other.m_contents;
 
     return *this;
 }
@@ -134,27 +226,7 @@ libconfigfile::section_node& libconfigfile::section_node::operator=(section_node
         return *this;
     }
 
-    m_name = std::move(other.m_name);
-    m_value = std::move(other.m_value);
+    m_contents = std::move(other.m_contents);
 
     return *this;
-}
-
-libconfigfile::section_node& libconfigfile::section_node::operator=(const value_t& other)
-{
-    m_value = other;
-
-    return *this;
-}
-
-libconfigfile::section_node& libconfigfile::section_node::operator=(value_t&& other)
-{
-    m_value = std::move(other);
-
-    return *this;
-}
-
-libconfigfile::section_node::operator value_t() const
-{
-    return m_value;
 }
