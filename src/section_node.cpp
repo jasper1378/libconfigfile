@@ -3,9 +3,7 @@
 #include "node.hpp"
 #include "node_types.hpp"
 
-#include <cstddef>
 #include <initializer_list>
-#include <string>
 #include <unordered_map>
 #include <utility>
 
@@ -292,6 +290,16 @@ void libconfigfile::section_node::reserve(size_type count)
     m_contents.reserve(count);
 }
 
+libconfigfile::section_node::hasher libconfigfile::section_node::hash_function() const
+{
+    return m_contents.hash_function();
+}
+
+libconfigfile::section_node::key_equal libconfigfile::section_node::key_eq() const
+{
+    return m_contents.key_eq();
+}
+
 libconfigfile::section_node& libconfigfile::section_node::operator=(const section_node& other)
 {
     if (this == &other)
@@ -314,4 +322,10 @@ libconfigfile::section_node& libconfigfile::section_node::operator=(section_node
     m_contents = std::move(other.m_contents);
 
     return *this;
+}
+
+void libconfigfile::swap(section_node& lhs, section_node& rhs)
+{
+    using std::swap;
+    swap(lhs.m_contents, rhs.m_contents);
 }

@@ -218,11 +218,28 @@ namespace libconfigfile
             void rehash(size_type count);
             void reserve(size_type count);
 
+            hasher hash_function() const;
+            key_equal key_eq() const;
+
         public:
 
             section_node& operator=(const section_node& other);
             section_node& operator=(section_node&& other);
+
+        public:
+
+            friend void swap(section_node& lhs, section_node& rhs);
+            template<typename Pred>
+                friend size_type erase_if(section_node& c, Pred pred);
     };
+
+    void swap(section_node& lhs, section_node& rhs);
+    template<typename Pred>
+        section_node::size_type erase_if(section_node& c, Pred pred)
+        {
+            using std::erase_if;
+            return erase_if(c.m_contents, pred);
+        }
 }
 
 #endif
