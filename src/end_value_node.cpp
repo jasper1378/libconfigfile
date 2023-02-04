@@ -7,16 +7,14 @@
 #include <cstddef>
 #include <utility>
 
-libconfigfile::end_value_node::~end_value_node()
-{
+libconfigfile::end_value_node::~end_value_node() {}
+
+libconfigfile::actual_node_type
+libconfigfile::end_value_node::get_actual_node_type() const {
+  return actual_node_type::END_VALUE_NODE;
 }
 
-libconfigfile::actual_node_type libconfigfile::end_value_node::get_actual_node_type() const
-{
-    return actual_node_type::END_VALUE_NODE;
-}
-
-libconfigfile::value_node_type libconfigfile::end_value_node::get_value_node_type() const
-{
-    return value_node_type::END_VALUE;
+libconfigfile::value_node_type
+libconfigfile::end_value_node::get_value_node_type() const {
+  return value_node_type::END_VALUE;
 }

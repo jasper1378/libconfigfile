@@ -10,58 +10,51 @@
 #include <iostream>
 #include <string>
 
-namespace libconfigfile
-{
-    class string_end_value_node : public end_value_node
-    {
-        public:
+namespace libconfigfile {
+class string_end_value_node : public end_value_node {
+public:
+  using value_t = std::string;
 
-            using value_t = std::string;
+private:
+  value_t m_value;
 
-        private:
+public:
+  string_end_value_node();
+  explicit string_end_value_node(const value_t &value);
+  explicit string_end_value_node(value_t &&value);
+  string_end_value_node(const string_end_value_node &other);
+  string_end_value_node(string_end_value_node &&other);
 
-            value_t m_value;
+  virtual ~string_end_value_node() override;
 
-        public:
+public:
+  virtual actual_node_type get_actual_node_type() const override;
 
-            string_end_value_node();
-            explicit string_end_value_node(const value_t& value);
-            explicit string_end_value_node(value_t&& value);
-            string_end_value_node(const string_end_value_node& other);
-            string_end_value_node(string_end_value_node&& other);
+  virtual string_end_value_node *create_new() const override;
+  virtual string_end_value_node *create_clone() const override;
+  virtual end_value_node_type get_end_value_node_type() const override final;
 
-            virtual ~string_end_value_node() override;
+  const value_t &get() const;
+  value_t &get();
+  void set(const value_t &value);
+  void set(value_t &&value);
 
-        public:
+public:
+  string_end_value_node &operator=(const string_end_value_node &other);
+  string_end_value_node &operator=(string_end_value_node &&other);
+  string_end_value_node &operator=(const value_t &value);
+  string_end_value_node &operator=(value_t &&value);
 
-            virtual actual_node_type get_actual_node_type() const override;
+  explicit operator value_t() const;
 
-            virtual string_end_value_node* create_new() const override;
-            virtual string_end_value_node* create_clone() const override;
-            virtual end_value_node_type get_end_value_node_type() const override final;
+public:
+  friend std::ostream &operator<<(std::ostream &out,
+                                  const string_end_value_node &s);
+  friend std::istream &operator>>(std::istream &in, string_end_value_node &s);
+};
 
-            const value_t& get() const;
-            value_t& get();
-            void set(const value_t& value);
-            void set(value_t&& value);
-
-        public:
-
-            string_end_value_node& operator=(const string_end_value_node& other);
-            string_end_value_node& operator=(string_end_value_node&& other);
-            string_end_value_node& operator=(const value_t& value);
-            string_end_value_node& operator=(value_t&& value);
-
-            explicit operator value_t() const;
-
-        public:
-
-            friend std::ostream& operator<<(std::ostream& out, const string_end_value_node& s);
-            friend std::istream& operator>>(std::istream& in, string_end_value_node& s);
-    };
-
-    std::ostream& operator<<(std::ostream& out, const string_end_value_node& s);
-    std::istream& operator>>(std::istream& in, string_end_value_node& s);
-}
+std::ostream &operator<<(std::ostream &out, const string_end_value_node &s);
+std::istream &operator>>(std::istream &in, string_end_value_node &s);
+} // namespace libconfigfile
 
 #endif
