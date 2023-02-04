@@ -7,37 +7,30 @@
 #include <string>
 #include <unordered_map>
 
-namespace libconfigfile
-{
-    //TODO
-    class config
-    {
-        private:
+namespace libconfigfile {
+// TODO
+class config {
+private:
+  std::unordered_map<std::string, node_ptr<node>> m_values;
 
-            std::unordered_map<std::string, node_ptr<node>> m_values;
+public:
+  config();
+  config(const config &other);
+  config(config &&other);
 
-        public:
+  ~config();
 
-            config();
-            config(const config& other);
-            config(config&& other);
+public:
+  // TODO
+  // void validate_file(); //TODO
 
-            ~config();
+public:
+  config &operator=(const config &other);
+  config &operator=(config &&other);
 
-        public:
-
-            //TODO
-            //void validate_file(); //TODO
-
-        public:
-
-            config& operator=(const config& other);
-            config& operator=(config&& other);
-
-        public:
-
-            friend class parser;
-    };
-}
+public:
+  friend class parser;
+};
+} // namespace libconfigfile
 
 #endif

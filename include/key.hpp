@@ -3,9 +3,8 @@
 
 #include <string>
 
-namespace libconfigfile
-{
-    using key = std::string;
+namespace libconfigfile {
+using key = std::string;
 }
 
 #endif

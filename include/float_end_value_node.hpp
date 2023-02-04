@@ -9,55 +9,48 @@
 #include <cstddef>
 #include <iostream>
 
-namespace libconfigfile
-{
-    class float_end_value_node : public end_value_node
-    {
-        public:
+namespace libconfigfile {
+class float_end_value_node : public end_value_node {
+public:
+  using value_t = double;
 
-            using value_t = double;
+private:
+  value_t m_value;
 
-        private:
+public:
+  float_end_value_node();
+  explicit float_end_value_node(const value_t value);
+  float_end_value_node(const float_end_value_node &other);
+  float_end_value_node(float_end_value_node &&other);
 
-            value_t m_value;
+  virtual ~float_end_value_node() override;
 
-        public:
+public:
+  virtual actual_node_type get_actual_node_type() const override;
 
-            float_end_value_node();
-            explicit float_end_value_node(const value_t value);
-            float_end_value_node(const float_end_value_node& other);
-            float_end_value_node(float_end_value_node&& other);
+  virtual float_end_value_node *create_new() const override;
+  virtual float_end_value_node *create_clone() const override;
+  virtual end_value_node_type get_end_value_node_type() const override final;
 
-            virtual ~float_end_value_node() override;
+  value_t get() const;
+  value_t &get();
+  void set(const value_t value);
 
-        public:
+public:
+  float_end_value_node &operator=(const float_end_value_node &other);
+  float_end_value_node &operator=(float_end_value_node &&other);
+  float_end_value_node &operator=(const value_t value);
 
-            virtual actual_node_type get_actual_node_type() const override;
+  explicit operator value_t() const;
 
-            virtual float_end_value_node* create_new() const override;
-            virtual float_end_value_node* create_clone() const override;
-            virtual end_value_node_type get_end_value_node_type() const override final;
+public:
+  friend std::ostream &operator<<(std::ostream &out,
+                                  const float_end_value_node &f);
+  friend std::istream &operator>>(std::istream &in, float_end_value_node &f);
+};
 
-            value_t get() const;
-            value_t& get();
-            void set(const value_t value);
-
-        public:
-
-            float_end_value_node& operator=(const float_end_value_node& other);
-            float_end_value_node& operator=(float_end_value_node&& other);
-            float_end_value_node& operator=(const value_t value);
-
-            explicit operator value_t() const;
-
-        public:
-
-            friend std::ostream& operator<<(std::ostream& out, const float_end_value_node& f);
-            friend std::istream& operator>>(std::istream& in, float_end_value_node& f);
-    };
-
-    std::ostream& operator<<(std::ostream& out, const float_end_value_node& f);
-    std::istream& operator>>(std::istream& in, float_end_value_node& f);
-}
+std::ostream &operator<<(std::ostream &out, const float_end_value_node &f);
+std::istream &operator>>(std::istream &in, float_end_value_node &f);
+} // namespace libconfigfile
 
 #endif
