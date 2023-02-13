@@ -13,7 +13,7 @@ Version: 0
 - [Arrays](#arrays)
 - [Sections](#sections)
 - [Directives](#directives)
-    - [Version Directive](#version-directive) 
+    - [Version Directive](#version-directive)
     - [Include Directive](#include-directive)
 - [Filename Extension](#filename-extension)
 - [Thanks](#thanks)
@@ -81,7 +81,7 @@ name = "Young"; // invalid
   is useful for formatting very long strings as sequences of shorter sequences.
 - A backslash within a string marks an escape sequence. The following escape
   sequences are supported.
-  
+
 Escape Sequence | Hex value in ASCII | Character represented
 ---|---|---
 `\a` | alert | `0x07`
@@ -207,6 +207,7 @@ integers3 = [
 - Keys/sections may not share names with other keys/sections in the same direct scope.
 - Naming rules for sections are the same as for keys.
 - Empty sections are allowed and simply have no key-value pairs and/or sections within them.
+- The ordering of objects within a section is not preserved (for performance reasons).
 ```
 (section)
 {
@@ -245,7 +246,7 @@ integers3 = [
 
 ## Directives
 - Directives are defined by an `@` character followed by the name of the directive, and optionally (depending on the specific directive), arguments.
-- The entire directive must appear on one line. A directive and its arguments must be the only text present on its line. 
+- The entire directive must appear on one line. A directive and its arguments must be the only text present on its line.
 - If arguments are present, at least one whitespace characters is required between the end of the directive name and the start of the arguments. All other whitespace between the directive name and the arguments is ignored.
 - Arguments are formatted and delimited according to the rules of the specific directive.
 ```
