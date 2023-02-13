@@ -14,28 +14,28 @@
 namespace libconfigfile {
 class section_node : public node {
 public:
-  using map_t = std::unordered_map<key, node_ptr<node>>;
-  using key_type = map_t::key_type;
-  using mapped_type = map_t::mapped_type;
-  using value_type = map_t::value_type;
-  using size_type = map_t::size_type;
-  using difference_type = map_t::difference_type;
-  using hasher = map_t::hasher;
-  using key_equal = map_t::key_equal;
-  using allocator_type = map_t::allocator_type;
-  using reference = map_t::reference;
-  using const_reference = map_t::const_reference;
-  using pointer = map_t::pointer;
-  using const_pointer = map_t::const_pointer;
-  using iterator = map_t::iterator;
-  using const_iterator = map_t::const_iterator;
-  using local_iterator = map_t::local_iterator;
-  using const_local_iterator = map_t::const_local_iterator;
-  using map_node_type = map_t::node_type;
-  using insert_return_type = map_t::insert_return_type;
+  using unordered_map_t = std::unordered_map<key, node_ptr<node>>;
+  using key_type = unordered_map_t::key_type;
+  using mapped_type = unordered_map_t::mapped_type;
+  using value_type = unordered_map_t::value_type;
+  using size_type = unordered_map_t::size_type;
+  using difference_type = unordered_map_t::difference_type;
+  using hasher = unordered_map_t::hasher;
+  using key_equal = unordered_map_t::key_equal;
+  using allocator_type = unordered_map_t::allocator_type;
+  using reference = unordered_map_t::reference;
+  using const_reference = unordered_map_t::const_reference;
+  using pointer = unordered_map_t::pointer;
+  using const_pointer = unordered_map_t::const_pointer;
+  using iterator = unordered_map_t::iterator;
+  using const_iterator = unordered_map_t::const_iterator;
+  using local_iterator = unordered_map_t::local_iterator;
+  using const_local_iterator = unordered_map_t::const_local_iterator;
+  using map_node_type = unordered_map_t::node_type;
+  using insert_return_type = unordered_map_t::insert_return_type;
 
 private:
-  map_t m_contents;
+  unordered_map_t m_contents;
 
 public:
   section_node();

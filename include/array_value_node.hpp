@@ -6,13 +6,27 @@
 #include "node_types.hpp"
 #include "value_node.hpp"
 
-#include <cstddef>
+#include <initializer_list>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace libconfigfile {
 class array_value_node : public value_node {
 public:
-  using value_t = std::vector<node_ptr<value_node>>;
+  using vector_t = std::vector<node_ptr<value_node>>;
+  using value_type = vector_t::value_type;
+  using allocator_type = vector_t::allocator_type;
+  using size_type = vector_t::size_type;
+  using difference_type = vector_t::difference_type;
+  using reference = vector_t::reference;
+  using const_reference = vector_t::const_reference;
+  using pointer = vector_t::pointer;
+  using const_pointer = vector_t::const_pointer;
+  using iterator = vector_t::iterator;
+  using const_iterator = vector_t::const_iterator;
+  using reverse_iterator = vector_t::reverse_iterator;
+  using const_reverse_iterator = vector_t::const_reverse_iterator;
 
 private:
   value_t m_value;

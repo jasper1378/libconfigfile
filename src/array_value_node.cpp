@@ -4,7 +4,7 @@
 #include "node_types.hpp"
 #include "value_node.hpp"
 
-#include <cstddef>
+#include <initializer_list>
 #include <utility>
 #include <vector>
 
