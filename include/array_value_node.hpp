@@ -7,6 +7,7 @@
 #include "value_node.hpp"
 
 #include <initializer_list>
+#include <memory>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -33,8 +34,13 @@ private:
 
 public:
   array_value_node();
+  explicit array_value_node(size_type count);
+  array_value_node(size_type count, const value_type &value);
+  template <typename InputIt>
+  array_value_node(InputIt first, InputIt last) : m_contents{first, last} {}
+  array_value_node(std::initializer_list<value_type> init);
   array_value_node(const array_value_node &other);
-  array_value_node(array_value_node &&other);
+  array_value_node(array_value_node &&other) noexcept;
 
   virtual ~array_value_node() override;
 
@@ -44,6 +50,13 @@ public:
   virtual array_value_node *create_new() const override;
   virtual array_value_node *create_clone() const override;
   virtual value_node_type get_value_node_type() const override final;
+
+  void assign(size_type count, const value_type &value);
+  template <typename InputIt> void assign(InputIt first, InputIt last) {
+    m_contents.assign(first, last);
+  }
+  void assign(std::initializer_list<value_type> ilist);
+  allocator_type get_allocator() const;
 
   reference at(size_type pos);
   const_reference at(size_type pos) const;
@@ -103,14 +116,18 @@ public:
 
 public:
   array_value_node &operator=(const array_value_node &other);
-  array_value_node &operator=(array_value_node &&other);
+  array_value_node &operator=(array_value_node &&other) noexcept(
+      std::allocator_traits<
+          allocator_type>::propagate_on_container_move_assignment::value ||
+      std::allocator_traits<allocator_type>::is_always_equal::value);
+  array_value_node &operator=(std::initializer_list<value_type> ilist);
 
 public:
   friend bool operator==(const array_value_node &lhs,
                          const array_value_node &rhs);
-  friend auto operator<=>(const array_value_node &lhs,
-                          const array_value_node &rhs)
-      -> decltype(lhs.m_contents <=> rhs.m_contents);
+  // friend auto operator<=>(const array_value_node &lhs,
+  //                         const array_value_node &rhs)
+  //     -> decltype(lhs.m_contents <=> rhs.m_contents);
   friend void swap(array_value_node &lhs, array_value_node &rhs);
   template <typename U>
   friend array_value_node::size_type erase(array_value_node &c, const U &value);
@@ -119,8 +136,8 @@ public:
 };
 
 bool operator==(const array_value_node &lhs, const array_value_node &rhs);
-auto operator<=>(const array_value_node &lhs, const array_value_node &rhs)
-    -> decltype(lhs.m_contents <=> rhs.m_contents);
+// auto operator<=>(const array_value_node &lhs, const array_value_node &rhs)
+//     -> decltype(lhs.m_contents <=> rhs.m_contents);
 void swap(array_value_node &lhs, array_value_node &rhs);
 template <typename U>
 array_value_node::size_type erase(array_value_node &c, const U &value) {
