@@ -7,6 +7,7 @@
 #include "node_types.hpp"
 
 #include <initializer_list>
+#include <memory>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -39,6 +40,14 @@ private:
 
 public:
   section_node();
+  explicit section_node(size_type bucket_count);
+  template <typename InputIt>
+  section_node(InputIt first, InputIt last) : m_contents{first, last} {}
+  template <typename InputIt>
+  section_node(InputIt first, InputIt last, size_type bucket_count)
+      : m_contents{first, last, bucket_count} {}
+  section_node(std::initializer_list<value_type> init);
+  section_node(std::initializer_list<value_type> init, size_type bucket_count);
   section_node(const section_node &other);
   section_node(section_node &&other);
 
@@ -50,6 +59,8 @@ public:
   virtual section_node *create_new() const override;
   virtual section_node *create_clone() const override;
   virtual libconfigfile::node_type get_node_type() const override final;
+
+  allocator_type get_allocator() const;
 
   iterator begin();
   const_iterator begin() const;
@@ -190,7 +201,10 @@ public:
 
 public:
   section_node &operator=(const section_node &other);
-  section_node &operator=(section_node &&other);
+  section_node &operator=(section_node &&other) noexcept(
+      std::allocator_traits<allocator_type>::is_always_equal::value
+          &&std::is_nothrow_move_assignable<hasher>::value
+              &&std::is_nothrow_move_assignable<key_equal>::value);
 
 public:
   friend void swap(section_node &lhs, section_node &rhs);

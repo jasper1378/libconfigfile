@@ -4,10 +4,23 @@
 #include "node_types.hpp"
 
 #include <initializer_list>
+#include <memory>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
-libconfigfile::section_node::section_node() {}
+libconfigfile::section_node::section_node() : m_contents{} {}
+
+libconfigfile::section_node::section_node(size_type bucket_count)
+    : m_contents{bucket_count} {}
+
+libconfigfile::section_node::section_node(
+    std::initializer_list<value_type> init)
+    : m_contents{init} {}
+
+libconfigfile::section_node::section_node(
+    std::initializer_list<value_type> init, size_type bucket_count)
+    : m_contents{init, bucket_count} {}
 
 libconfigfile::section_node::section_node(const section_node &other)
     : m_contents{other.m_contents} {}
@@ -32,6 +45,11 @@ libconfigfile::section_node *libconfigfile::section_node::create_clone() const {
 
 libconfigfile::node_type libconfigfile::section_node::get_node_type() const {
   return libconfigfile::node_type::SECTION;
+}
+
+libconfigfile::section_node::allocator_type
+libconfigfile::section_node::get_allocator() const {
+  return m_contents.get_allocator();
 }
 
 libconfigfile::section_node::iterator libconfigfile::section_node::begin() {
@@ -288,7 +306,10 @@ libconfigfile::section_node::operator=(const section_node &other) {
 }
 
 libconfigfile::section_node &
-libconfigfile::section_node::operator=(section_node &&other) {
+libconfigfile::section_node::operator=(section_node &&other) noexcept(
+    std::allocator_traits<allocator_type>::is_always_equal::value
+        &&std::is_nothrow_move_assignable<hasher>::value
+            &&std::is_nothrow_move_assignable<key_equal>::value) {
   if (this == &other) {
     return *this;
   }
