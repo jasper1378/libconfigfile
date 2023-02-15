@@ -207,10 +207,16 @@ public:
               &&std::is_nothrow_move_assignable<key_equal>::value);
 
 public:
+  friend bool operator==(const section_node &lhs, const section_node &rhs);
+  friend bool operator!=(const section_node &lhs, const section_node &rhs);
+
   friend void swap(section_node &lhs, section_node &rhs);
   template <typename Pred>
   friend size_type erase_if(section_node &c, Pred pred);
 };
+
+bool operator==(const section_node &lhs, const section_node &rhs);
+bool operator!=(const section_node &lhs, const section_node &rhs);
 
 void swap(section_node &lhs, section_node &rhs);
 template <typename Pred>

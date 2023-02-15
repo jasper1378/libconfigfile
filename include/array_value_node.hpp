@@ -125,9 +125,20 @@ public:
 public:
   friend bool operator==(const array_value_node &lhs,
                          const array_value_node &rhs);
-  // friend auto operator<=>(const array_value_node &lhs,
-  //                         const array_value_node &rhs)
-  //     -> decltype(lhs.m_contents <=> rhs.m_contents);
+  friend bool operator!=(const array_value_node &lhs,
+                         const array_value_node &rhs);
+  friend bool operator<(const array_value_node &lhs,
+                        const array_value_node &rhs);
+  friend bool operator<=(const array_value_node &lhs,
+                         const array_value_node &rhs);
+  friend bool operator>(const array_value_node &lhs,
+                        const array_value_node &rhs);
+  friend bool operator>=(const array_value_node &lhs,
+                         const array_value_node &rhs);
+  friend auto operator<=>(const array_value_node &lhs,
+                          const array_value_node &rhs)
+      -> decltype(lhs.m_contents <=> rhs.m_contents);
+
   friend void swap(array_value_node &lhs, array_value_node &rhs);
   template <typename U>
   friend array_value_node::size_type erase(array_value_node &c, const U &value);
@@ -136,8 +147,14 @@ public:
 };
 
 bool operator==(const array_value_node &lhs, const array_value_node &rhs);
-// auto operator<=>(const array_value_node &lhs, const array_value_node &rhs)
-//     -> decltype(lhs.m_contents <=> rhs.m_contents);
+bool operator!=(const array_value_node &lhs, const array_value_node &rhs);
+bool operator<(const array_value_node &lhs, const array_value_node &rhs);
+bool operator<=(const array_value_node &lhs, const array_value_node &rhs);
+bool operator>(const array_value_node &lhs, const array_value_node &rhs);
+bool operator>=(const array_value_node &lhs, const array_value_node &rhs);
+auto operator<=>(const array_value_node &lhs, const array_value_node &rhs)
+    -> decltype(lhs.m_contents <=> rhs.m_contents);
+
 void swap(array_value_node &lhs, array_value_node &rhs);
 template <typename U>
 array_value_node::size_type erase(array_value_node &c, const U &value) {

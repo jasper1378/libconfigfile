@@ -4,6 +4,8 @@
 #include "node.hpp"
 
 #include <concepts>
+#include <functional>
+#include <type_traits>
 #include <utility>
 
 namespace libconfigfile {
@@ -98,35 +100,217 @@ public:
   ptr_t operator->() const { return m_ptr; }
 
 public:
-  friend bool operator==(const node_ptr &first, const node_ptr &second) {
-    return first.m_ptr == second.m_ptr;
-  }
-
-  friend bool operator==(const node_ptr &first, std::nullptr_t) {
-    return first.m_ptr == nullptr;
-  }
-
-  friend bool operator==(std::nullptr_t, const node_ptr &second) {
-    return nullptr == second.m_ptr;
-  }
-
-  friend bool operator!=(const node_ptr &first, const node_ptr &second) {
-    return first.m_ptr != second.m_ptr;
-  }
-
-  friend bool operator!=(const node_ptr &first, std::nullptr_t) {
-    return first.m_ptr != nullptr;
-  }
-
-  friend bool operator!=(std::nullptr_t, const node_ptr &second) {
-    return nullptr != second.m_ptr;
-  }
+  template <is_node node_t1, is_node node_t2>
+  friend bool operator==(const node_ptr<node_t1> &x,
+                         const node_ptr<node_t2> &y);
+  template <is_node node_t1, is_node node_t2>
+  friend bool operator!=(const node_ptr<node_t1> &x,
+                         const node_ptr<node_t2> &y);
+  template <is_node node_t1, is_node node_t2>
+  friend bool operator<(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y);
+  template <is_node node_t1, is_node node_t2>
+  friend bool operator<=(const node_ptr<node_t1> &x,
+                         const node_ptr<node_t2> &y);
+  template <is_node node_t1, is_node node_t2>
+  friend bool operator>(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y);
+  template <is_node node_t1, is_node node_t2>
+  friend bool operator>=(const node_ptr<node_t1> &x,
+                         const node_ptr<node_t2> &y);
+  template <is_node node_t1, is_node node_t2>
+    requires std::three_way_comparable_with<typename node_ptr<node_t1>::ptr_t,
+                                            typename node_ptr<node_t2>::ptr_t>
+  friend std::compare_three_way_result_t<typename node_ptr<node_t1>::ptr_t,
+                                         typename node_ptr<node_t2>::ptr_t>
+  operator<=>(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y);
+  template <is_node node_t1>
+  friend bool operator==(const node_ptr<node_t1> &x, std::nullptr_t);
+  template <is_node node_t1>
+  friend bool operator==(std::nullptr_t, const node_ptr<node_t1> &x);
+  template <is_node node_t1>
+  friend bool operator!=(const node_ptr<node_t1> &x, std::nullptr_t);
+  template <is_node node_t1>
+  friend bool operator!=(std::nullptr_t, const node_ptr<node_t1> &x);
+  template <is_node node_t1>
+  friend bool operator<(const node_ptr<node_t1> &x, std::nullptr_t);
+  template <is_node node_t1>
+  friend bool operator<(std::nullptr_t, const node_ptr<node_t1> &y);
+  template <is_node node_t1>
+  friend bool operator<=(const node_ptr<node_t1> &x, std::nullptr_t);
+  template <is_node node_t1>
+  friend bool operator<=(std::nullptr_t, const node_ptr<node_t1> &y);
+  template <is_node node_t1>
+  friend bool operator>(const node_ptr<node_t1> &x, std::nullptr_t);
+  template <is_node node_t1>
+  friend bool operator>(std::nullptr_t, const node_ptr<node_t1> &y);
+  template <is_node node_t1>
+  friend bool operator>=(const node_ptr<node_t1> &x, std::nullptr_t);
+  template <is_node node_t1>
+  friend bool operator>=(std::nullptr_t, const node_ptr<node_t1> &y);
+  template <is_node node_t1>
+    requires std::three_way_comparable<typename node_ptr<node_t1>::ptr_t>
+  friend std::compare_three_way_result_t<typename node_ptr<node_t1>::ptr_t>
+  operator<=>(const node_ptr<node_t1> &x, std::nullptr_t);
 };
 
 template <is_node node_t, typename... args_t>
 node_ptr<node_t> make_node_ptr(args_t &&...args) {
   return node_ptr<node_t>{new node_t{std::forward<args_t>(args)...}};
 }
+
+template <is_node node_t1, is_node node_t2>
+bool operator==(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y) {
+  return x.get() == y.get();
+}
+
+template <is_node node_t1, is_node node_t2>
+bool operator!=(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y) {
+  return x.get() != y.get();
+}
+
+template <is_node node_t1, is_node node_t2>
+bool operator<(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y) {
+  using CT = typename std::common_type<typename node_ptr<node_t1>::ptr_t,
+                                       typename node_ptr<node_t2>::ptr>::value;
+  return std::less<CT>()(x.get(), y.get());
+}
+
+template <is_node node_t1, is_node node_t2>
+bool operator<=(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y) {
+  return !(y < x);
+}
+
+template <is_node node_t1, is_node node_t2>
+bool operator>(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y) {
+  return y < x;
+}
+
+template <is_node node_t1, is_node node_t2>
+bool operator>=(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y) {
+  return !(x < y);
+}
+
+template <is_node node_t1, is_node node_t2>
+  requires std::three_way_comparable_with<typename node_ptr<node_t1>::ptr_t,
+                                          typename node_ptr<node_t2>::ptr_t>
+std::compare_three_way_result_t<typename node_ptr<node_t1>::ptr_t,
+                                typename node_ptr<node_t2>::ptr_t>
+operator<=>(const node_ptr<node_t1> &x, const node_ptr<node_t2> &y) {
+
+  return std::compare_three_way{}(x.get(), y.get());
+}
+
+template <is_node node_t1>
+bool operator==(const node_ptr<node_t1> &x, std::nullptr_t) {
+  return !x;
+}
+
+template <is_node node_t1>
+bool operator==(std::nullptr_t, const node_ptr<node_t1> &x) {
+  return !x;
+}
+
+template <is_node node_t1>
+bool operator!=(const node_ptr<node_t1> &x, std::nullptr_t) {
+  return (bool)x;
+}
+
+template <is_node node_t1>
+bool operator!=(std::nullptr_t, const node_ptr<node_t1> &x) {
+  return (bool)x;
+}
+
+template <is_node node_t1>
+bool operator<(const node_ptr<node_t1> &x, std::nullptr_t) {
+  return std::less<typename node_ptr<node_t1>::ptr_t>()(x.get(), nullptr);
+}
+
+template <is_node node_t1>
+bool operator<(std::nullptr_t, const node_ptr<node_t1> &y) {
+  return std::less<typename node_ptr<node_t1>::ptr_t>()(nullptr, y.get());
+}
+
+template <is_node node_t1>
+bool operator<=(const node_ptr<node_t1> &x, std::nullptr_t) {
+  return !(nullptr < x);
+}
+
+template <is_node node_t1>
+bool operator<=(std::nullptr_t, const node_ptr<node_t1> &y) {
+  return !(y < nullptr);
+}
+
+template <is_node node_t1>
+bool operator>(const node_ptr<node_t1> &x, std::nullptr_t) {
+  return nullptr < x;
+}
+
+template <is_node node_t1>
+bool operator>(std::nullptr_t, const node_ptr<node_t1> &y) {
+  return y < nullptr;
+}
+
+template <is_node node_t1>
+bool operator>=(const node_ptr<node_t1> &x, std::nullptr_t) {
+  return !(x < nullptr);
+}
+
+template <is_node node_t1>
+bool operator>=(std::nullptr_t, const node_ptr<node_t1> &y) {
+  return !(nullptr < y);
+}
+
+template <is_node node_t1>
+  requires std::three_way_comparable<typename node_ptr<node_t1>::ptr_t>
+std::compare_three_way_result_t<typename node_ptr<node_t1>::ptr_t>
+operator<=>(const node_ptr<node_t1> &x, std::nullptr_t) {
+  return std::compare_three_way{}(
+      x.get(), static_cast<typename node_ptr<node_t1>::ptr_t>(nullptr));
+}
+
 } // namespace libconfigfile
 
 #endif
+
+// friend bool operator==(const node_ptr &first, const node_ptr &second);
+//
+// friend bool operator==(const node_ptr &first, std::nullptr_t);
+//
+// friend bool operator==(std::nullptr_t, const node_ptr &second);
+//
+// friend bool operator!=(const node_ptr &first, const node_ptr &second);
+//
+// friend bool operator!=(const node_ptr &first, std::nullptr_t);
+//
+// friend bool operator!=(std::nullptr_t, const node_ptr &second);
+
+// template <is_node node_t>
+// bool operator==(const node_ptr<node_t> &first, const node_ptr<node_t>
+// &second) {
+//   return first.m_ptr == second.m_ptr;
+// }
+//
+// template <is_node node_t>
+// bool operator==(const node_ptr<node_t> &first, std::nullptr_t) {
+//   return first.m_ptr == nullptr;
+// }
+//
+// template <is_node node_t>
+// bool operator==(std::nullptr_t, const node_ptr<node_t> &second) {
+//   return nullptr == second.m_ptr;
+// }
+//
+// template <is_node node_t>
+// bool operator!=(const node_ptr<node_t> &first, const node_ptr<node_t>
+// &second) {
+//   return first.m_ptr != second.m_ptr;
+// }
+//
+// template <is_node node_t>
+// bool operator!=(const node_ptr<node_t> &first, std::nullptr_t) {
+//   return first.m_ptr != nullptr;
+// }
+//
+// template <is_node node_t>
+// bool operator!=(std::nullptr_t, const node_ptr<node_t> &second) {
+//   return nullptr != second.m_ptr;
+// }
