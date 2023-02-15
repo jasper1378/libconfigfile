@@ -319,6 +319,16 @@ libconfigfile::section_node::operator=(section_node &&other) noexcept(
   return *this;
 }
 
+bool libconfigfile::operator==(const section_node &lhs,
+                               const section_node &rhs) {
+  return lhs.m_contents == rhs.m_contents;
+}
+
+bool libconfigfile::operator!=(const section_node &lhs,
+                               const section_node &rhs) {
+  return lhs.m_contents != rhs.m_contents;
+}
+
 void libconfigfile::swap(section_node &lhs, section_node &rhs) {
   using std::swap;
   swap(lhs.m_contents, rhs.m_contents);
