@@ -293,6 +293,37 @@ bool libconfigfile::operator==(const array_value_node &lhs,
   return lhs.m_contents == rhs.m_contents;
 }
 
+bool libconfigfile::operator!=(const array_value_node &lhs,
+                               const array_value_node &rhs) {
+  return lhs.m_contents != rhs.m_contents;
+}
+
+bool libconfigfile::operator<(const array_value_node &lhs,
+                              const array_value_node &rhs) {
+  return lhs.m_contents < rhs.m_contents;
+}
+
+bool libconfigfile::operator<=(const array_value_node &lhs,
+                               const array_value_node &rhs) {
+  return lhs.m_contents <= rhs.m_contents;
+}
+
+bool libconfigfile::operator>(const array_value_node &lhs,
+                              const array_value_node &rhs) {
+  return lhs.m_contents > rhs.m_contents;
+}
+
+bool libconfigfile::operator>=(const array_value_node &lhs,
+                               const array_value_node &rhs) {
+  return lhs.m_contents >= rhs.m_contents;
+}
+
+auto libconfigfile::operator<=>(const array_value_node &lhs,
+                                const array_value_node &rhs)
+    -> decltype(lhs.m_contents <=> rhs.m_contents) {
+  return lhs.m_contents <=> rhs.m_contents;
+}
+
 void libconfigfile::swap(array_value_node &lhs, array_value_node &rhs) {
   using std::swap;
   swap(lhs.m_contents, rhs.m_contents);
