@@ -2,6 +2,7 @@
 #define LIBCONFIGFILE_FILE_HPP
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace libconfigfile {
@@ -20,7 +21,7 @@ public:
   file(const std::string &file_path, bool insert_newlines = true);
   file(std::string &&file_path, bool insert_newlines = true);
   file(const file &other);
-  file(file &&other);
+  file(file &&other) noexcept;
 
   ~file();
 
@@ -40,7 +41,13 @@ public:
 
 public:
   file &operator=(const file &other);
-  file &operator=(file &&other);
+  file &operator=(file &&other) noexcept(
+      (std::is_nothrow_assignable_v<
+          decltype(m_file_path),
+          decltype(m_file_path)>)&&(std::
+                                        is_nothrow_assignable_v<
+                                            decltype(m_file_contents),
+                                            decltype(m_file_contents)>));
 
   const char &operator[](const file_pos &pos) const;
 

@@ -21,7 +21,7 @@ libconfigfile::integer_end_value_node::integer_end_value_node(
     : m_value{other.m_value} {}
 
 libconfigfile::integer_end_value_node::integer_end_value_node(
-    integer_end_value_node &&other)
+    integer_end_value_node &&other) noexcept
     : m_value{std::move(other.m_value)} {}
 
 libconfigfile::integer_end_value_node::~integer_end_value_node() {}
@@ -74,7 +74,7 @@ libconfigfile::integer_end_value_node::operator=(
 
 libconfigfile::integer_end_value_node &
 libconfigfile::integer_end_value_node::operator=(
-    integer_end_value_node &&other) {
+    integer_end_value_node &&other) noexcept {
   if (this == &other) {
     return *this;
   }

@@ -24,7 +24,7 @@ libconfigfile::string_end_value_node::string_end_value_node(
     : m_value{other.m_value} {}
 
 libconfigfile::string_end_value_node::string_end_value_node(
-    string_end_value_node &&other)
+    string_end_value_node &&other) noexcept
     : m_value{std::move(other.m_value)} {}
 
 libconfigfile::string_end_value_node::~string_end_value_node() {}
@@ -80,7 +80,8 @@ libconfigfile::string_end_value_node::operator=(
 }
 
 libconfigfile::string_end_value_node &
-libconfigfile::string_end_value_node::operator=(string_end_value_node &&other) {
+libconfigfile::string_end_value_node::operator=(
+    string_end_value_node &&other) noexcept {
   if (this == &other) {
     return *this;
   }

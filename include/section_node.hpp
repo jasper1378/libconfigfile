@@ -202,9 +202,7 @@ public:
 public:
   section_node &operator=(const section_node &other);
   section_node &operator=(section_node &&other) noexcept(
-      std::allocator_traits<allocator_type>::is_always_equal::value
-          &&std::is_nothrow_move_assignable<hasher>::value
-              &&std::is_nothrow_move_assignable<key_equal>::value);
+      std::is_nothrow_assignable_v<decltype(m_contents), decltype(m_contents)>);
 
 public:
   friend bool operator==(const section_node &lhs, const section_node &rhs);

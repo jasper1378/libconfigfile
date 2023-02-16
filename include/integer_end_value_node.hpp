@@ -22,7 +22,7 @@ public:
   integer_end_value_node();
   explicit integer_end_value_node(const value_t value);
   integer_end_value_node(const integer_end_value_node &other);
-  integer_end_value_node(integer_end_value_node &&other);
+  integer_end_value_node(integer_end_value_node &&other) noexcept;
 
   virtual ~integer_end_value_node() override;
 
@@ -39,7 +39,7 @@ public:
 
 public:
   integer_end_value_node &operator=(const integer_end_value_node &other);
-  integer_end_value_node &operator=(integer_end_value_node &&other);
+  integer_end_value_node &operator=(integer_end_value_node &&other) noexcept;
   integer_end_value_node &operator=(const value_t value);
 
   explicit operator value_t() const;

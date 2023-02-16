@@ -30,7 +30,9 @@ public:
 
   node_ptr(const node_ptr &other) : m_ptr{other.m_ptr->create_clone()} {}
 
-  node_ptr(node_ptr &&other) : m_ptr{other.m_ptr} { other.m_ptr = nullptr; }
+  node_ptr(node_ptr &&other) noexcept : m_ptr{other.m_ptr} {
+    other.m_ptr = nullptr;
+  }
 
   ~node_ptr() {
     if (m_ptr != nullptr) {
@@ -78,7 +80,7 @@ public:
     return *this;
   }
 
-  node_ptr &operator=(node_ptr &&other) {
+  node_ptr &operator=(node_ptr &&other) noexcept {
     if (this == &other) {
       return *this;
     }
