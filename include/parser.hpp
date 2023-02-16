@@ -1,7 +1,6 @@
 #ifndef LIBCONFIGFILE_PARSER_HPP
 #define LIBCONFIGFILE_PARSER_HPP
 
-#include "config.hpp"
 #include "file.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"

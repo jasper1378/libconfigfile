@@ -1,7 +1,6 @@
 #include "parser.hpp"
 
 #include "array_value_node.hpp"
-#include "config.hpp"
 #include "end_value_node.hpp"
 #include "file.hpp"
 #include "float_end_value_node.hpp"
