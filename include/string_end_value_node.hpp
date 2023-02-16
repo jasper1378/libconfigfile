@@ -23,7 +23,7 @@ public:
   explicit string_end_value_node(const value_t &value);
   explicit string_end_value_node(value_t &&value);
   string_end_value_node(const string_end_value_node &other);
-  string_end_value_node(string_end_value_node &&other);
+  string_end_value_node(string_end_value_node &&other) noexcept;
 
   virtual ~string_end_value_node() override;
 
@@ -41,7 +41,8 @@ public:
 
 public:
   string_end_value_node &operator=(const string_end_value_node &other);
-  string_end_value_node &operator=(string_end_value_node &&other);
+  string_end_value_node &operator=(string_end_value_node &&other) noexcept(
+      std::is_nothrow_assignable_v<decltype(m_value), decltype(m_value)>);
   string_end_value_node &operator=(const value_t &value);
   string_end_value_node &operator=(value_t &&value);
 

@@ -29,7 +29,7 @@ public:
   parser();
   parser(const std::string &file_name);
   parser(const parser &other);
-  parser(parser &&other);
+  parser(parser &&other) /*TODO: noexcept()*/;
 
   ~parser();
 
@@ -38,7 +38,7 @@ public:
 
 public:
   parser &operator=(const parser &other);
-  parser &operator=(parser &&other);
+  parser &operator=(parser &&other) /*TODO: noexcept()*/;
 
 private:
   void parse_file();

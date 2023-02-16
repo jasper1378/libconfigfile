@@ -21,7 +21,7 @@ public:
   float_end_value_node();
   explicit float_end_value_node(const value_t value);
   float_end_value_node(const float_end_value_node &other);
-  float_end_value_node(float_end_value_node &&other);
+  float_end_value_node(float_end_value_node &&other) noexcept;
 
   virtual ~float_end_value_node() override;
 
@@ -38,7 +38,7 @@ public:
 
 public:
   float_end_value_node &operator=(const float_end_value_node &other);
-  float_end_value_node &operator=(float_end_value_node &&other);
+  float_end_value_node &operator=(float_end_value_node &&other) noexcept;
   float_end_value_node &operator=(const value_t value);
 
   explicit operator value_t() const;

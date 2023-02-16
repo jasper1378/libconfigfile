@@ -19,7 +19,7 @@ libconfigfile::float_end_value_node::float_end_value_node(
     : m_value{other.m_value} {}
 
 libconfigfile::float_end_value_node::float_end_value_node(
-    float_end_value_node &&other)
+    float_end_value_node &&other) noexcept
     : m_value{std::move(other.m_value)} {}
 
 libconfigfile::float_end_value_node::~float_end_value_node() {}
@@ -71,7 +71,8 @@ libconfigfile::float_end_value_node::operator=(
 }
 
 libconfigfile::float_end_value_node &
-libconfigfile::float_end_value_node::operator=(float_end_value_node &&other) {
+libconfigfile::float_end_value_node::operator=(
+    float_end_value_node &&other) noexcept {
   if (this == &other) {
     return *this;
   }

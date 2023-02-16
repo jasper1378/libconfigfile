@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -23,7 +24,7 @@ libconfigfile::file::file(std::string &&file_path,
 libconfigfile::file::file(const file &other)
     : m_file_path{other.m_file_path}, m_file_contents{other.m_file_contents} {}
 
-libconfigfile::file::file(file &&other)
+libconfigfile::file::file(file &&other) noexcept
     : m_file_path{std::move(other.m_file_path)}, m_file_contents{std::move(
                                                      other.m_file_contents)} {}
 
@@ -99,7 +100,13 @@ libconfigfile::file &libconfigfile::file::operator=(const file &other) {
   return *this;
 }
 
-libconfigfile::file &libconfigfile::file::operator=(file &&other) {
+libconfigfile::file &libconfigfile::file::operator=(file &&other) noexcept(
+    (std::is_nothrow_assignable_v<
+        decltype(m_file_path),
+        decltype(m_file_path)>)&&(std::
+                                      is_nothrow_assignable_v<
+                                          decltype(m_file_contents),
+                                          decltype(m_file_contents)>)) {
   if (this == &other) {
     return *this;
   }
