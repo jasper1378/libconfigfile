@@ -54,8 +54,6 @@ public:
   virtual ~section_node() override;
 
 public:
-  virtual actual_node_type get_actual_node_type() const override;
-
   virtual section_node *create_new() const override;
   virtual section_node *create_clone() const override;
   virtual libconfigfile::node_type get_node_type() const override final;

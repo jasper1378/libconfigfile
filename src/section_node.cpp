@@ -30,11 +30,6 @@ libconfigfile::section_node::section_node(section_node &&other)
 
 libconfigfile::section_node::~section_node() {}
 
-libconfigfile::actual_node_type
-libconfigfile::section_node::get_actual_node_type() const {
-  return actual_node_type::SECTION_NODE;
-}
-
 libconfigfile::section_node *libconfigfile::section_node::create_new() const {
   return new section_node{};
 }
