@@ -45,8 +45,6 @@ public:
   virtual ~array_value_node() override;
 
 public:
-  virtual actual_node_type get_actual_node_type() const override;
-
   virtual array_value_node *create_new() const override;
   virtual array_value_node *create_clone() const override;
   virtual value_node_type get_value_node_type() const override final;

@@ -12,8 +12,6 @@ public:
   virtual ~value_node() override;
 
 public:
-  virtual actual_node_type get_actual_node_type() const override;
-
   virtual value_node *create_new() const override = 0;
   virtual value_node *create_clone() const override = 0;
   virtual node_type get_node_type() const override final;

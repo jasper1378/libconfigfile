@@ -31,11 +31,6 @@ libconfigfile::array_value_node::array_value_node(
 
 libconfigfile::array_value_node::~array_value_node() {}
 
-libconfigfile::actual_node_type
-libconfigfile::array_value_node::get_actual_node_type() const {
-  return actual_node_type::ARRAY_VALUE_NODE;
-}
-
 libconfigfile::array_value_node *
 libconfigfile::array_value_node::create_new() const {
   return new array_value_node{};

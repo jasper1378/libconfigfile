@@ -2,18 +2,6 @@
 #define LIBCONFIGFILE_NODE_TYPES_HPP
 
 namespace libconfigfile {
-enum class actual_node_type {
-  NODE,
-  SECTION_NODE,
-  VALUE_NODE,
-  ARRAY_VALUE_NODE,
-  END_VALUE_NODE,
-  INTEGER_END_VALUE_NODE,
-  FLOAT_END_VALUE_NODE,
-  STRING_END_VALUE_NODE,
-  MAX,
-};
-
 enum class node_type {
   VALUE,
   SECTION,
