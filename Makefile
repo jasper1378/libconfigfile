@@ -28,10 +28,7 @@ SHELL := /bin/bash
 INCLUDE_FLAGS := $(addprefix -I, $(shell find $(INCLUDE_DIR) -type d))
 export CPPFLAGS := $(INCLUDE_FLAGS) -MMD -MP
 
-ifneq ($(LIBRARIES),)
-	COMPILE_FLAGS += $(shell pkg-config --cflags $(LIBRARIES))
-	LINK_FLAGS += $(shell pkg-config --libs $(LIBRARIES))
-endif
+LINK_FLAGS += $(addprefix -l, $(LIBRARIES))
 
 release: export CXXFLAGS := $(CXXFLAGS) $(COMPILE_FLAGS) $(RELEASE_COMPILE_FLAGS)
 release: export LDFLAGS := $(LDFLAGS) $(LINK_FLAGS) $(RELEASE_LINK_FLAGS)
