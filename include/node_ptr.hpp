@@ -35,10 +35,8 @@ public:
   }
 
   ~node_ptr() {
-    if (m_ptr != nullptr) {
-      delete m_ptr;
-      m_ptr = nullptr;
-    }
+    delete m_ptr;
+    m_ptr = nullptr;
   }
 
 public:
@@ -52,9 +50,7 @@ public:
     ptr_t old_ptr{m_ptr};
     m_ptr = ptr;
 
-    if (old_ptr != nullptr) {
-      delete m_ptr;
-    }
+    delete old_ptr;
   }
 
   void swap(node_ptr &other) {
