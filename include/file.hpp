@@ -111,6 +111,9 @@ public:
   void goto_start_of_whitespace(const std::vector<char> &whitespace_chars = {
                                     ' ', '\t'});
 
+  bool is_located_on_occurence_of(const std::string &str) const;
+  bool is_located_on_occurence_of(const char ch) const;
+
 public:
   file_pos &operator=(const file_pos &other);
   file_pos &operator=(file_pos &&other);

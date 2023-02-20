@@ -555,6 +555,15 @@ void libconfigfile::file_pos::goto_start_of_whitespace(
       std::string{whitespace_chars.begin(), whitespace_chars.end()});
 }
 
+bool libconfigfile::file_pos::is_located_on_occurence_of(
+    const std::string &str) const {
+  return ((m_char) == ((m_file->get_line(*this)).find(str, m_char)));
+}
+
+bool libconfigfile::file_pos::is_located_on_occurence_of(const char ch) const {
+  return ((m_file->get_char(*this)) == (ch));
+}
+
 libconfigfile::file_pos &
 libconfigfile::file_pos::operator=(const file_pos &other) {
   m_file = other.m_file;
