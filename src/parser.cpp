@@ -35,10 +35,6 @@ libconfigfile::parser::parser(parser &&other)
 libconfigfile::parser::~parser() {}
 
 libconfigfile::parser &libconfigfile::parser::operator=(const parser &other) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_file_contents = other.m_file_contents;
   m_cur_pos = m_file_contents.create_file_pos(other.m_cur_pos);
 
@@ -46,10 +42,6 @@ libconfigfile::parser &libconfigfile::parser::operator=(const parser &other) {
 }
 
 libconfigfile::parser &libconfigfile::parser::operator=(parser &&other) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_file_contents = std::move(other.m_file_contents);
   m_cur_pos = m_file_contents.create_file_pos(other.m_cur_pos);
 

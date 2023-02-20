@@ -90,10 +90,6 @@ std::vector<std::string> &libconfigfile::file::get_underlying() {
 }
 
 libconfigfile::file &libconfigfile::file::operator=(const file &other) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_file_path = other.m_file_path;
   m_file_contents = other.m_file_contents;
 
@@ -107,10 +103,6 @@ libconfigfile::file &libconfigfile::file::operator=(file &&other) noexcept(
                                       is_nothrow_assignable_v<
                                           decltype(m_file_contents),
                                           decltype(m_file_contents)>)) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_file_path = std::move(other.m_file_path);
   m_file_contents = std::move(other.m_file_contents);
 
@@ -565,10 +557,6 @@ void libconfigfile::file_pos::goto_start_of_whitespace(
 
 libconfigfile::file_pos &
 libconfigfile::file_pos::operator=(const file_pos &other) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_file = other.m_file;
   m_line = other.m_line;
   m_char = other.m_char;
@@ -579,10 +567,6 @@ libconfigfile::file_pos::operator=(const file_pos &other) {
 }
 
 libconfigfile::file_pos &libconfigfile::file_pos::operator=(file_pos &&other) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_file = std::move(other.m_file);
   m_line = std::move(other.m_line);
   m_char = std::move(other.m_char);

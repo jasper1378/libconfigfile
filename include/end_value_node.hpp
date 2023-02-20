@@ -63,10 +63,6 @@ public:
   void set(value_t &&value) { m_value = std::move(value); }
 
   end_value_node &operator=(const end_value_node &other) {
-    if (this == &other) {
-      return *this;
-    }
-
     m_value = other.m_value;
 
     return *this;
@@ -74,10 +70,6 @@ public:
 
   end_value_node &operator=(end_value_node &&other) noexcept(
       std::is_nothrow_move_assignable_v<value_t>) {
-    if (this == &other) {
-      return *this;
-    }
-
     m_value = std::move(other.m_value);
 
     return *this;
