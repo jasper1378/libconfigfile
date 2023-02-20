@@ -260,10 +260,6 @@ void libconfigfile::array_value_node::swap(array_value_node &other) {
 
 libconfigfile::array_value_node &
 libconfigfile::array_value_node::operator=(const array_value_node &other) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_contents = other.m_contents;
 
   return *this;
@@ -274,10 +270,6 @@ libconfigfile::array_value_node::operator=(array_value_node &&other) noexcept(
     std::allocator_traits<
         allocator_type>::propagate_on_container_move_assignment::value ||
     std::allocator_traits<allocator_type>::is_always_equal::value) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_contents = std::move(other.m_contents);
 
   return *this;

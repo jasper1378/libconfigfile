@@ -26,10 +26,6 @@ const char *libconfigfile::semantic_error::what() const noexcept {
 
 libconfigfile::semantic_error &
 libconfigfile::semantic_error::operator=(const semantic_error &other) noexcept {
-  if (this == &other) {
-    return *this;
-  }
-
   std::runtime_error::operator=(other);
 
   return *this;
@@ -37,10 +33,6 @@ libconfigfile::semantic_error::operator=(const semantic_error &other) noexcept {
 
 libconfigfile::semantic_error &
 libconfigfile::semantic_error::operator=(semantic_error &&other) noexcept {
-  if (this == &other) {
-    return *this;
-  }
-
   std::runtime_error::operator=(std::move(other));
 
   return *this;

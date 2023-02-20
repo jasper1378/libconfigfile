@@ -291,10 +291,6 @@ libconfigfile::section_node::key_eq() const {
 
 libconfigfile::section_node &
 libconfigfile::section_node::operator=(const section_node &other) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_contents = other.m_contents;
 
   return *this;
@@ -303,10 +299,6 @@ libconfigfile::section_node::operator=(const section_node &other) {
 libconfigfile::section_node &
 libconfigfile::section_node::operator=(section_node &&other) noexcept(
     std::is_nothrow_assignable_v<decltype(m_contents), decltype(m_contents)>) {
-  if (this == &other) {
-    return *this;
-  }
-
   m_contents = std::move(other.m_contents);
 
   return *this;

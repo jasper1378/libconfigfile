@@ -25,10 +25,6 @@ const char *libconfigfile::syntax_error::what() const noexcept {
 
 libconfigfile::syntax_error &
 libconfigfile::syntax_error::operator=(const syntax_error &other) noexcept {
-  if (this == &other) {
-    return *this;
-  }
-
   std::runtime_error::operator=(other);
 
   return *this;
@@ -36,10 +32,6 @@ libconfigfile::syntax_error::operator=(const syntax_error &other) noexcept {
 
 libconfigfile::syntax_error &
 libconfigfile::syntax_error::operator=(syntax_error &&other) noexcept {
-  if (this == &other) {
-    return *this;
-  }
-
   std::runtime_error::operator=(std::move(other));
 
   return *this;
