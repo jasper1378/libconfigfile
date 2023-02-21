@@ -14,15 +14,19 @@
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
 
-const std::unordered_map<std::string, char>
-    libconfigfile::parser::m_k_basic_escape_sequences{
-        {"\a", 0x07}, {"\b", 0x08}, {"\f", 0x0C}, {"\n", 0x0A}, {"\r", 0x0D},
-        {"\t", 0x09}, {"\v", 0x0B}, {"\\", 0x5C}, {"\'", 0x27}, {"\"", 0x22}};
+const std::unordered_map<char, char>
+    libconfigfile::parser::m_k_basic_escape_chars{
+        {'a', 0x07}, {'b', 0x08}, {'f', 0x0C},  {'n', 0x0A},  {'r', 0x0D},
+        {'t', 0x09}, {'v', 0x0B}, {'\\', 0x5C}, {'\'', 0x27}, {'"', 0x22}};
+
+const std::string libconfigfile::parser::m_k_hex_digits{
+    "0123456789abcdefABCDEF"};
 
 libconfigfile::parser::parser()
     : m_file_contents{}, m_cur_pos{m_file_contents.create_file_pos()} {}
@@ -56,16 +60,6 @@ libconfigfile::parser &libconfigfile::parser::operator=(parser &&other) {
 }
 
 void libconfigfile::parser::parse_file() {
-  static const auto is_whitespace{[](char c) {
-    for (size_t i{0}; i < m_k_whitespace_chars.size(); ++i) {
-      if (c == m_k_whitespace_chars[i]) {
-        return true;
-      }
-    }
-
-    return false;
-  }};
-
   while (m_cur_pos.is_eof() == false) {
     m_cur_pos.goto_end_of_whitespace(m_k_whitespace_chars);
 
@@ -87,8 +81,7 @@ void libconfigfile::parser::parse_file() {
                                                      what_arg);
       } else {
         parse_directive();
-        // TODO continue
-        // from here
+        // TODO continue from here
       }
     }
   }
@@ -145,16 +138,126 @@ void libconfigfile::parser::parse_directive() {
 }
 
 void libconfigfile::parser::parse_include_directive(const std::string &args) {
-  if (args.empty() == true) {
-    std::string what_arg{"include directive requires file path argument"};
-    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                 what_arg);
-  } else if (args.front() != '"') {
-    std::string what_arg{"include directive requires file path argument"};
-    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                 what_arg);
+  std::variant<std::vector<std::vector<std::string>>, std::string::size_type>
+      extracted_args{extract_strings(args)};
+
+  switch (extracted_args.index()) {
+  case 0: {
+    std::vector<std::vector<std::string>> extracted_args_just_strings{
+        std::get<std::vector<std::vector<std::string>>>(extracted_args)};
+
+    if (extracted_args_just_strings.empty()) {
+      std::string what_arg{"include directive requires file path argument"};
+      throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                   what_arg);
+    } else if (extracted_args_just_strings.size() > 1) {
+      std::string what_arg{"excess arguments given to include directive"};
+      throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                   what_arg);
+    } else {
+      std::string file_path_raw{};
+      for (size_t i{0}; i < extracted_args_just_strings.front().size(); ++i) {
+        file_path_raw.append(extracted_args_just_strings.front()[i]);
+      }
+
+      std::variant<std::string, std::string::size_type>
+          file_path_esc_seq_replaced{replace_escape_sequences(file_path_raw)};
+
+      std::string file_path{};
+
+      switch (file_path_esc_seq_replaced.index()) {
+      case 0: {
+        file_path =
+            std::get<std::string>(std::move(file_path_esc_seq_replaced));
+      } break;
+
+      case 1: {
+        std::string what_arg{
+            "invalid escape sequence in include directive argument"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_line(),
+            (m_cur_pos.get_char() +
+             std::get<std::string::size_type>(file_path_esc_seq_replaced)),
+            what_arg);
+      } break;
+      }
+
+      file included_file{file_path};
+
+      std::remove_reference_t<decltype(m_file_contents.get_underlying())>::
+          const_iterator include_pos_iter{
+              m_file_contents.get_underlying().begin() + m_cur_pos.get_line()};
+
+      m_file_contents.get_underlying().erase(include_pos_iter);
+      m_file_contents.get_underlying().insert(
+          include_pos_iter,
+          std::make_move_iterator(included_file.get_underlying().begin()),
+          std::make_move_iterator(included_file.get_underlying().end()));
+
+      m_cur_pos.set_char(0);
+    }
+  } break;
+
+  case 1: {
+    std::string what_arg{"unterminated string in include directive argument"};
+    throw syntax_error::generate_formatted_error(
+        m_file_contents, m_cur_pos.get_line(),
+        (m_cur_pos.get_char() +
+         std::get<std::string::size_type>(extracted_args)),
+        what_arg);
+  } break;
   }
-  // TODO continue from here
+}
+
+std::variant<std::string /*result*/,
+             std::string::size_type /*invalid_escape_sequence_pos*/>
+libconfigfile::parser::replace_escape_sequences(const std::string &str) {
+  static const auto is_hex_digit{[](const char ch) {
+    return ((m_k_hex_digits.find(ch)) != (std::string::npos));
+  }};
+
+  std::string result{};
+  result.reserve(str.size());
+
+  for (std::string::size_type cur_char{0}; cur_char < str.size(); ++cur_char) {
+    if (str[cur_char] == m_k_escape_leader) {
+      std::string::size_type escape_char_pos{cur_char + 1};
+      if (escape_char_pos < str.size()) {
+        char escape_char{str[escape_char_pos]};
+        if (escape_char == m_k_hex_escape_char) {
+          std::string::size_type hex_digit_pos_1{escape_char_pos + 1};
+          std::string::size_type hex_digit_pos_2{escape_char_pos + 2};
+          if ((hex_digit_pos_1 < str.size()) &&
+              (hex_digit_pos_2 < str.size())) {
+            char hex_digit_1{str[hex_digit_pos_1]};
+            char hex_digit_2{str[hex_digit_pos_2]};
+            if ((is_hex_digit(hex_digit_1)) && (is_hex_digit(hex_digit_2))) {
+              std::string hex_string{std::string{} + hex_digit_1 + hex_digit_2};
+              result.push_back(
+                  static_cast<char>(std::stoi(hex_string, nullptr, 16)));
+              cur_char = hex_digit_pos_2;
+            } else {
+              return cur_char;
+            }
+          } else {
+            return cur_char;
+          }
+        } else {
+          if (m_k_basic_escape_chars.contains(escape_char)) {
+            result.push_back(m_k_basic_escape_chars.at(escape_char));
+            cur_char = escape_char;
+          } else {
+            return cur_char;
+          }
+        }
+      } else {
+        return cur_char;
+      }
+    } else {
+      result.push_back(str[cur_char]);
+    }
+  }
+  return result;
 }
 
 std::variant<std::vector<std::vector<std::string>> /*result*/,
@@ -168,7 +271,6 @@ libconfigfile::parser::extract_strings(
   bool strings_are_adjacent{true};
 
   std::string::size_type start_of_last_string{std::string::npos};
-  std::string::size_type end_of_last_string{std::string::npos};
 
   std::string cur_string{};
   std::vector<std::string> cur_string_group{};
@@ -180,7 +282,7 @@ libconfigfile::parser::extract_strings(
 
   static const auto is_actual_delimiter{
       [delimiter, delimiter_escape, &raw](std::string::size_type pos) -> bool {
-        if ((pos >= 0) && (pos < raw.size())) {
+        if (pos < raw.size()) {
           if (raw[pos] == delimiter) {
             if (pos == 0) {
               return true;
@@ -201,7 +303,6 @@ libconfigfile::parser::extract_strings(
     if (in_string == true) {
       if (is_actual_delimiter(cur_char) == true) {
         in_string = false;
-        end_of_last_string = cur_char;
         strings_are_adjacent = true;
         if (cur_string.empty() == false) {
           cur_string_group.push_back(std::move(cur_string));
@@ -236,46 +337,6 @@ libconfigfile::parser::extract_strings(
     return all_strings;
   }
 }
-
-char libconfigfile::parser::escape_sequence_to_char( // XXX
-    const std::string &seq, bool throw_on_invalid_seq /*= false*/) {
-  static constexpr int basic_esc_seq_len{2};
-  static constexpr int hexdec_esc_seq_len{4};
-
-  static const auto return_invalid_seq{[throw_on_invalid_seq, &seq]() {
-    if (throw_on_invalid_seq == true) {
-      throw std::runtime_error{"invalid escape sequence: \"" + seq + "\""};
-    } else {
-      return 0x00;
-    }
-  }};
-
-  if (seq.front() != '\\') {
-    return_invalid_seq();
-  } else {
-    if (seq.size() == basic_esc_seq_len) {
-      if (m_k_basic_escape_sequences.contains(seq)) {
-        return m_k_basic_escape_sequences.at(seq);
-      } else {
-        return_invalid_seq();
-      }
-    } else if (seq.size() == hexdec_esc_seq_len) {
-      if (seq[1] != 'x') {
-        return_invalid_seq();
-      } else {
-        return static_cast<char>(
-            std::stoi(get_substr_between_indices(seq, 2, 3), nullptr, 16));
-      }
-    } else {
-      return_invalid_seq();
-    }
-  }
-}
-
-std::variant<std::string /*result*/,
-             std::string::size_type /*invalid_escape_sequence_pos*/>
-libconfigfile::parser::replace_escape_sequences(const std::string &str) {
-} // TODO
 
 std::string libconfigfile::parser::get_substr_between_indices(
     const std::string &str, const std::string::size_type start,

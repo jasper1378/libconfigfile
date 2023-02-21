@@ -282,8 +282,7 @@ key = "value"; @directive "argument1" // invalid
 - This directive directs the parser to inline the contents of another file at the location of the directive.
 - This directive takes one required argument: the path of the file to be inlined, enclosed by double quotes.
 - The file path string supports the same escape characters as regular key-value strings.
-- If the path of the inlined file is not absolute (i.e. beginning with `/`), it is interpreted as being relative to the location of the current config file.
- - Currently the parser does not check for recursive includeds. You have been warned! If the parser segfaults due to a stack overflow, you only have yourself to blame!
+- Currently the parser does not check for recursive includeds. You have been warned! If the parser segfaults due to a stack overflow, you only have yourself to blame!
 ```
 // main.conf
 key1 = "value";

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -132,7 +133,7 @@ libconfigfile::file::read_file(const std::string &file_path,
                                const bool insert_newlines /*= false*/) {
   std::ifstream input_file{file_path};
 
-  if (!input_file) {
+  if (!input_file.is_open()) {
     throw std::runtime_error{"file \"" + file_path +
                              "\" could not be opened for "
                              "reading"};
@@ -148,7 +149,7 @@ libconfigfile::file::read_file(const std::string &file_path,
       new_line.push_back(m_k_newline);
     }
 
-    file_contents.push_back(new_line);
+    file_contents.push_back(std::move(new_line));
   }
 
   return file_contents;

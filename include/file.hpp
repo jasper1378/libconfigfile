@@ -1,6 +1,7 @@
 #ifndef LIBCONFIGFILE_FILE_HPP
 #define LIBCONFIGFILE_FILE_HPP
 
+#include <filesystem>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -10,7 +11,7 @@ class file_pos;
 
 class file {
 private:
-  std::string m_file_path;
+  std::filesystem::path m_file_path;
   std::vector<std::string> m_file_contents;
 
 private:
@@ -18,8 +19,8 @@ private:
 
 public:
   file();
-  file(const std::string &file_path, bool insert_newlines = true);
-  file(std::string &&file_path, bool insert_newlines = true);
+  file(const std::string &file_path, bool insert_newlines = false);
+  file(std::string &&file_path, bool insert_newlines = false);
   file(const file &other);
   file(file &&other) noexcept;
 

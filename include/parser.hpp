@@ -27,7 +27,12 @@ private:
 
   static constexpr char m_k_directive_leader{'@'};
 
-  static const std::unordered_map<std::string, char> m_k_basic_escape_sequences;
+  static constexpr char m_k_escape_leader{'\\'};
+  static const std::unordered_map<char, char> m_k_basic_escape_chars;
+  static constexpr char m_k_hex_escape_char{'x'};
+  static const std::string m_k_hex_digits;
+  static constexpr int m_k_ascii_start{0x00};
+  static constexpr int m_k_ascii_end{0x7F};
 
 public:
   parser();
@@ -51,15 +56,16 @@ private:
   void parse_include_directive(const std::string &args);
 
 private:
+  static std::variant<std::string /*result*/,
+                      std::string::size_type /*invalid_escape_sequence_pos*/>
+  replace_escape_sequences(const std::string &str);
+
+public:
   static std::variant<std::vector<std::vector<std::string>> /*result*/,
                       std::string::size_type /*unterminated_string_pos*/>
   extract_strings(const std::string &raw, const char delimiter = '"',
                   const char delimiter_escape = '\\',
                   const std::string &whitespace_chars = m_k_whitespace_chars);
-
-  static std::variant<std::string /*result*/,
-                      std::string::size_type /*invalid_escape_sequence_pos*/>
-  replace_escape_sequences(const std::string &str);
 
   static std::string
   get_substr_between_indices(const std::string &str,
