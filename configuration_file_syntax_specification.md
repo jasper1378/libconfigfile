@@ -283,7 +283,7 @@ key = "value"; @directive "argument1" // invalid
 ### Include Directive
 - This directive directs the parser to inline the contents of another file at the location of the directive.
 - This directive takes one required argument: the path of the file to be inlined, enclosed by double quotes.
-- The file path string supports the same escape characters as regular key-value strings.
+- The file path string supports the same escape characters as regular key-value strings; adjacent strings will not be concatenated.
 - Currently the parser does not check for recursive includeds. You have been warned! If the parser segfaults due to a stack overflow, you only have yourself to blame!
 ```
 // main.conf

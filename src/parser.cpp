@@ -180,55 +180,58 @@ void libconfigfile::parser::parse_directive() {
   }
 }
 
-// TODO check eof/bof
 void libconfigfile::parser::parse_include_directive(const std::string &args) {
   // m_cur_pos =
   // start of directive arguments if arguments exist or
   // end of directive name if arguments don't exist
 
-  std::variant<std::vector<std::vector<std::string>>, std::string::size_type>
-      extracted_args{extract_strings(args)};
+  if (args.empty() == true) {
+    std::string what_arg{"include directive requires file path argument"};
+    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                 what_arg);
+  } else if (args.front() != m_k_string_delimiter) {
+    std::string what_arg{"include directive requires file path argument"};
+    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                 what_arg);
+  } else {
+    std::string file_path{};
+    file_path.reserve(args.size());
 
-  switch (extracted_args.index()) {
-  case 0: {
-    std::vector<std::vector<std::string>> extracted_args_just_strings{
-        std::get<std::vector<std::vector<std::string>>>(extracted_args)};
+    std::string::size_type end_pos{std::string::npos};
 
-    if (extracted_args_just_strings.empty()) {
-      std::string what_arg{"include directive requires file path argument"};
-      throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                   what_arg);
-    } else if (extracted_args_just_strings.size() > 1) {
-      std::string what_arg{"excess arguments given to include directive"};
-      throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                   what_arg);
-    } else {
-      std::string file_path_raw{};
-      for (size_t i{0}; i < extracted_args_just_strings.front().size(); ++i) {
-        file_path_raw.append(extracted_args_just_strings.front()[i]);
+    for (std::string::size_type i{1}; i < args.size(); ++i) {
+      if (is_actual_delimiter(i, args, m_k_string_delimiter,
+                              m_k_escape_leader)) {
+        end_pos = i;
+      } else {
+        file_path.push_back(args[i]);
       }
+    }
 
-      std::variant<std::string, std::string::size_type>
-          file_path_esc_seq_replaced{replace_escape_sequences(file_path_raw)};
+    if (end_pos == std::string::npos) {
+      std::string what_arg{"unterminated string in include directive argument"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, m_cur_pos.get_line(),
+          (m_file_contents.get_line(m_cur_pos).size() - 1), what_arg);
+    }
 
-      std::string file_path{};
-
-      switch (file_path_esc_seq_replaced.index()) {
-      case 0: {
-        file_path =
-            std::get<std::string>(std::move(file_path_esc_seq_replaced));
-      } break;
-
-      case 1: {
-        std::string what_arg{
-            "invalid escape sequence in include directive argument"};
+    {
+      std::string::size_type extra_args_pos{
+          args.find_first_not_of(m_k_whitespace_chars, (end_pos + 1))};
+      if (extra_args_pos != std::string::npos) {
+        std::string what_arg{"excess arguments given to include directive"};
         throw syntax_error::generate_formatted_error(
             m_file_contents, m_cur_pos.get_line(),
-            (m_cur_pos.get_char() +
-             std::get<std::string::size_type>(file_path_esc_seq_replaced)),
-            what_arg);
-      } break;
+            (m_cur_pos.get_char() + extra_args_pos), what_arg);
       }
+    }
+
+    std::variant<std::string, std::string::size_type> file_path_escaped{
+        replace_escape_sequences(file_path)};
+
+    switch (file_path_escaped.index()) {
+    case 0: {
+      file_path = std::get<std::string>(std::move(file_path_escaped));
 
       file included_file{file_path};
 
@@ -242,18 +245,22 @@ void libconfigfile::parser::parse_include_directive(const std::string &args) {
           std::make_move_iterator(included_file.get_underlying().begin()),
           std::make_move_iterator(included_file.get_underlying().end()));
 
+      m_cur_pos = m_file_contents.create_file_pos(m_cur_pos);
       m_cur_pos.set_char(0);
-    }
-  } break;
+      return;
+    } break;
 
-  case 1: {
-    std::string what_arg{"unterminated string in include directive argument"};
-    throw syntax_error::generate_formatted_error(
-        m_file_contents, m_cur_pos.get_line(),
-        (m_cur_pos.get_char() +
-         std::get<std::string::size_type>(extracted_args)),
-        what_arg);
-  } break;
+    case 1: {
+      std::string::size_type invalid_escape_sequence_pos{
+          std::get<std::string::size_type>(file_path_escaped)};
+
+      std::string what_arg{
+          "invalid escape sequence in include directive argument"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, m_cur_pos.get_line(),
+          (m_cur_pos.get_char() + invalid_escape_sequence_pos), what_arg);
+    } break;
+    }
   }
 }
 
@@ -311,8 +318,8 @@ libconfigfile::parser::replace_escape_sequences(const std::string &str) {
 std::variant<std::vector<std::vector<std::string>> /*result*/,
              std::string::size_type /*unterminated_string_pos*/>
 libconfigfile::parser::extract_strings(
-    const std::string &raw, const char delimiter /*= '"'*/,
-    const char delimiter_escape /*= '\\'*/,
+    const std::string &raw, const char delimiter /*= m_k_string_delimiter*/,
+    const char delimiter_escape /*= m_k_escape_leader*/,
     const std::string &whitespace_chars /*= m_k_whitespace_chars*/) {
 
   bool in_string{false};
@@ -324,32 +331,10 @@ libconfigfile::parser::extract_strings(
   std::vector<std::string> cur_string_group{};
   std::vector<std::vector<std::string>> all_strings{};
 
-  static const auto is_whitespace{[&whitespace_chars](const char ch) -> bool {
-    return ((whitespace_chars.find(ch)) != (std::string::npos));
-  }};
-
-  static const auto is_actual_delimiter{
-      [delimiter, delimiter_escape, &raw](std::string::size_type pos) -> bool {
-        if (pos < raw.size()) {
-          if (raw[pos] == delimiter) {
-            if (pos == 0) {
-              return true;
-            } else if (raw[pos - 1] == delimiter_escape) {
-              return false;
-            } else {
-              return true;
-            }
-          } else {
-            return false;
-          }
-        } else {
-          return false;
-        }
-      }};
-
   for (std::string::size_type cur_char{0}; cur_char < raw.size(); ++cur_char) {
     if (in_string == true) {
-      if (is_actual_delimiter(cur_char) == true) {
+      if (is_actual_delimiter(cur_char, raw, delimiter, delimiter_escape) ==
+          true) {
         in_string = false;
         strings_are_adjacent = true;
         if (cur_string.empty() == false) {
@@ -360,7 +345,8 @@ libconfigfile::parser::extract_strings(
         cur_string.push_back(raw[cur_char]);
       }
     } else {
-      if (is_actual_delimiter(cur_char) == true) {
+      if (is_actual_delimiter(cur_char, raw, delimiter, delimiter_escape) ==
+          true) {
         in_string = true;
         start_of_last_string = cur_char;
         if (strings_are_adjacent == false) {
@@ -369,7 +355,7 @@ libconfigfile::parser::extract_strings(
             cur_string_group.clear();
           }
         } else {
-          if (is_whitespace(raw[cur_char]) == false) {
+          if (is_whitespace(raw[cur_char], whitespace_chars) == false) {
             strings_are_adjacent = false;
           }
         }
@@ -390,4 +376,31 @@ std::string libconfigfile::parser::get_substr_between_indices(
     const std::string &str, const std::string::size_type start,
     const std::string::size_type end) {
   return str.substr((start), ((end - start) + 1));
+}
+
+bool libconfigfile::parser::is_whitespace(
+    const char ch,
+    const std::string &whitespace_chars /*= m_k_whitespace_chars*/) {
+  return ((whitespace_chars.find(ch)) != (std::string::npos));
+}
+
+bool libconfigfile::parser::is_actual_delimiter(
+    const std::string::size_type pos, const std::string &str,
+    const char delimiter,
+    const char delimiter_escape /*= m_k_delimiter_leader*/) {
+  if (pos < str.size()) {
+    if (str[pos] == delimiter) {
+      if (pos == 0) {
+        return true;
+      } else if (str[pos - 1] == delimiter_escape) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
 }

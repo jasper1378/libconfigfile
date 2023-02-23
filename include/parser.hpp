@@ -32,6 +32,8 @@ private:
 
   static constexpr char m_k_directive_leader{'@'};
 
+  static constexpr char m_k_string_delimiter{'"'};
+
   static constexpr char m_k_escape_leader{'\\'};
   static const std::unordered_map<char, char> m_k_basic_escape_chars;
   static constexpr char m_k_hex_escape_char{'x'};
@@ -76,14 +78,22 @@ private:
 public:
   static std::variant<std::vector<std::vector<std::string>> /*result*/,
                       std::string::size_type /*unterminated_string_pos*/>
-  extract_strings(const std::string &raw, const char delimiter = '"',
-                  const char delimiter_escape = '\\',
+  extract_strings(const std::string &raw,
+                  const char delimiter = m_k_string_delimiter,
+                  const char delimiter_escape = m_k_escape_leader,
                   const std::string &whitespace_chars = m_k_whitespace_chars);
 
   static std::string
   get_substr_between_indices(const std::string &str,
                              const std::string::size_type start,
                              const std::string::size_type end);
+  static bool
+  is_whitespace(const char ch,
+                const std::string &whitespace_chars = m_k_whitespace_chars);
+  static bool
+  is_actual_delimiter(const std::string::size_type pos, const std::string &str,
+                      const char delimiter,
+                      const char delimiter_escape = m_k_escape_leader);
 };
 } // namespace libconfigfile
 
