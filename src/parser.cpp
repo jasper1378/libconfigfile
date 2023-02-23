@@ -1,6 +1,7 @@
 #include "parser.hpp"
 
 #include "array_value_node.hpp"
+#include "end_value_node.hpp"
 #include "file.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
@@ -28,26 +29,33 @@ const std::unordered_map<char, char>
 const std::string libconfigfile::parser::m_k_hex_digits{
     "0123456789abcdefABCDEF"};
 
+const std::string libconfigfile::parser::m_k_valid_name_chars{
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"};
+
 libconfigfile::parser::parser()
-    : m_file_contents{}, m_cur_pos{m_file_contents.create_file_pos()} {}
+    : m_file_contents{}, m_cur_pos{m_file_contents.create_file_pos()},
+      m_root_section{} {}
 
 libconfigfile::parser::parser(const std::string &file_name)
-    : m_file_contents{file_name}, m_cur_pos{m_file_contents.create_file_pos()} {
-}
+    : m_file_contents{file_name}, m_cur_pos{m_file_contents.create_file_pos()},
+      m_root_section{} {}
 
 libconfigfile::parser::parser(const parser &other)
     : m_file_contents{other.m_file_contents},
-      m_cur_pos{m_file_contents.create_file_pos(other.m_cur_pos)} {}
+      m_cur_pos{m_file_contents.create_file_pos(other.m_cur_pos)},
+      m_root_section{other.m_root_section} {}
 
 libconfigfile::parser::parser(parser &&other)
     : m_file_contents{std::move(other.m_file_contents)},
-      m_cur_pos{m_file_contents.create_file_pos(other.m_cur_pos)} {}
+      m_cur_pos{m_file_contents.create_file_pos(other.m_cur_pos)},
+      m_root_section{std::move(other.m_root_section)} {}
 
 libconfigfile::parser::~parser() {}
 
 libconfigfile::parser &libconfigfile::parser::operator=(const parser &other) {
   m_file_contents = other.m_file_contents;
   m_cur_pos = m_file_contents.create_file_pos(other.m_cur_pos);
+  m_root_section = other.m_root_section;
 
   return *this;
 }
@@ -55,10 +63,12 @@ libconfigfile::parser &libconfigfile::parser::operator=(const parser &other) {
 libconfigfile::parser &libconfigfile::parser::operator=(parser &&other) {
   m_file_contents = std::move(other.m_file_contents);
   m_cur_pos = m_file_contents.create_file_pos(other.m_cur_pos);
+  m_root_section = std::move(other.m_root_section);
 
   return *this;
 }
 
+// TODO move stuff into parse_section()
 void libconfigfile::parser::parse_file() {
   while (m_cur_pos.is_eof() == false) {
     m_cur_pos.goto_end_of_whitespace(m_k_whitespace_chars);
@@ -72,72 +82,110 @@ void libconfigfile::parser::parse_file() {
     }
 
     else if (m_cur_pos.is_located_on_occurence_of(m_k_directive_leader)) {
-      file_pos test_pos{m_cur_pos - 1};
-      test_pos.goto_find_last_not_of(m_k_whitespace_chars);
-      if ((test_pos.get_line() == m_cur_pos.get_line()) &&
-          (test_pos.is_bof() == false)) {
-        std::string what_arg{"directive must be the only text on its line"};
-        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                     what_arg);
+      parse_directive();
+    }
+  }
+  // TODO
+}
+
+// TODO check eof/bof
+libconfigfile::section_node libconfigfile::parser::parse_section(
+    bool is_root_section /*<- TODO*/ /*= false*/) {
+  // m_cur_pos = opening round bracket
+
+  ++m_cur_pos;
+  if (m_cur_pos.is_located_on_occurence_of(
+          m_k_section_name_closing_delimiter)) {
+    std::string what_arg{"empty section name"};
+    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                 what_arg);
+  } else {
+    file_pos name_start_pos{m_cur_pos};
+
+    m_cur_pos.goto_find_start(m_k_section_name_closing_delimiter);
+    file_pos name_end_pos{(m_cur_pos - 1)};
+
+    if (name_start_pos.get_line() != name_end_pos.get_line()) {
+      std::string what_arg{"section name must appear completely on one line"};
+      throw syntax_error::generate_formatted_error(m_file_contents,
+                                                   name_start_pos, what_arg);
+    }
+  }
+
+  // TODO
+}
+
+void libconfigfile::parser::parse_directive() {
+  // m_cur_pos = directive leader
+
+  file_pos test_pos{m_cur_pos - 1};
+  test_pos.goto_find_last_not_of(m_k_whitespace_chars);
+  if ((test_pos.get_line() == m_cur_pos.get_line()) &&
+      (test_pos.is_bof() == false)) {
+    std::string what_arg{"directive must be the only text on its line"};
+    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                 what_arg);
+  } else {
+
+    const std::string &directive_line{m_file_contents.get_line(m_cur_pos)};
+    std::string::size_type line_pos{m_cur_pos.get_char()};
+
+    ++line_pos;
+    line_pos = directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
+    if (line_pos == std::string::npos) {
+      std::string what_arg{"expected directive name"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, m_cur_pos.get_line(), line_pos, what_arg);
+    } else {
+      std::string::size_type start_of_name{line_pos};
+
+      line_pos = directive_line.find_first_of(m_k_whitespace_chars, line_pos);
+      if (line_pos == std::string::npos) {
+        line_pos = (directive_line.size() - 1);
+      }
+      std::string::size_type end_of_name{line_pos};
+
+      std::string name{get_substr_between_indices(directive_line, start_of_name,
+                                                  end_of_name)};
+
+      std::string args{};
+      std::string::size_type start_of_args{};
+      ++line_pos;
+      line_pos =
+          directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
+      if (line_pos == std::string::npos) {
+        start_of_args = end_of_name;
+        args = "";
       } else {
-        parse_directive();
-        // TODO continue from here
+        start_of_args = line_pos;
+        args = get_substr_between_indices(directive_line, start_of_args,
+                                          (directive_line.size() - 1));
+      }
+
+      m_cur_pos.set_char(start_of_args);
+
+      if (name == "version") {
+        std::string what_arg{
+            "alpha version does not support version directive"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_line(), start_of_name, what_arg);
+      } else if (name == "include") {
+        parse_include_directive(args);
+      } else {
+        std::string what_arg{"unknown directive"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_line(), start_of_name, what_arg);
       }
     }
   }
 }
 
-void libconfigfile::parser::parse_directive() {
-  const std::string &directive_line{m_file_contents.get_line(m_cur_pos)};
-  std::string::size_type line_pos{m_cur_pos.get_char()};
-
-  ++line_pos;
-  line_pos = directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
-  if (line_pos == std::string::npos) {
-    std::string what_arg{"expected directive name"};
-    throw syntax_error::generate_formatted_error(
-        m_file_contents, m_cur_pos.get_line(), line_pos, what_arg);
-  } else {
-    std::string::size_type start_of_name{line_pos};
-
-    line_pos = directive_line.find_first_of(m_k_whitespace_chars, line_pos);
-    if (line_pos == std::string::npos) {
-      line_pos = (directive_line.size() - 1);
-    }
-    std::string::size_type end_of_name{line_pos};
-
-    std::string name{
-        get_substr_between_indices(directive_line, start_of_name, end_of_name)};
-
-    std::string args{};
-    std::string::size_type start_of_args{};
-    ++line_pos;
-    line_pos = directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
-    if (line_pos == std::string::npos) {
-      args = "";
-    } else {
-      start_of_args = line_pos;
-      args = get_substr_between_indices(directive_line, start_of_args,
-                                        (directive_line.size() - 1));
-    }
-
-    m_cur_pos.set_char(start_of_args);
-
-    if (name == "version") {
-      std::string what_arg{"alpha version does not support version directive"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_line(), start_of_name, what_arg);
-    } else if (name == "include") {
-      parse_include_directive(args);
-    } else {
-      std::string what_arg{"unknown directive"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_line(), start_of_name, what_arg);
-    }
-  }
-}
-
+// TODO check eof/bof
 void libconfigfile::parser::parse_include_directive(const std::string &args) {
+  // m_cur_pos =
+  // start of directive arguments if arguments exist or
+  // end of directive name if arguments don't exist
+
   std::variant<std::vector<std::vector<std::string>>, std::string::size_type>
       extracted_args{extract_strings(args)};
 

@@ -1,9 +1,13 @@
 #ifndef LIBCONFIGFILE_PARSER_HPP
 #define LIBCONFIGFILE_PARSER_HPP
 
+#include "array_value_node.hpp"
+#include "end_value_node.hpp"
 #include "file.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
+#include "section_node.hpp"
+#include "value_node.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -15,6 +19,7 @@ class parser {
 private:
   file m_file_contents;
   file_pos m_cur_pos;
+  section_node m_root_section;
 
 private:
   static constexpr std::string m_k_whitespace_chars{" \t"};
@@ -34,6 +39,12 @@ private:
   static constexpr int m_k_ascii_start{0x00};
   static constexpr int m_k_ascii_end{0x7F};
 
+  static const std::string m_k_valid_name_chars;
+  static constexpr char m_k_section_name_opening_delimiter{'('};
+  static constexpr char m_k_section_name_closing_delimiter{')'};
+  static constexpr char m_k_section_body_opening_delimiter{'{'};
+  static constexpr char m_k_section_body_closing_delimiter{'}'};
+
 public:
   parser();
   parser(const std::string &file_name);
@@ -51,6 +62,8 @@ public:
 
 private:
   void parse_file();
+
+  section_node parse_section(bool is_root_section = false);
 
   void parse_directive();
   void parse_include_directive(const std::string &args);

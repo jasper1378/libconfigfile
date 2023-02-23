@@ -305,6 +305,29 @@ void libconfigfile::file_pos::goto_find_start(const std::string &to_find) {
   }
 }
 
+void libconfigfile::file_pos::goto_find_start(const char to_find) {
+  if (m_eof == true) {
+    return;
+  }
+
+  while (true) {
+    std::string::size_type pos{m_file->get_line(*this).find(to_find, m_char)};
+
+    if (pos == std::string::npos) {
+      goto_next_line();
+
+      if (m_eof == true) {
+        return;
+      } else {
+        continue;
+      }
+    } else {
+      m_char = pos;
+      return;
+    }
+  }
+}
+
 void libconfigfile::file_pos::goto_find_end(const std::string &to_find) {
   if (m_eof == true) {
     return;
@@ -314,7 +337,39 @@ void libconfigfile::file_pos::goto_find_end(const std::string &to_find) {
   goto_next_char(to_find.size());
 }
 
+void libconfigfile::file_pos::goto_find_end(const char to_find) {
+  if (m_eof == true) {
+    return;
+  }
+
+  goto_find_start(to_find);
+  goto_next_char(1);
+}
+
 void libconfigfile::file_pos::goto_rfind_start(const std::string &to_find) {
+  if (m_bof == true) {
+    return;
+  }
+
+  while (true) {
+    std::string::size_type pos{m_file->get_line(*this).rfind(to_find, m_char)};
+
+    if (pos == std::string::npos) {
+      goto_prev_line();
+
+      if (m_bof == true) {
+        return;
+      } else {
+        continue;
+      }
+    } else {
+      m_char = pos;
+      return;
+    }
+  }
+}
+
+void libconfigfile::file_pos::goto_rfind_start(const char to_find) {
   if (m_bof == true) {
     return;
   }
@@ -344,6 +399,15 @@ void libconfigfile::file_pos::goto_rfind_end(const std::string &to_find) {
 
   goto_rfind_start(to_find);
   goto_next_char(to_find.size());
+}
+
+void libconfigfile::file_pos::goto_rfind_end(const char to_find) {
+  if (m_bof == true) {
+    return;
+  }
+
+  goto_rfind_start(to_find);
+  goto_next_char(1);
 }
 
 void libconfigfile::file_pos::goto_find_first_of(const std::string &to_find) {

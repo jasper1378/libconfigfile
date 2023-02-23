@@ -49,6 +49,7 @@ key4 = "/* string, not a comment */";
 - Keys may only containt ACII letters, ASCII digits, and underscores. Note that
   keys composed only of ASCII digits (eg. `1234`) are allowed, but are always
   interpreted as strings.
+- Key names must appear completely on one line.
 - Undefined keys are invalid.
 - Defining a key multiple times in the same scope is invalid.
 - Undefined values are invalid.
@@ -206,6 +207,7 @@ integers3 = [
 - Sections may be nested.
 - Keys/sections may not share names with other keys/sections in the same direct scope.
 - Naming rules for sections are the same as for keys.
+- Section names must appear completely on one line.
 - Empty sections are allowed and simply have no key-value pairs and/or sections within them.
 - The ordering of objects within a section is not preserved (for performance reasons).
 - The top-level section, also called the root section, starts at the beginning of the document and ends at end-of-file, encompassing everything else in its scope. Unlike other sections, it is nameless.

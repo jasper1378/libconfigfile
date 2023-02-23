@@ -92,9 +92,13 @@ public:
   void goto_prev_char(size_t chars_to_move = 1);
 
   void goto_find_start(const std::string &to_find);
+  void goto_find_start(const char to_find);
   void goto_find_end(const std::string &to_find);
+  void goto_find_end(const char to_find);
   void goto_rfind_start(const std::string &to_find);
+  void goto_rfind_start(const char to_find);
   void goto_rfind_end(const std::string &to_find);
+  void goto_rfind_end(const char to_find);
 
   void goto_find_first_of(const std::string &to_find);
   void goto_find_first_of(const std::vector<char> &to_find);
