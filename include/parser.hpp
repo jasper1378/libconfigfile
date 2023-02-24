@@ -65,7 +65,7 @@ public:
 private:
   void parse_file();
 
-  section_node parse_section(bool is_root_section = false);
+  node_ptr<section_node> parse_section(bool is_root_section = false);
 
   void parse_directive();
   void parse_include_directive(const std::string &args);

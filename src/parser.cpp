@@ -89,7 +89,8 @@ void libconfigfile::parser::parse_file() {
 }
 
 // TODO check eof/bof
-libconfigfile::section_node libconfigfile::parser::parse_section(
+libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::parser::parse_section(
     bool is_root_section /*<- TODO*/ /*= false*/) {
   // m_cur_pos = opening round bracket
 
