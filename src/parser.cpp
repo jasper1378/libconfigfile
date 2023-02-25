@@ -88,30 +88,10 @@ void libconfigfile::parser::parse_file() {
   // TODO
 }
 
-// TODO check eof/bof
 libconfigfile::node_ptr<libconfigfile::section_node>
 libconfigfile::parser::parse_section(
-    bool is_root_section /*<- TODO*/ /*= false*/) {
+    bool is_root_section /*<- TODO: root section*/ /*= false*/) {
   // m_cur_pos = opening round bracket
-
-  ++m_cur_pos;
-  if (m_cur_pos.is_located_on_occurence_of(
-          m_k_section_name_closing_delimiter)) {
-    std::string what_arg{"empty section name"};
-    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                 what_arg);
-  } else {
-    file_pos name_start_pos{m_cur_pos};
-
-    m_cur_pos.goto_find_start(m_k_section_name_closing_delimiter);
-    file_pos name_end_pos{(m_cur_pos - 1)};
-
-    if (name_start_pos.get_line() != name_end_pos.get_line()) {
-      std::string what_arg{"section name must appear completely on one line"};
-      throw syntax_error::generate_formatted_error(m_file_contents,
-                                                   name_start_pos, what_arg);
-    }
-  }
 
   // TODO
 }
@@ -146,8 +126,8 @@ void libconfigfile::parser::parse_directive() {
       }
       std::string::size_type end_of_name{line_pos};
 
-      std::string name{get_substr_between_indices(directive_line, start_of_name,
-                                                  end_of_name)};
+      std::string name{get_substr_between_indices_inclusive(
+          directive_line, start_of_name, end_of_name)};
 
       std::string args{};
       std::string::size_type start_of_args{};
@@ -159,8 +139,8 @@ void libconfigfile::parser::parse_directive() {
         args = "";
       } else {
         start_of_args = line_pos;
-        args = get_substr_between_indices(directive_line, start_of_args,
-                                          (directive_line.size() - 1));
+        args = get_substr_between_indices_inclusive(
+            directive_line, start_of_args, (directive_line.size() - 1));
       }
 
       m_cur_pos.set_char(start_of_args);
@@ -373,10 +353,31 @@ libconfigfile::parser::extract_strings(
   }
 }
 
-std::string libconfigfile::parser::get_substr_between_indices(
+std::string libconfigfile::parser::get_substr_between_indices_inclusive(
     const std::string &str, const std::string::size_type start,
     const std::string::size_type end) {
-  return str.substr((start), ((end - start) + 1));
+  if (start > end) {
+    return "";
+  } else if (start >= str.size()) {
+    return "";
+  } else {
+    return str.substr((start), ((end - start) + 1));
+  }
+}
+
+std::string libconfigfile::parser::get_substr_between_indices_exclusive(
+    const std::string &str, const std::string::size_type start,
+    const std::string::size_type end) {
+
+  if (start > end) {
+    return "";
+  } else if (start >= str.size()) {
+    return "";
+  } else if ((end - start) <= 1) {
+    return "";
+  } else {
+    return str.substr((start + 1), (((end - 1) - (start + 1)) + 1));
+  }
 }
 
 bool libconfigfile::parser::is_whitespace(

@@ -84,9 +84,13 @@ public:
                   const std::string &whitespace_chars = m_k_whitespace_chars);
 
   static std::string
-  get_substr_between_indices(const std::string &str,
-                             const std::string::size_type start,
-                             const std::string::size_type end);
+  get_substr_between_indices_inclusive(const std::string &str,
+                                       const std::string::size_type start,
+                                       const std::string::size_type end);
+  static std::string
+  get_substr_between_indices_exclusive(const std ::string &str,
+                                       const std::string::size_type start,
+                                       const std::string::size_type end);
   static bool
   is_whitespace(const char ch,
                 const std::string &whitespace_chars = m_k_whitespace_chars);
