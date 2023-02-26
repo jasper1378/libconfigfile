@@ -12,13 +12,13 @@
 
 libconfigfile::file::file() : m_file_path{}, m_file_contents{} {}
 
-libconfigfile::file::file(const std::string &file_path,
-                          bool insert_newlines /*= true*/)
+libconfigfile::file::file(const std::filesystem::path &file_path,
+                          bool insert_newlines /*= false*/)
     : m_file_path{file_path}, m_file_contents{
                                   read_file(m_file_path, insert_newlines)} {}
 
-libconfigfile::file::file(std::string &&file_path,
-                          bool insert_newlines /*= true*/)
+libconfigfile::file::file(std::filesystem::path &&file_path,
+                          bool insert_newlines /*= false*/)
     : m_file_path{std::move(file_path)}, m_file_contents{read_file(
                                              m_file_path, insert_newlines)} {}
 
@@ -44,6 +44,12 @@ libconfigfile::file_pos libconfigfile::file::create_file_pos() const {
 libconfigfile::file_pos
 libconfigfile::file::create_file_pos(const file_pos &start_pos) const {
   return file_pos{this, start_pos};
+}
+
+libconfigfile::file_pos
+libconfigfile::file::create_file_pos(const size_t start_pos_line,
+                                     const size_t start_pos_char) {
+  return file_pos{this, start_pos_line, start_pos_char};
 }
 
 const char &libconfigfile::file::get_char(const file_pos &pos) const {
@@ -161,6 +167,23 @@ libconfigfile::file_pos::file_pos(const file *file_in_which_to_move)
   if (file_in_which_to_move == nullptr) {
     throw std::runtime_error{"file cannot be null"};
   }
+
+  if (file_in_which_to_move->get_array().empty() == true) {
+    set_bof();
+    set_eof();
+  } else {
+    bool all_empty{true};
+    for (size_t i{0}; i < file_in_which_to_move->get_array().size(); ++i) {
+      if (file_in_which_to_move->get_array()[i].empty() == false) {
+        all_empty = false;
+        break;
+      }
+    }
+    if (all_empty == true) {
+      set_bof();
+      set_eof();
+    }
+  }
 }
 
 libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
@@ -169,6 +192,22 @@ libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
       m_char{start_pos.m_char}, m_bof{start_pos.m_bof}, m_eof{start_pos.m_eof} {
   if (file_in_which_to_move == nullptr) {
     throw std::runtime_error{"file cannot be null"};
+  }
+}
+
+libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
+                                  const size_t start_pos_line,
+                                  const size_t start_pos_char)
+    : m_file{file_in_which_to_move}, m_line{start_pos_line},
+      m_char{start_pos_char}, m_bof{false}, m_eof{false} {
+
+  if (start_pos_line >= file_in_which_to_move->get_array().size()) {
+    throw std::runtime_error{"out-of-range starting line position argument "
+                             "provided to file_pos constructor"};
+  } else if (start_pos_char >=
+             file_in_which_to_move->get_array()[start_pos_line].size()) {
+    throw std::runtime_error{"out-of-range starting char position argument "
+                             "provided to file_pos constructor"};
   }
 }
 
@@ -191,6 +230,15 @@ const libconfigfile::file *libconfigfile::file_pos::get_paired_file() const {
   return m_file;
 }
 
+libconfigfile::file_pos libconfigfile::file_pos::get_start_of_file_pos() const {
+  return file_pos{m_file, 0, 0};
+};
+
+libconfigfile::file_pos libconfigfile::file_pos::get_end_of_file_pos() const {
+  return file_pos{m_file, (m_file->get_array().size() - 1),
+                  (m_file->get_array().back().size() - 1)};
+};
+
 bool libconfigfile::file_pos::is_bof() const { return m_bof; }
 
 bool libconfigfile::file_pos::is_eof() const { return m_eof; }
@@ -201,7 +249,8 @@ size_t libconfigfile::file_pos::get_char() const { return m_char; }
 
 void libconfigfile::file_pos::set_line(const size_t line_val) {
   if (line_val >= m_file->get_array().size()) {
-    throw std::runtime_error{"line value is out of range"};
+    throw std::runtime_error{
+        "out-of-range line position argument provided to file_pos::set_line()"};
   } else {
     m_line = line_val;
   }
@@ -209,7 +258,8 @@ void libconfigfile::file_pos::set_line(const size_t line_val) {
 
 void libconfigfile::file_pos::set_char(const size_t char_val) {
   if (char_val >= m_file->get_line(*this).size()) {
-    throw std::runtime_error{"char value is out of range"};
+    throw std::runtime_error{
+        "out-of-range line position argument provided to file_pos::set_char()"};
   } else {
     m_char = char_val;
   }

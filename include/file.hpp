@@ -19,8 +19,8 @@ private:
 
 public:
   file();
-  file(const std::string &file_path, bool insert_newlines = false);
-  file(std::string &&file_path, bool insert_newlines = false);
+  file(const std::filesystem::path &file_path, bool insert_newlines = false);
+  file(std::filesystem::path &&file_path, bool insert_newlines = false);
   file(const file &other);
   file(file &&other) noexcept;
 
@@ -33,6 +33,8 @@ public:
 
   file_pos create_file_pos() const;
   file_pos create_file_pos(const file_pos &start_pos) const;
+  file_pos create_file_pos(const size_t start_pos_line,
+                           const size_t start_pos_char);
 
   const char &get_char(const file_pos &pos) const;
   const std::string &get_line(const file_pos &pos) const;
@@ -68,6 +70,8 @@ private:
 public:
   file_pos(const file *file_in_which_to_move);
   file_pos(const file *file_in_which_to_move, const file_pos &start_pos);
+  file_pos(const file *file_in_which_to_move, const size_t start_pos_line,
+           const size_t start_pos_char);
   file_pos(const file_pos &other);
   file_pos(file_pos &&other);
 
@@ -77,6 +81,9 @@ public:
 public:
   bool is_paired(const file &f) const;
   const file *get_paired_file() const;
+
+  file_pos get_start_of_file_pos() const;
+  file_pos get_end_of_file_pos() const;
 
   bool is_bof() const;
   bool is_eof() const;

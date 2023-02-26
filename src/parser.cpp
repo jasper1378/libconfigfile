@@ -15,6 +15,7 @@
 #include <exception>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -88,10 +89,77 @@ void libconfigfile::parser::parse_file() {
   // TODO
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
-libconfigfile::parser::parse_section(
-    bool is_root_section /*<- TODO: root section*/ /*= false*/) {
-  // m_cur_pos = opening round bracket
+std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
+libconfigfile::parser::parse_section(bool is_root_section /*= false*/) {
+  // if is_root_section is true, m_cur_pos is located at file start, else
+  // m_cur_pos is located on opening round bracket
+
+  std::string section_name{};
+
+  if (is_root_section == false) {
+    if (m_cur_pos.is_located_on_occurence_of(
+            m_k_section_name_opening_delimiter) == false) {
+      throw std::runtime_error{"parser::parse_section() called with m_cur_pos "
+                               "is incorrect position"};
+    }
+
+    ++m_cur_pos;
+    if (m_cur_pos.is_eof() == true) {
+      std::string what_arg{"expected section name"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+    }
+    m_cur_pos.goto_end_of_whitespace(m_k_whitespace_chars);
+    if (m_cur_pos.is_eof()) {
+      std::string what_arg{"expected section name"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+    }
+    file_pos section_name_start_pos{m_cur_pos};
+
+    m_cur_pos.goto_find_start(m_k_section_name_closing_delimiter);
+    if (m_cur_pos.is_eof() == true) {
+      std::string what_arg{"unterminated section name"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+    }
+    --m_cur_pos;
+    m_cur_pos.goto_start_of_whitespace(m_k_whitespace_chars);
+    file_pos section_name_end_pos{m_cur_pos};
+
+    if (section_name_start_pos.get_line() != section_name_end_pos.get_line()) {
+      std::string what_arg{"section name must appear completely on one line"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, section_name_end_pos, what_arg);
+    }
+
+    std::string section_name_raw{get_substr_between_indices_inclusive(
+        m_file_contents.get_line(section_name_start_pos),
+        section_name_start_pos.get_char(), section_name_end_pos.get_char())};
+    section_name_raw =
+        trim_whitespace(section_name_raw, m_k_whitespace_chars, true, true);
+
+    if (section_name_raw.empty() == true) {
+      std::string what_arg{"empty section names are not permitted"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, section_name_end_pos, what_arg);
+    }
+
+    std::tuple<bool, std::string::size_type> section_name_raw_invalid_chars{
+        contains_invalid_character_valid_provided(section_name_raw,
+                                                  m_k_valid_name_chars)};
+
+    if (std::get<0>(section_name_raw_invalid_chars) == true) {
+      std::string what_arg{"invalid character in section name"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, section_name_end_pos.get_line(),
+          std::get<1>(section_name_raw_invalid_chars), what_arg);
+    }
+
+    section_name = section_name_raw;
+  } else {
+    section_name = "";
+  }
 
   // TODO
 }
@@ -386,6 +454,38 @@ bool libconfigfile::parser::is_whitespace(
   return ((whitespace_chars.find(ch)) != (std::string::npos));
 }
 
+std::string libconfigfile::parser::trim_whitespace(
+    const std::string &str,
+    const std::string &whitespace_chars /*= m_k_whitespace_chars*/,
+    bool trim_leading /*= true*/, bool trim_trailing /*= true*/) {
+  if (str.empty() == true) {
+    return "";
+  } else {
+    std::string::size_type start_pos{0};
+    start_pos = str.find_first_not_of(whitespace_chars);
+    if (start_pos == std::string::npos) {
+      return "";
+    }
+
+    std::string::size_type end_pos{str.size() - 1};
+    end_pos = str.find_last_not_of(whitespace_chars);
+    if (end_pos == std::string::npos) {
+      return "";
+    }
+
+    if ((trim_leading == false) && (trim_trailing == false)) {
+      return str;
+    } else if ((trim_leading == true) && (trim_trailing == false)) {
+      return get_substr_between_indices_inclusive(str, start_pos,
+                                                  std::string::npos);
+    } else if ((trim_leading == false) && (trim_trailing == true)) {
+      return get_substr_between_indices_inclusive(str, 0, end_pos);
+    } else if ((trim_leading == true) && (trim_trailing == true)) {
+      return get_substr_between_indices_inclusive(str, start_pos, end_pos);
+    }
+  }
+}
+
 bool libconfigfile::parser::is_actual_delimiter(
     const std::string::size_type pos, const std::string &str,
     const char delimiter,
@@ -405,4 +505,26 @@ bool libconfigfile::parser::is_actual_delimiter(
   } else {
     return false;
   }
+}
+
+static std::tuple<bool, std::string::size_type>
+contains_invalid_character_valid_provided(const std::string &str,
+                                          const std::string &valid_chars) {
+  for (size_t i{0}; i < str.size(); ++i) {
+    if (valid_chars.find(str[i]) == std::string::npos) {
+      return {true, i};
+    }
+  }
+  return {false, std::string::npos};
+}
+
+static std::tuple<bool, std::string::size_type>
+contains_invalid_character_invalid_provided(const std::string &str,
+                                            const std::string &invalid_chars) {
+  for (size_t i{0}; i < str.size(); ++i) {
+    if (invalid_chars.find(str[i]) != std::string::npos) {
+      return {true, i};
+    }
+  }
+  return {false, std::string::npos};
 }

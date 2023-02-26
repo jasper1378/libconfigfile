@@ -10,6 +10,7 @@
 #include "value_node.hpp"
 
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -65,7 +66,8 @@ public:
 private:
   void parse_file();
 
-  node_ptr<section_node> parse_section(bool is_root_section = false);
+  std::tuple<node_ptr<section_node>, std::string>
+  parse_section(bool is_root_section = false);
 
   void parse_directive();
   void parse_include_directive(const std::string &args);
@@ -94,10 +96,20 @@ public:
   static bool
   is_whitespace(const char ch,
                 const std::string &whitespace_chars = m_k_whitespace_chars);
+  static std::string
+  trim_whitespace(const std::string &str,
+                  const std::string &whitespace_chars = m_k_whitespace_chars,
+                  bool trim_leading = true, bool trim_trailing = true);
   static bool
   is_actual_delimiter(const std::string::size_type pos, const std::string &str,
                       const char delimiter,
                       const char delimiter_escape = m_k_escape_leader);
+  static std::tuple<bool, std::string::size_type>
+  contains_invalid_character_valid_provided(const std::string &str,
+                                            const std::string &valid_chars);
+  static std::tuple<bool, std::string::size_type>
+  contains_invalid_character_invalid_provided(const std::string &str,
+                                              const std::string &invalid_chars);
 };
 } // namespace libconfigfile
 

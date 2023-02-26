@@ -208,7 +208,9 @@ integers3 = [
 - Keys/sections may not share names with other keys/sections in the same direct scope.
 - Naming rules for sections are the same as for keys.
 - Section names must appear completely on one line.
+- Whitespace between the opening/closing round bracket and the section name is allowed and will be ignored.
 - Empty sections are allowed and simply have no key-value pairs and/or sections within them.
+- Empty section names are not permitted.
 - The ordering of objects within a section is not preserved (for performance reasons).
 - The top-level section, also called the root section, starts at the beginning of the document and ends at end-of-file, encompassing everything else in its scope. Unlike other sections, it is nameless.
 ```
