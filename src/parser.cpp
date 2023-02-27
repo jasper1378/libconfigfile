@@ -100,7 +100,7 @@ libconfigfile::parser::parse_section(bool is_root_section /*= false*/) {
     if (m_cur_pos.is_located_on_occurence_of(
             m_k_section_name_opening_delimiter) == false) {
       throw std::runtime_error{"parser::parse_section() called with m_cur_pos "
-                               "is incorrect position"};
+                               "in incorrect position"};
     }
 
     ++m_cur_pos;
@@ -123,6 +123,8 @@ libconfigfile::parser::parse_section(bool is_root_section /*= false*/) {
       throw syntax_error::generate_formatted_error(
           m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
     }
+
+    file_pos section_name_closing_delimiter{m_cur_pos};
     --m_cur_pos;
     m_cur_pos.goto_start_of_whitespace(m_k_whitespace_chars);
     file_pos section_name_end_pos{m_cur_pos};
@@ -157,6 +159,7 @@ libconfigfile::parser::parse_section(bool is_root_section /*= false*/) {
     }
 
     section_name = section_name_raw;
+    m_cur_pos = section_name_closing_delimiter;
   } else {
     section_name = "";
   }
@@ -463,15 +466,9 @@ std::string libconfigfile::parser::trim_whitespace(
   } else {
     std::string::size_type start_pos{0};
     start_pos = str.find_first_not_of(whitespace_chars);
-    if (start_pos == std::string::npos) {
-      return "";
-    }
 
     std::string::size_type end_pos{str.size() - 1};
     end_pos = str.find_last_not_of(whitespace_chars);
-    if (end_pos == std::string::npos) {
-      return "";
-    }
 
     if ((trim_leading == false) && (trim_trailing == false)) {
       return str;
