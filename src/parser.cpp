@@ -232,6 +232,11 @@ void libconfigfile::parser::parse_directive() {
   }
 }
 
+void libconfigfile::parser::parse_directive_new() {
+  // m_cur_pos = directive leader
+  // caller must check that directive is the only text on its line
+}
+
 void libconfigfile::parser::parse_include_directive(const std::string &args) {
   // m_cur_pos =
   // start of directive arguments if arguments exist or
@@ -479,6 +484,8 @@ std::string libconfigfile::parser::trim_whitespace(
       return get_substr_between_indices_inclusive(str, 0, end_pos);
     } else if ((trim_leading == true) && (trim_trailing == true)) {
       return get_substr_between_indices_inclusive(str, start_pos, end_pos);
+    } else {
+      throw std::runtime_error{"impossible!"};
     }
   }
 }
@@ -504,9 +511,9 @@ bool libconfigfile::parser::is_actual_delimiter(
   }
 }
 
-static std::tuple<bool, std::string::size_type>
-contains_invalid_character_valid_provided(const std::string &str,
-                                          const std::string &valid_chars) {
+std::tuple<bool, std::string::size_type>
+libconfigfile::parser::contains_invalid_character_valid_provided(
+    const std::string &str, const std::string &valid_chars) {
   for (size_t i{0}; i < str.size(); ++i) {
     if (valid_chars.find(str[i]) == std::string::npos) {
       return {true, i};
@@ -515,9 +522,9 @@ contains_invalid_character_valid_provided(const std::string &str,
   return {false, std::string::npos};
 }
 
-static std::tuple<bool, std::string::size_type>
-contains_invalid_character_invalid_provided(const std::string &str,
-                                            const std::string &invalid_chars) {
+std::tuple<bool, std::string::size_type>
+libconfigfile::parser::contains_invalid_character_invalid_provided(
+    const std::string &str, const std::string &invalid_chars) {
   for (size_t i{0}; i < str.size(); ++i) {
     if (invalid_chars.find(str[i]) != std::string::npos) {
       return {true, i};
