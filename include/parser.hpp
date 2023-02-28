@@ -76,10 +76,12 @@ private:
   std::tuple<node_ptr<section_node>, std::string>
   parse_section_new(bool is_root_section = false); // TODO
 
-  void parse_directive();
-  void parse_directive_new(); // TODO
-  void parse_include_directive(const std::string &args);
-  void parse_include_directive_new(const std::string &args); // TODO
+  [[deprecated("use new forward-only variant")]] void parse_directive(); // XXX
+  void parse_directive_new();
+  void parse_version_directive();
+  [[deprecated("use new forward-only variant")]] void
+  parse_include_directive(const std::string &args); // XXX
+  void parse_include_directive_new();               // TODO
 
 private:
   static std::variant<std::string /*result*/,
@@ -113,6 +115,12 @@ public:
   is_actual_delimiter(const std::string::size_type pos, const std::string &str,
                       const char delimiter,
                       const char delimiter_escape = m_k_escape_leader);
+  static bool
+  is_invalid_character_valid_provided(const char ch,
+                                      const std::string &valid_chars);
+  static bool
+  is_invalid_character_invalid_provided(const char ch,
+                                        const std::string &invalid_chars);
   static std::tuple<bool, std::string::size_type>
   contains_invalid_character_valid_provided(const std::string &str,
                                             const std::string &valid_chars);

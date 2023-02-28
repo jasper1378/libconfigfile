@@ -182,7 +182,6 @@ void libconfigfile::parser::parse_directive() {
     const std::string &directive_line{m_file_contents.get_line(m_cur_pos)};
     std::string::size_type line_pos{m_cur_pos.get_char()};
 
-    // vvvvvvvvvv
     ++line_pos;
     line_pos = directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
     if (line_pos == std::string::npos) {
@@ -200,7 +199,6 @@ void libconfigfile::parser::parse_directive() {
 
       std::string name{get_substr_between_indices_inclusive(
           directive_line, start_of_name, end_of_name)};
-      // ^^^^^^^^^^
 
       std::string args{};
       std::string::size_type start_of_args{};
@@ -248,14 +246,13 @@ void libconfigfile::parser::parse_directive_new() {
       directive_leader,
       leading_whitespace,
       name_proper,
-      trailing_whitespace
+      done,
     };
 
     name_location last_state{name_location::directive_leader};
     file_pos last_pos{m_cur_pos};
 
     for (;; last_pos = m_cur_pos, ++m_cur_pos) {
-      // while (true) {
       switch (last_state) {
       case name_location::directive_leader: {
         if (m_cur_pos.is_eof() == true) {
@@ -283,18 +280,92 @@ void libconfigfile::parser::parse_directive_new() {
         }
       } break;
 
-      case name_location::leading_whitespace:
-        // TODO continue from here
-        break;
+      case name_location::leading_whitespace: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"expected directive name"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-      case name_location::name_proper:
-        break;
+          if (is_whitespace(cur_char) == true) {
+            continue;
+          } else {
+            if (m_cur_pos.get_line() != start_pos.get_line()) {
+              std::string what_arg{"entire directive must appear on one line"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } else {
+              last_state = name_location::name_proper;
+              name.push_back(cur_char);
+            }
+          }
+        }
+      } break;
 
-      case name_location::trailing_whitespace:
+      case name_location::name_proper: {
+        if (m_cur_pos.is_eof() == true) {
+          last_state = name_location::done;
+          goto goto_exit_name_loop;
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char) == true) {
+            last_state = name_location::done;
+            goto goto_exit_name_loop;
+          } else {
+            if (m_cur_pos.get_line() != start_pos.get_line()) {
+              std::string what_arg{"entire directive must appear on one line"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } else {
+              name.push_back(cur_char);
+            }
+          }
+        }
+      } break;
+
+      case name_location::done: {
+        goto goto_exit_name_loop;
+      } break;
+      }
+    }
+  goto_exit_name_loop:;
+  }
+
+  void (parser::*directive_function)(){nullptr};
+
+  if (name == m_k_version_directive_name) {
+    directive_function = &parser::parse_version_directive;
+  } else if (name == m_k_include_directive_name) {
+    directive_function = &parser::parse_include_directive_new;
+  } else {
+    std::string what_arg{"invalid directive"};
+    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                 what_arg);
+  }
+
+  for (;; ++m_cur_pos) {
+    if (m_cur_pos.is_eof() == true) {
+      break;
+    } else {
+      char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+      if (is_whitespace(cur_char) == true) {
+        continue;
+      } else {
         break;
       }
     }
   }
+
+  (this->*directive_function)();
+}
+
+void libconfigfile::parser::parse_version_directive() {
+  std::string what_arg{"alpha version does not support version directive"};
+  throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                               what_arg);
 }
 
 void libconfigfile::parser::parse_include_directive(const std::string &args) {
@@ -379,6 +450,12 @@ void libconfigfile::parser::parse_include_directive(const std::string &args) {
     } break;
     }
   }
+}
+
+void libconfigfile::parser::parse_include_directive_new() {
+  // m_cur_pos = start of directive arguments
+  // or eof if arguments don't exist
+  // TODO continue from here
 }
 
 std::variant<std::string /*result*/,
@@ -571,11 +648,21 @@ bool libconfigfile::parser::is_actual_delimiter(
   }
 }
 
+bool libconfigfile::parser::is_invalid_character_valid_provided(
+    const char ch, const std::string &valid_chars) {
+  return (valid_chars.find(ch) == std::string::npos);
+}
+
+bool libconfigfile::parser::is_invalid_character_invalid_provided(
+    const char ch, const std::string &invalid_chars) {
+  return (invalid_chars.find(ch) != std::string::npos);
+}
+
 std::tuple<bool, std::string::size_type>
 libconfigfile::parser::contains_invalid_character_valid_provided(
     const std::string &str, const std::string &valid_chars) {
   for (size_t i{0}; i < str.size(); ++i) {
-    if (valid_chars.find(str[i]) == std::string::npos) {
+    if (is_invalid_character_valid_provided(str[i], valid_chars) == true) {
       return {true, i};
     }
   }
@@ -586,7 +673,7 @@ std::tuple<bool, std::string::size_type>
 libconfigfile::parser::contains_invalid_character_invalid_provided(
     const std::string &str, const std::string &invalid_chars) {
   for (size_t i{0}; i < str.size(); ++i) {
-    if (invalid_chars.find(str[i]) != std::string::npos) {
+    if (is_invalid_character_invalid_provided(str[i], invalid_chars) == true) {
       return {true, i};
     }
   }
