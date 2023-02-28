@@ -182,6 +182,7 @@ void libconfigfile::parser::parse_directive() {
     const std::string &directive_line{m_file_contents.get_line(m_cur_pos)};
     std::string::size_type line_pos{m_cur_pos.get_char()};
 
+    // vvvvvvvvvv
     ++line_pos;
     line_pos = directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
     if (line_pos == std::string::npos) {
@@ -199,6 +200,7 @@ void libconfigfile::parser::parse_directive() {
 
       std::string name{get_substr_between_indices_inclusive(
           directive_line, start_of_name, end_of_name)};
+      // ^^^^^^^^^^
 
       std::string args{};
       std::string::size_type start_of_args{};
@@ -235,6 +237,64 @@ void libconfigfile::parser::parse_directive() {
 void libconfigfile::parser::parse_directive_new() {
   // m_cur_pos = directive leader
   // caller must check that directive is the only text on its line
+
+  file_pos start_pos{m_cur_pos};
+
+  std::string name{};
+  name.reserve(m_k_max_directive_name_length);
+
+  {
+    enum class name_location {
+      directive_leader,
+      leading_whitespace,
+      name_proper,
+      trailing_whitespace
+    };
+
+    name_location last_state{name_location::directive_leader};
+    file_pos last_pos{m_cur_pos};
+
+    for (;; last_pos = m_cur_pos, ++m_cur_pos) {
+      // while (true) {
+      switch (last_state) {
+      case name_location::directive_leader: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"expected directive name"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (cur_char == m_k_directive_leader) {
+            continue;
+          } else if (is_whitespace(cur_char) == true) {
+            last_state = name_location::leading_whitespace;
+            continue;
+          } else {
+            if (m_cur_pos.get_line() != start_pos.get_line()) {
+              std::string what_arg{"entire directive must appear on one line"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } else {
+              last_state = name_location::name_proper;
+              name.push_back(cur_char);
+            }
+          }
+        }
+      } break;
+
+      case name_location::leading_whitespace:
+        // TODO continue from here
+        break;
+
+      case name_location::name_proper:
+        break;
+
+      case name_location::trailing_whitespace:
+        break;
+      }
+    }
+  }
 }
 
 void libconfigfile::parser::parse_include_directive(const std::string &args) {

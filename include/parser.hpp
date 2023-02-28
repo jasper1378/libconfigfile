@@ -9,6 +9,7 @@
 #include "section_node.hpp"
 #include "value_node.hpp"
 
+#include <algorithm>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -32,6 +33,10 @@ private:
   static constexpr std::string m_k_comment_c_end{"*/"};
 
   static constexpr char m_k_directive_leader{'@'};
+  static constexpr std::string m_k_version_directive_name{"version"};
+  static constexpr std::string m_k_include_directive_name{"include"};
+  static constexpr int m_k_max_directive_name_length{std::max(
+      m_k_version_directive_name.size(), m_k_include_directive_name.size())};
 
   static constexpr char m_k_string_delimiter{'"'};
 
