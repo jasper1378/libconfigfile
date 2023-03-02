@@ -241,95 +241,89 @@ void libconfigfile::parser::parse_directive_new() {
   std::string name{};
   name.reserve(m_k_max_directive_name_length);
 
-  {
-    enum class name_location {
-      directive_leader,
-      leading_whitespace,
-      name_proper,
-      done,
-    };
+  enum class name_location {
+    directive_leader,
+    leading_whitespace,
+    name_proper,
+    done,
+  };
 
-    name_location last_state{name_location::directive_leader};
+  for (name_location last_state{name_location::directive_leader};
+       last_state != name_location::done; ++m_cur_pos) {
+    switch (last_state) {
+    case name_location::directive_leader: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{"expected directive name"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-    for (;; ++m_cur_pos) {
-      switch (last_state) {
-      case name_location::directive_leader: {
-        if (m_cur_pos.is_eof() == true) {
-          std::string what_arg{"expected directive name"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        if (cur_char == m_k_directive_leader) {
+          ;
+        } else if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+          last_state = name_location::leading_whitespace;
+          ;
         } else {
-          char cur_char{m_file_contents.get_char(m_cur_pos)};
-
-          if (cur_char == m_k_directive_leader) {
-            continue;
-          } else if (is_whitespace(cur_char) == true) {
-            last_state = name_location::leading_whitespace;
-            continue;
+          if (m_cur_pos.get_line() != start_pos.get_line()) {
+            std::string what_arg{"entire directive must appear on one line"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         m_cur_pos, what_arg);
           } else {
-            if (m_cur_pos.get_line() != start_pos.get_line()) {
-              std::string what_arg{"entire directive must appear on one line"};
-              throw syntax_error::generate_formatted_error(m_file_contents,
-                                                           m_cur_pos, what_arg);
-            } else {
-              last_state = name_location::name_proper;
-              name.push_back(cur_char);
-            }
+            last_state = name_location::name_proper;
+            name.push_back(cur_char);
           }
         }
-      } break;
-
-      case name_location::leading_whitespace: {
-        if (m_cur_pos.is_eof() == true) {
-          std::string what_arg{"expected directive name"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
-        } else {
-          char cur_char{m_file_contents.get_char(m_cur_pos)};
-
-          if (is_whitespace(cur_char) == true) {
-            continue;
-          } else {
-            if (m_cur_pos.get_line() != start_pos.get_line()) {
-              std::string what_arg{"entire directive must appear on one line"};
-              throw syntax_error::generate_formatted_error(m_file_contents,
-                                                           m_cur_pos, what_arg);
-            } else {
-              last_state = name_location::name_proper;
-              name.push_back(cur_char);
-            }
-          }
-        }
-      } break;
-
-      case name_location::name_proper: {
-        if (m_cur_pos.is_eof() == true) {
-          last_state = name_location::done;
-          goto goto_exit_name_loop;
-        } else {
-          char cur_char{m_file_contents.get_char(m_cur_pos)};
-
-          if (is_whitespace(cur_char) == true) {
-            last_state = name_location::done;
-            goto goto_exit_name_loop;
-          } else {
-            if (m_cur_pos.get_line() != start_pos.get_line()) {
-              std::string what_arg{"entire directive must appear on one line"};
-              throw syntax_error::generate_formatted_error(m_file_contents,
-                                                           m_cur_pos, what_arg);
-            } else {
-              name.push_back(cur_char);
-            }
-          }
-        }
-      } break;
-
-      case name_location::done: {
-        goto goto_exit_name_loop;
-      } break;
       }
+    } break;
+
+    case name_location::leading_whitespace: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{"expected directive name"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+        if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+          ;
+        } else {
+          if (m_cur_pos.get_line() != start_pos.get_line()) {
+            std::string what_arg{"entire directive must appear on one line"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         m_cur_pos, what_arg);
+          } else {
+            last_state = name_location::name_proper;
+            name.push_back(cur_char);
+          }
+        }
+      }
+    } break;
+
+    case name_location::name_proper: {
+      if (m_cur_pos.is_eof() == true) {
+        last_state = name_location::done;
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+        if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+          last_state = name_location::done;
+        } else {
+          if (m_cur_pos.get_line() != start_pos.get_line()) {
+            std::string what_arg{"entire directive must appear on one line"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         m_cur_pos, what_arg);
+          } else {
+            name.push_back(cur_char);
+          }
+        }
+      }
+    } break;
+
+    case name_location::done: {
+      throw std::runtime_error{"impossible!"};
+    } break;
     }
-  goto_exit_name_loop:;
   }
 
   void (parser::*directive_function)(){nullptr};
@@ -350,8 +344,8 @@ void libconfigfile::parser::parse_directive_new() {
     } else {
       char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-      if (is_whitespace(cur_char) == true) {
-        continue;
+      if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+        ;
       } else {
         break;
       }
@@ -457,63 +451,154 @@ void libconfigfile::parser::parse_include_directive_new() {
 
   file_pos start_pos{m_cur_pos};
 
-  {
-    enum class args_location {
-      leading_whitespace,
-      opening_delimiter,
-      file_path,
-      closing_delimiter,
-      trailing_whitespace,
-      trailing_garbage,
-    };
+  std::string file_path{};
 
-    args_location last_state{args_location::leading_whitespace};
+  enum class args_location {
+    leading_whitespace,
+    opening_delimiter,
+    file_path,
+    closing_delimiter,
+    trailing_whitespace,
+    done,
+  };
 
-    for (;; ++m_cur_pos) {
-      switch (last_state) {
-      case args_location::leading_whitespace: {
-        if (m_cur_pos.is_eof() == true) {
+  bool last_char_was_escape_leader{false};
+
+  for (args_location last_state{args_location::leading_whitespace};
+       last_state != args_location::done; ++m_cur_pos) {
+    switch (last_state) {
+    case args_location::leading_whitespace: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{"include directive requires file path argument"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+        if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+          ;
+        } else if (cur_char == m_k_string_delimiter) {
+          if (m_cur_pos.get_line() != start_pos.get_line()) {
+            std::string what_arg{"entire directive must appear on one line"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         m_cur_pos, what_arg);
+          } else {
+            last_state = args_location::opening_delimiter;
+          }
+        } else {
           std::string what_arg{"include directive requires file path argument"};
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
+        }
+      }
+    } break;
+
+    case args_location::opening_delimiter: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{
+            "unterminated string in include directive argument"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+      } else {
+        if (m_cur_pos.get_line() != start_pos.get_line()) {
+          std::string what_arg{"entire directive must appear on one line"};
           throw syntax_error::generate_formatted_error(m_file_contents,
                                                        m_cur_pos, what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-          if (is_whitespace(cur_char) == true) {
-            continue;
-          } else if (cur_char == m_k_string_delimiter) {
-            if (m_cur_pos.get_line() != start_pos.get_line()) {
-              std::string what_arg{"entire directive must appear on one line"};
-              throw syntax_error::generate_formatted_error(m_file_contents,
-                                                           m_cur_pos, what_arg);
-            } else {
-              last_state = args_location::opening_delimiter;
-            }
+          if (cur_char == m_k_string_delimiter) {
+            last_state = args_location::closing_delimiter;
+          } else if (cur_char == m_k_escape_leader) {
+            last_char_was_escape_leader = true;
+            file_path.push_back(cur_char);
+            last_state = args_location::file_path;
           } else {
-            std::string what_arg{
-                "include directive requires file path argument"};
+            file_path.push_back(cur_char);
+            last_state = args_location::file_path;
+          }
+        }
+      }
+    } break;
+
+    case args_location::file_path: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{
+            "unterminated string in include directive argument"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+      } else {
+        if (m_cur_pos.get_line() != start_pos.get_line()) {
+          std::string what_arg{"entire directive must appear on one line"};
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (cur_char == m_k_string_delimiter) {
+            if (last_char_was_escape_leader == true) {
+              last_char_was_escape_leader = false;
+              file_path.push_back(cur_char);
+            } else {
+              last_state = args_location::closing_delimiter;
+            }
+          } else if (cur_char == m_k_escape_leader) {
+            last_char_was_escape_leader = true;
+            file_path.push_back(cur_char);
+          } else {
+            file_path.push_back(cur_char);
+          }
+        }
+      }
+    } break;
+
+    case args_location::closing_delimiter: {
+      if (m_cur_pos.is_eof() == true) {
+        last_state = args_location::done;
+      } else {
+        if (m_cur_pos.get_line() != start_pos.get_line()) {
+          last_state = args_location::done;
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+            last_state = args_location::trailing_whitespace;
+          } else {
+            std::string what_arg{"excess arguments given to include directive"};
             throw syntax_error::generate_formatted_error(m_file_contents,
                                                          m_cur_pos, what_arg);
           }
         }
-      } break;
+      }
+    } break;
 
-      case args_location::opening_delimiter: {
-        if (m_cur_pos.is_eof() == true) {
-          std::string what_arg{
-              "unterminated string in include directive argument"};
-          throw syntax_error::generate_formatted_error(m_file_contents,
-                                                       m_cur_pos, what_arg);
+    case args_location::trailing_whitespace: {
+      if (m_cur_pos.is_eof() == true) {
+        last_state = args_location::done;
+      } else {
+        if (m_cur_pos.get_line() != start_pos.get_line()) {
+          last_state = args_location::done;
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-          // TODO continue from here
+          if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+            ;
+          } else {
+            std::string what_arg{"excess arguments given to include directive"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         m_cur_pos, what_arg);
+          }
         }
-      } break;
       }
+    } break;
+
+    case args_location::done: {
+      throw std::runtime_error{"impossible!"};
+    } break;
     }
-  goto_exit_args_loop:;
   }
+
+  // TODO continue from here
 }
 
 std::variant<std::string /*result*/,
