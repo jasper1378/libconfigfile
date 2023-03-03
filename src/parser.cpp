@@ -163,10 +163,29 @@ libconfigfile::parser::parse_section(bool is_root_section /*= false*/) {
   } else {
     section_name = "";
   }
-
-  // TODO
 }
 
+std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
+libconfigfile::parser::parse_section_new(bool is_root_section) {
+  // m_cur_pos = opening round bracket
+  //  or beginning of file is is_root_section is true
+
+  std::string section_name{};
+
+  if (is_root_section == false) {
+    enum class name_location {
+      opening_delimiter,
+      name_proper,
+      closing_delimiter,
+      done,
+    };
+    // TODO continue from here
+  } else {
+    section_name = "";
+  }
+}
+
+/*
 void libconfigfile::parser::parse_directive() {
   // m_cur_pos = directive leader
 
@@ -231,6 +250,7 @@ void libconfigfile::parser::parse_directive() {
     }
   }
 }
+*/
 
 void libconfigfile::parser::parse_directive_new() {
   // m_cur_pos = directive leader
@@ -361,6 +381,7 @@ void libconfigfile::parser::parse_version_directive() {
                                                what_arg);
 }
 
+/*
 void libconfigfile::parser::parse_include_directive(const std::string &args) {
   // m_cur_pos =
   // start of directive arguments if arguments exist or
@@ -444,6 +465,7 @@ void libconfigfile::parser::parse_include_directive(const std::string &args) {
     }
   }
 }
+*/
 
 void libconfigfile::parser::parse_include_directive_new() {
   // m_cur_pos = start of directive arguments
@@ -461,6 +483,8 @@ void libconfigfile::parser::parse_include_directive_new() {
     trailing_whitespace,
     done,
   };
+
+  file_pos start_of_file_path_pos{m_cur_pos.get_end_of_file_pos()};
 
   bool last_char_was_escape_leader{false};
 
@@ -509,13 +533,16 @@ void libconfigfile::parser::parse_include_directive_new() {
 
           if (cur_char == m_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
+            start_of_file_path_pos = m_cur_pos;
           } else if (cur_char == m_k_escape_leader) {
             last_char_was_escape_leader = true;
             file_path.push_back(cur_char);
             last_state = args_location::file_path;
+            start_of_file_path_pos = m_cur_pos;
           } else {
             file_path.push_back(cur_char);
             last_state = args_location::file_path;
+            start_of_file_path_pos = m_cur_pos;
           }
         }
       }
@@ -598,7 +625,49 @@ void libconfigfile::parser::parse_include_directive_new() {
     }
   }
 
-  // TODO continue from here
+  if (file_path.empty() == true) {
+    std::string what_arg{"empty file path argument given to include directive"};
+    throw syntax_error::generate_formatted_error(
+        m_file_contents, start_of_file_path_pos, what_arg);
+  } else {
+    std::variant<std::string, std::string::size_type> file_path_escaped{
+        replace_escape_sequences(file_path)};
+
+    switch (file_path_escaped.index()) {
+    case 0: {
+      file_path = std::get<std::string>(std::move(file_path_escaped));
+
+      file included_file{file_path};
+
+      // TODO vvv change this to work with streams
+
+      std::remove_reference_t<decltype(m_file_contents.get_underlying())>::
+          const_iterator include_pos_iter{
+              m_file_contents.get_underlying().begin() + start_pos.get_line()};
+
+      m_file_contents.get_underlying().erase(include_pos_iter);
+      m_file_contents.get_underlying().insert(
+          include_pos_iter,
+          std::make_move_iterator(included_file.get_underlying().begin()),
+          std::make_move_iterator(included_file.get_underlying().end()));
+
+      m_cur_pos = m_file_contents.create_file_pos(m_cur_pos);
+      m_cur_pos.set_char(0);
+    } break;
+
+    case 1: {
+      file_pos invalid_escape_sequence_pos{start_of_file_path_pos};
+      invalid_escape_sequence_pos.set_char(
+          (invalid_escape_sequence_pos.get_char()) +
+          (std::get<std::string::size_type>(file_path_escaped)));
+
+      std::string what_arg{
+          "invalid escape sequence in include directive argument"};
+      throw syntax_error::generate_formatted_error(
+          m_file_contents, invalid_escape_sequence_pos, what_arg);
+    } break;
+    }
+  }
 }
 
 std::variant<std::string /*result*/,

@@ -72,16 +72,13 @@ private:
   void parse_file(); // TODO
 
   std::tuple<node_ptr<section_node>, std::string>
-  parse_section(bool is_root_section = false);
+  parse_section(bool is_root_section = false); // XXX
   std::tuple<node_ptr<section_node>, std::string>
   parse_section_new(bool is_root_section = false); // TODO
 
-  [[deprecated("use new forward-only variant")]] void parse_directive(); // XXX
   void parse_directive_new();
   void parse_version_directive();
-  [[deprecated("use new forward-only variant")]] void
-  parse_include_directive(const std::string &args); // XXX
-  void parse_include_directive_new();               // TODO
+  void parse_include_directive_new();
 
 private:
   static std::variant<std::string /*result*/,
