@@ -83,7 +83,7 @@ void libconfigfile::parser::parse_file() {
     }
 
     else if (m_cur_pos.is_located_on_occurence_of(m_k_directive_leader)) {
-      parse_directive();
+      parse_directive_new();
     }
   }
   // TODO
@@ -170,16 +170,147 @@ libconfigfile::parser::parse_section_new(bool is_root_section) {
   // m_cur_pos = opening round bracket
   //  or beginning of file is is_root_section is true
 
+  // TODO continue from here
+
   std::string section_name{};
 
   if (is_root_section == false) {
     enum class name_location {
       opening_delimiter,
+      leading_whitespace,
       name_proper,
+      trailing_whitespace,
       closing_delimiter,
       done,
     };
-    // TODO continue from here
+
+    file_pos start_of_name_proper_pos{m_cur_pos.get_end_of_file_pos()};
+
+    bool first_loop{true};
+
+    for (name_location last_state{name_location::opening_delimiter};
+         last_state != name_location::done; ++m_cur_pos, first_loop = false) {
+
+      switch (last_state) {
+      case name_location::opening_delimiter: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"expected section name"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char) == true) {
+            last_state = name_location::leading_whitespace;
+          } else {
+            if (first_loop == true) {
+              if (cur_char == m_k_section_name_opening_delimiter) {
+                ;
+              }
+            } else {
+              if (cur_char == m_k_section_name_closing_delimiter) {
+                last_state = name_location::closing_delimiter;
+
+                std::string what_arg{"empty section names are not permitted"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, m_cur_pos, what_arg);
+              } else {
+                last_state = name_location::name_proper;
+                start_of_name_proper_pos = m_cur_pos;
+
+                if (is_invalid_character_valid_provided(
+                        cur_char, m_k_valid_name_chars) == true) {
+                  std::string what_arg{"invalid character in section name"};
+                  throw syntax_error::generate_formatted_error(
+                      m_file_contents, m_cur_pos, what_arg);
+                } else {
+                  section_name.push_back(cur_char);
+                }
+              }
+            }
+          }
+        }
+      } break;
+
+      case name_location::leading_whitespace: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"expected section name"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char) == true) {
+            ;
+          } else {
+            if (cur_char == m_k_section_name_closing_delimiter) {
+              last_state = name_location::closing_delimiter;
+
+              std::string what_arg{"empty section names are not permitted"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } else {
+              last_state = name_location::name_proper;
+              start_of_name_proper_pos = m_cur_pos;
+
+              if (is_invalid_character_valid_provided(
+                      cur_char, m_k_valid_name_chars) == true) {
+                std::string what_arg{"invalid character in section name"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, m_cur_pos, what_arg);
+              } else {
+                section_name.push_back(cur_char);
+              }
+            }
+          }
+        }
+      } break;
+
+      case name_location::name_proper: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"unterminated section name"};
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char) == true) {
+            last_state = name_location::trailing_whitespace;
+          } else {
+            if (cur_char == m_k_section_name_closing_delimiter) {
+              last_state = name_location::closing_delimiter;
+            } else {
+              if (m_cur_pos.get_line() != start_of_name_proper_pos.get_line()) {
+                std::string what_arg{
+                    "section name must appear completely on one line"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, m_cur_pos, what_arg);
+              } else {
+                if (is_invalid_character_valid_provided(
+                        cur_char, m_k_valid_name_chars) == true) {
+                  std::string what_arg{"invalid character in section name"};
+                  throw syntax_error::generate_formatted_error(
+                      m_file_contents, m_cur_pos, what_arg);
+                } else {
+                  section_name.push_back(cur_char);
+                }
+              }
+            }
+          }
+        }
+      } break;
+
+      case name_location::trailing_whitespace: {
+        // TODO continue from here
+      } break;
+
+      case name_location::closing_delimiter: {
+      } break;
+
+      case name_location::done: {
+      } break;
+      }
+    }
   } else {
     section_name = "";
   }
@@ -202,10 +333,9 @@ void libconfigfile::parser::parse_directive() {
     std::string::size_type line_pos{m_cur_pos.get_char()};
 
     ++line_pos;
-    line_pos = directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
-    if (line_pos == std::string::npos) {
-      std::string what_arg{"expected directive name"};
-      throw syntax_error::generate_formatted_error(
+    line_pos = directive_line.find_first_not_of(m_k_whitespace_chars,
+line_pos); if (line_pos == std::string::npos) { std::string what_arg{"expected
+directive name"}; throw syntax_error::generate_formatted_error(
           m_file_contents, m_cur_pos.get_line(), line_pos, what_arg);
     } else {
       std::string::size_type start_of_name{line_pos};
@@ -411,10 +541,10 @@ void libconfigfile::parser::parse_include_directive(const std::string &args) {
     }
 
     if (end_pos == std::string::npos) {
-      std::string what_arg{"unterminated string in include directive argument"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_line(),
-          (m_file_contents.get_line(m_cur_pos).size() - 1), what_arg);
+      std::string what_arg{"unterminated string in include directive
+argument"}; throw syntax_error::generate_formatted_error( m_file_contents,
+m_cur_pos.get_line(), (m_file_contents.get_line(m_cur_pos).size() - 1),
+what_arg);
     }
 
     {
@@ -439,7 +569,8 @@ void libconfigfile::parser::parse_include_directive(const std::string &args) {
 
       std::remove_reference_t<decltype(m_file_contents.get_underlying())>::
           const_iterator include_pos_iter{
-              m_file_contents.get_underlying().begin() + m_cur_pos.get_line()};
+              m_file_contents.get_underlying().begin() +
+m_cur_pos.get_line()};
 
       m_file_contents.get_underlying().erase(include_pos_iter);
       m_file_contents.get_underlying().insert(
