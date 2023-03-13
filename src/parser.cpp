@@ -269,8 +269,8 @@ libconfigfile::parser::parse_section_new(bool is_root_section) {
       case name_location::name_proper: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"unterminated section name"};
-          throw syntax_error::generate_formatted_error(m_file_contents,
-                                                       m_cur_pos, what_arg);
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -301,10 +301,30 @@ libconfigfile::parser::parse_section_new(bool is_root_section) {
       } break;
 
       case name_location::trailing_whitespace: {
-        // TODO continue from here
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"unterminated section name"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char) == true) {
+            ;
+          } else {
+            if (cur_char == m_k_section_name_closing_delimiter) {
+              last_state = name_location::closing_delimiter;
+            } else {
+              std::string what_arg{
+                  "character after trailing whitespace in section name"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            }
+          }
+        }
       } break;
 
       case name_location::closing_delimiter: {
+        last_state = name_location::done;
       } break;
 
       case name_location::done: {
@@ -314,6 +334,8 @@ libconfigfile::parser::parse_section_new(bool is_root_section) {
   } else {
     section_name = "";
   }
+
+  // TODO continue from here, m_cur_pos is one past closing delimiter
 }
 
 /*
