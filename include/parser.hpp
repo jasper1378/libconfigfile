@@ -72,13 +72,11 @@ private:
   void parse_file(); // TODO
 
   std::tuple<node_ptr<section_node>, std::string>
-  parse_section(bool is_root_section = false); // XXX
-  std::tuple<node_ptr<section_node>, std::string>
-  parse_section_new(bool is_root_section = false); // TODO
+  parse_section(bool is_root_section = false); // TODO
 
-  void parse_directive_new();
+  void parse_directive();
   void parse_version_directive();
-  void parse_include_directive_new();
+  void parse_include_directive();
 
 private:
   static std::variant<std::string /*result*/,

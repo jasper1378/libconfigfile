@@ -83,14 +83,15 @@ void libconfigfile::parser::parse_file() {
     }
 
     else if (m_cur_pos.is_located_on_occurence_of(m_k_directive_leader)) {
-      parse_directive_new();
+      parse_directive();
     }
   }
   // TODO
 }
 
+/*
 std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
-libconfigfile::parser::parse_section(bool is_root_section /*= false*/) {
+libconfigfile::parser::parse_section(bool is_root_section = false) {
   // if is_root_section is true, m_cur_pos is located at file start, else
   // m_cur_pos is located on opening round bracket
 
@@ -164,9 +165,10 @@ libconfigfile::parser::parse_section(bool is_root_section /*= false*/) {
     section_name = "";
   }
 }
+*/
 
 std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
-libconfigfile::parser::parse_section_new(bool is_root_section) {
+libconfigfile::parser::parse_section(bool is_root_section) {
   // m_cur_pos = opening round bracket
   //  or beginning of file is is_root_section is true
 
@@ -175,6 +177,7 @@ libconfigfile::parser::parse_section_new(bool is_root_section) {
   std::string section_name{};
 
   if (is_root_section == false) {
+
     enum class name_location {
       opening_delimiter,
       leading_whitespace,
@@ -328,6 +331,7 @@ libconfigfile::parser::parse_section_new(bool is_root_section) {
       } break;
 
       case name_location::done: {
+        throw std::runtime_error{"impossible!"};
       } break;
       }
     }
@@ -335,7 +339,55 @@ libconfigfile::parser::parse_section_new(bool is_root_section) {
     section_name = "";
   }
 
-  // TODO continue from here, m_cur_pos is one past closing delimiter
+  // m_cur_pos is one past closing delimiter
+
+  if (is_root_section == false) {
+    enum class name_body_gap_location {
+      separating_whitespace,
+      opening_body_delimiter,
+      done,
+    };
+
+    for (name_body_gap_location last_state{
+             name_body_gap_location::separating_whitespace};
+         last_state != name_body_gap_location::done; ++m_cur_pos) {
+      switch (last_state) {
+
+      case name_body_gap_location::separating_whitespace: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"expected section body"};
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char) == true) {
+            ;
+          } else if (cur_char == m_k_section_body_opening_delimiter) {
+            last_state = name_body_gap_location::opening_body_delimiter;
+          } else {
+            std::string what_arg{"expected section body opening delimiter"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         m_cur_pos, what_arg);
+          }
+        }
+      } break;
+
+      case name_body_gap_location::opening_body_delimiter: {
+        last_state = name_body_gap_location::done;
+      } break;
+
+      case name_body_gap_location::done: {
+        throw std::runtime_error{"impossible!"};
+      } break;
+      }
+    }
+  } else {
+  }
+
+  // m_cur_pos is one past closing delimiter
+
+  // TODO continue from here
 }
 
 /*
@@ -404,7 +456,7 @@ directive name"}; throw syntax_error::generate_formatted_error(
 }
 */
 
-void libconfigfile::parser::parse_directive_new() {
+void libconfigfile::parser::parse_directive() {
   // m_cur_pos = directive leader
   // caller must check that directive is the only text on its line
 
@@ -503,7 +555,7 @@ void libconfigfile::parser::parse_directive_new() {
   if (name == m_k_version_directive_name) {
     directive_function = &parser::parse_version_directive;
   } else if (name == m_k_include_directive_name) {
-    directive_function = &parser::parse_include_directive_new;
+    directive_function = &parser::parse_include_directive;
   } else {
     std::string what_arg{"invalid directive"};
     throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
@@ -620,7 +672,7 @@ m_cur_pos.get_line()};
 }
 */
 
-void libconfigfile::parser::parse_include_directive_new() {
+void libconfigfile::parser::parse_include_directive() {
   // m_cur_pos = start of directive arguments
   // or eof if arguments don't exist
 
