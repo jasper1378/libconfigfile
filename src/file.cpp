@@ -52,7 +52,7 @@ libconfigfile::file::create_file_pos(const size_t start_pos_line,
   return file_pos{this, start_pos_line, start_pos_char};
 }
 
-const char &libconfigfile::file::get_char(const file_pos &pos) const {
+char libconfigfile::file::get_char(const file_pos &pos) const {
   if (pos.get_paired_file() != this) {
     throw std::runtime_error{"given file_pos is not paired with "
                              "this file"};
@@ -587,13 +587,7 @@ void libconfigfile::file_pos::goto_end_of_whitespace(
   }
 
   static const auto is_whitespace{[&whitespace_chars](char c) -> bool {
-    for (size_t i{0}; i < whitespace_chars.size(); ++i) {
-      if (c == whitespace_chars[i]) {
-        return true;
-      }
-    }
-
-    return false;
+    return ((whitespace_chars.find(c)) != (std::string::npos));
   }};
 
   if (is_whitespace(m_file->get_char(*this)) == false) {
@@ -632,13 +626,7 @@ void libconfigfile::file_pos::goto_start_of_whitespace(
   }
 
   static const auto is_whitespace{[&whitespace_chars](char c) -> bool {
-    for (size_t i{0}; i < whitespace_chars.size(); ++i) {
-      if (c == whitespace_chars[i]) {
-        return true;
-      }
-    }
-
-    return false;
+    return ((whitespace_chars.find(c)) != (std::string::npos));
   }};
 
   if (is_whitespace(m_file->get_char(*this)) == false) {

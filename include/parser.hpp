@@ -48,10 +48,14 @@ private:
   static constexpr int m_k_ascii_end{0x7F};
 
   static const std::string m_k_valid_name_chars;
+
   static constexpr char m_k_section_name_opening_delimiter{'('};
   static constexpr char m_k_section_name_closing_delimiter{')'};
   static constexpr char m_k_section_body_opening_delimiter{'{'};
   static constexpr char m_k_section_body_closing_delimiter{'}'};
+
+  static constexpr char m_k_key_value_assign{'='};
+  static constexpr char m_k_key_value_terminate{';'};
 
 public:
   parser();
@@ -74,16 +78,21 @@ private:
   std::tuple<node_ptr<section_node>, std::string>
   parse_section(bool is_root_section = false); // TODO
 
+  std::tuple<node_ptr<value_node>, std::string> parse_key_value(); // TODO
+  std::string parse_key_value_key();
+  node_ptr<value_node> parse_key_value_value(); // TODO
+
   void parse_directive();
   void parse_version_directive();
   void parse_include_directive();
+
+  void handle_comments();
 
 private:
   static std::variant<std::string /*result*/,
                       std::string::size_type /*invalid_escape_sequence_pos*/>
   replace_escape_sequences(const std::string &str);
 
-public:
   static std::variant<std::vector<std::vector<std::string>> /*result*/,
                       std::string::size_type /*unterminated_string_pos*/>
   extract_strings(const std::string &raw,

@@ -36,7 +36,7 @@ public:
   file_pos create_file_pos(const size_t start_pos_line,
                            const size_t start_pos_char);
 
-  const char &get_char(const file_pos &pos) const;
+  char get_char(const file_pos &pos) const;
   const std::string &get_line(const file_pos &pos) const;
   const std::vector<std::string> &get_array() const;
 

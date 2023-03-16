@@ -69,23 +69,7 @@ libconfigfile::parser &libconfigfile::parser::operator=(parser &&other) {
   return *this;
 }
 
-// TODO move stuff into parse_section()
 void libconfigfile::parser::parse_file() {
-  while (m_cur_pos.is_eof() == false) {
-    m_cur_pos.goto_end_of_whitespace(m_k_whitespace_chars);
-
-    if (m_cur_pos.is_located_on_occurence_of(m_k_comment_script)) {
-      m_cur_pos.goto_next_line();
-    } else if (m_cur_pos.is_located_on_occurence_of(m_k_comment_cpp)) {
-      m_cur_pos.goto_next_line();
-    } else if (m_cur_pos.is_located_on_occurence_of(m_k_comment_c_start)) {
-      m_cur_pos.goto_find_end(m_k_comment_c_end);
-    }
-
-    else if (m_cur_pos.is_located_on_occurence_of(m_k_directive_leader)) {
-      parse_directive();
-    }
-  }
   // TODO
 }
 
@@ -171,8 +155,6 @@ std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
 libconfigfile::parser::parse_section(bool is_root_section) {
   // m_cur_pos = opening round bracket
   //  or beginning of file is is_root_section is true
-
-  // TODO continue from here
 
   std::string section_name{};
 
@@ -342,6 +324,7 @@ libconfigfile::parser::parse_section(bool is_root_section) {
   // m_cur_pos is one past closing delimiter
 
   if (is_root_section == false) {
+
     enum class name_body_gap_location {
       separating_whitespace,
       opening_body_delimiter,
@@ -385,9 +368,200 @@ libconfigfile::parser::parse_section(bool is_root_section) {
   } else {
   }
 
-  // m_cur_pos is one past closing delimiter
+  // m_cur_pos is one past opening body delimiter
 
-  // TODO continue from here
+  node_ptr<section_node> section_body{make_node_ptr<section_node>()};
+
+  {
+    for (;; ++m_cur_pos) {
+      if (m_cur_pos.is_eof() == true) {
+        break;
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+        if (is_whitespace(cur_char)) {
+          ;
+        } else if (cur_char == m_k_section_body_closing_delimiter) {
+          ++m_cur_pos;
+          break;
+        } else if (cur_char == m_k_section_name_opening_delimiter) {
+          file_pos start_pos{m_cur_pos};
+
+          std::tuple<node_ptr<section_node>, std::string> new_section{
+              parse_section(false)};
+          node_ptr<section_node> new_section_body{
+              std::get<node_ptr<section_node>>(std::move(new_section))};
+          std::string new_section_name{
+              std::get<std::string>(std::move(new_section))};
+
+          if (section_body->contains(new_section_name) == true) {
+            std::string what_arg{"duplicate name in scope"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         start_pos, what_arg);
+          } else {
+            section_body->insert(
+                {new_section_name,
+                 node_ptr_cast<node>(std::move(new_section_body))});
+          }
+        } else {
+          file_pos start_pos{m_cur_pos};
+
+          // TODO parse key-value
+          // TODO continue from here
+        }
+      }
+    }
+  }
+
+  // m_cur_pos is one past closing body delimiter
+}
+
+std::tuple<libconfigfile::node_ptr<libconfigfile::value_node>, std::string>
+libconfigfile::parser::parse_key_value() {
+  // m_cur_pos = first char of key name or leading whitespace before key name
+
+  std::string key_name{parse_key_value_key()};
+}
+
+std::string libconfigfile::parser::parse_key_value_key() {
+  // m_cur_pos = first char of key name or leading whitespace before key name
+
+  std::string key_name{};
+
+  enum class key_name_location {
+    leading_whitespace,
+    name_proper,
+    trailing_whitespace,
+    equal_sign /*i.e. done*/,
+  };
+
+  for (key_name_location last_state{key_name_location::leading_whitespace};
+       last_state != key_name_location::equal_sign; ++m_cur_pos) {
+    switch (last_state) {
+
+    case key_name_location::leading_whitespace: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{"expected key name"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+        if (is_whitespace(cur_char)) {
+          ;
+        } else {
+          last_state = key_name_location::name_proper;
+
+          if (is_invalid_character_valid_provided(
+                  cur_char, m_k_valid_name_chars) == true) {
+            switch (cur_char) {
+
+            case m_k_key_value_assign: {
+              std::string what_arg{"missing key-value name"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } break;
+
+            case m_k_key_value_terminate: {
+              std::string what_arg{"empty key-value"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } break;
+
+            default: {
+              std::string what_arg{"invalid character in key name"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } break;
+            }
+
+          } else {
+            key_name.push_back(cur_char);
+          }
+        }
+      }
+    } break;
+
+    case key_name_location::name_proper: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{"missing value part of key-value"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+        if (is_whitespace(cur_char) == true) {
+          last_state = key_name_location::trailing_whitespace;
+        } else {
+          if (cur_char == m_k_key_value_assign) {
+            last_state = key_name_location::equal_sign;
+          } else if (is_invalid_character_valid_provided(
+                         cur_char, m_k_valid_name_chars) == true) {
+            switch (cur_char) {
+
+            case m_k_key_value_terminate: {
+              std::string what_arg{"missing value part of key-value"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } break;
+
+            default: {
+              std::string what_arg{"invalid character in key name"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } break;
+            }
+          } else {
+            key_name.push_back(cur_char);
+          }
+        }
+      }
+    } break;
+
+    case key_name_location::trailing_whitespace: {
+      if (m_cur_pos.is_eof() == true) {
+        std::string what_arg{"missing value part of key-value"};
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
+      } else {
+        char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+        if (is_whitespace(cur_char) == true) {
+          ;
+        } else {
+          if (cur_char == m_k_key_value_assign) {
+            last_state = key_name_location::equal_sign;
+          } else {
+            if (cur_char == m_k_key_value_terminate) {
+              std::string what_arg{"missing value part of key-value"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } else {
+              std::string what_arg{"expected value assigment after key name"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            }
+          }
+        }
+      }
+    } break;
+
+    case key_name_location::equal_sign: {
+      throw std::runtime_error{"impossible!"};
+    } break;
+    }
+  }
+
+  // m_cur_pos = equal sign
+
+  return key_name;
+}
+
+libconfigfile::node_ptr<libconfigfile::value_node>
+libconfigfile::parser::parse_key_value_value() {
+  // m_cur_pos = equal sign
+
+  // TODO
 }
 
 /*
@@ -871,6 +1045,40 @@ void libconfigfile::parser::parse_include_directive() {
       throw syntax_error::generate_formatted_error(
           m_file_contents, invalid_escape_sequence_pos, what_arg);
     } break;
+    }
+  }
+}
+
+void libconfigfile::parser::handle_comments() {
+  if (m_cur_pos.is_eof() == true) {
+    return;
+  } else {
+    char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+    if (cur_char == m_k_comment_script) {
+      m_cur_pos.goto_next_line();
+      return;
+    } else if ((cur_char == m_k_comment_cpp.front()) ||
+               (cur_char == m_k_comment_c_start.front())) {
+      file_pos next_pos{m_cur_pos + 1};
+
+      if (next_pos.is_eof() == true) {
+        return;
+      } else {
+        char next_char{m_file_contents.get_char(next_pos)};
+
+        if (next_char == m_k_comment_cpp.back()) {
+          m_cur_pos.goto_next_line();
+          return;
+        } else if (next_char == m_k_comment_c_start.back()) {
+          m_cur_pos.goto_find_end(m_k_comment_c_end);
+          return;
+        } else {
+          return;
+        }
+      }
+    } else {
+      return;
     }
   }
 }
