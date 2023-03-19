@@ -116,7 +116,7 @@ value3 = "The quick" /* comment */ " brown fox " // another comment
 - For large numbers, you may use underscores between digits to enhance readability. Each underscore must be surrounded by at least one digit on each side.
 - Integers values must be within the range of a signed 64-bit integer ((-2^(63)) to (2^(63)-1)).
 - `-0` and `+0` are valid and identical to an unprefixed zero.
-- Non-negative integer values may also be expressed in hexadecimal (`0x` prefix), octal (`0o` prefix), or binary (`0b` prefix) formats. In these formats, a leading plus sign is not allowed. Hexadecimal values are case-insensitive.
+- Integer values may also be expressed in hexadecimal (`x` or `X` prefix), octal (`o` or `O` prefix), or binary (`b` or `B` prefix) formats. Hexadecimal values are case-insensitive.
 ```
 int1 = +99;
 int2 = 42;
@@ -127,15 +127,15 @@ int6 = 5_349_221;
 int7 = _100_000; // invalid
 int8 = 10_223_372_036_854_775_807; // too large
 
-hex1 = 0xBADC0DE;
-hex2 = 0xbadc0de;
-hex3 = 0xbad_c0de;
+hex1 = xBADC0DE;
+hex2 = xbadc0de;
+hex3 = xbad_c0de;
 
-oct1 = 0o1234567;
-oct2 = 0o755;
+oct1 = o1234567;
+oct2 = o755;
 
-bin1 = 0b11010110;
-bin2 = +0b1010; // invalid
+bin1 = b11010110;
+bin2 = -b11010110;
 ```
 
 ## Floats

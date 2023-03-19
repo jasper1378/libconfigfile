@@ -11,6 +11,7 @@
 #include "syntax_error.hpp"
 #include "value_node.hpp"
 
+#include <cassert>
 #include <cstddef>
 #include <exception>
 #include <stdexcept>
@@ -27,11 +28,12 @@ const std::unordered_map<char, char>
         {'a', 0x07}, {'b', 0x08}, {'f', 0x0C},  {'n', 0x0A},  {'r', 0x0D},
         {'t', 0x09}, {'v', 0x0B}, {'\\', 0x5C}, {'\'', 0x27}, {'"', 0x22}};
 
-const std::string libconfigfile::parser::m_k_hex_digits{
-    "0123456789abcdefABCDEF"};
-
 const std::string libconfigfile::parser::m_k_valid_name_chars{
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"};
+
+const libconfigfile::parser::numeral_system
+    libconfigfile::parser::m_k_hex_num_sys{16, 'x', 'X',
+                                           "0123456789abcdefABCDEF"};
 
 libconfigfile::parser::parser()
     : m_file_contents{}, m_cur_pos{m_file_contents.create_file_pos()},
@@ -188,10 +190,9 @@ libconfigfile::parser::parse_section(bool is_root_section) {
           if (is_whitespace(cur_char) == true) {
             last_state = name_location::leading_whitespace;
           } else {
-            if (first_loop == true) {
-              if (cur_char == m_k_section_name_opening_delimiter) {
-                ;
-              }
+            if ((first_loop == true) &&
+                (cur_char == m_k_section_name_opening_delimiter)) {
+              ;
             } else {
               if (cur_char == m_k_section_name_closing_delimiter) {
                 last_state = name_location::closing_delimiter;
@@ -421,6 +422,7 @@ libconfigfile::parser::parse_key_value() {
   // m_cur_pos = first char of key name or leading whitespace before key name
 
   std::string key_name{parse_key_value_key()};
+  // TODO
 }
 
 std::string libconfigfile::parser::parse_key_value_key() {
@@ -561,6 +563,298 @@ libconfigfile::node_ptr<libconfigfile::value_node>
 libconfigfile::parser::parse_key_value_value() {
   // m_cur_pos = equal sign
 
+  {
+    enum class value_location {
+      equal_sign,
+      leading_whitespace,
+      value_proper,
+      semicolon,
+      done,
+    };
+
+    file_pos value_start_pos{m_cur_pos.get_end_of_file_pos()};
+    std::string value_contents{};
+
+    bool first_loop{true};
+    bool in_string{false};
+    for (value_location last_state{value_location::equal_sign};
+         last_state != value_location::done; ++m_cur_pos, first_loop = false) {
+      switch (last_state) {
+
+      case value_location::equal_sign: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"missing value part of key-value"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if ((first_loop == true) && (cur_char == m_k_key_value_assign)) {
+            ;
+          } else {
+            if (is_whitespace(cur_char)) {
+              last_state = value_location::leading_whitespace;
+            } else if (cur_char == m_k_key_value_terminate) {
+              last_state = value_location::semicolon;
+              std::string what_arg{"empty value part of key-value"};
+              throw syntax_error::generate_formatted_error(m_file_contents,
+                                                           m_cur_pos, what_arg);
+            } else {
+              last_state = value_location::value_proper;
+              value_start_pos = m_cur_pos;
+              value_contents.push_back(cur_char);
+
+              if (cur_char == m_k_string_delimiter) {
+                in_string = !in_string;
+              }
+            }
+          }
+        }
+      } break;
+
+      case value_location::leading_whitespace: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"missing value part of key-value"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if (is_whitespace(cur_char)) {
+            ;
+          } else if (cur_char == m_k_key_value_terminate) {
+            last_state = value_location::semicolon;
+            std::string what_arg{"empty value part of key-value"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         m_cur_pos, what_arg);
+          } else {
+            last_state = value_location::value_proper;
+            value_start_pos = m_cur_pos;
+            value_contents.push_back(cur_char);
+
+            if (cur_char == m_k_string_delimiter) {
+              in_string = !in_string;
+            }
+          }
+        }
+      } break;
+
+      case value_location::value_proper: {
+        if (m_cur_pos.is_eof() == true) {
+          std::string what_arg{"unterminated key-value"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        } else {
+          char cur_char{m_file_contents.get_char(m_cur_pos)};
+
+          if ((in_string == false) && (cur_char == m_k_key_value_terminate)) {
+            last_state = value_location::semicolon;
+          } else {
+            value_contents.push_back(cur_char);
+
+            if (cur_char == m_k_string_delimiter) {
+              in_string = !in_string;
+            }
+          }
+        }
+      } break;
+
+      case value_location::semicolon: {
+        last_state = value_location::done;
+      } break;
+
+      case value_location::done: {
+        throw std::runtime_error{"impossible!"};
+      } break;
+      }
+    }
+  }
+
+  // TODO continue from here (identify value type; trim trailing whitespace;
+  // parse value string)
+}
+
+libconfigfile::node_ptr<
+    libconfigfile::end_value_node<libconfigfile::integer_end_value_node_t>>
+libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
+  // m_cur_pos = first char of raw value
+
+  // TODO std::string::starts_with() could likely be optimized
+
+  if (raw_value.empty()) {
+    std::string what_arg{"empty value"};
+    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                 what_arg);
+  } else {
+    std::string actual_digits{};
+    actual_digits.reserve(raw_value.size());
+    bool is_negative{false};
+    const numeral_system *num_sys{nullptr};
+
+    bool last_char_was_digit{false};
+    bool any_digits_so_far{false};
+
+    /* m_k_hex_num_sys can't be constexpr because the digits string is too long,
+     * this means that we can't use the prefix members as case labels in the
+     * switch statement below, resulting in this nasty workaround */
+    static constexpr char constexpr_workaround_m_k_hex_num_sys_prefix{'x'};
+    static constexpr char constexpr_workaround_m_k_hex_num_sys_prefix_alt{'X'};
+    assert(constexpr_workaround_m_k_hex_num_sys_prefix ==
+           m_k_hex_num_sys.prefix);
+    assert((constexpr_workaround_m_k_hex_num_sys_prefix_alt ==
+            m_k_hex_num_sys.prefix_alt));
+
+    for (std::string::size_type raw_value_idx{0};
+         raw_value_idx < raw_value.size(); ++raw_value_idx) {
+      char cur_char{raw_value[raw_value_idx]};
+
+      switch (cur_char) {
+
+      case m_k_int_digit_separator: {
+        if ((last_char_was_digit == false) ||
+            (raw_value_idx == (raw_value.size() - 1))) {
+          std::string what_arg{"integer digit separator must be durrounded by "
+                               "at least one digit on each side"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        } else {
+          last_char_was_digit = false;
+        }
+      } break;
+
+      case m_k_int_positive_sign: {
+        if (raw_value_idx == 0) {
+          is_negative = false;
+          last_char_was_digit = false;
+        } else {
+          std::string what_arg{"positive sign must appear at start of integer"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        }
+      } break;
+
+      case m_k_int_negative_sign: {
+        if (raw_value_idx == 0) {
+          is_negative = true;
+          last_char_was_digit = false;
+        } else {
+          std::string what_arg{"negative sign must appear at start of integer"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        }
+      } break;
+
+      case m_k_bin_num_sys.prefix:
+      case m_k_bin_num_sys.prefix_alt: {
+        last_char_was_digit = false;
+
+        if (num_sys == nullptr) {
+          if (any_digits_so_far == false) {
+            num_sys = &m_k_bin_num_sys;
+          } else {
+            std::string what_arg{
+                "numeral system prefix must appear before integer digits"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } else {
+          std::string what_arg{"only one numeral system prefix may be used"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        }
+      } break;
+
+      case m_k_oct_num_sys.prefix:
+      case m_k_oct_num_sys.prefix_alt: {
+        last_char_was_digit = false;
+
+        if (num_sys == nullptr) {
+          if (any_digits_so_far == false) {
+            num_sys = &m_k_oct_num_sys;
+          } else {
+            std::string what_arg{
+                "numeral system prefix must appear before integer digits"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } else {
+          std::string what_arg{"only one numeral system prefix may be used"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        }
+      } break;
+
+      case constexpr_workaround_m_k_hex_num_sys_prefix:
+      case constexpr_workaround_m_k_hex_num_sys_prefix_alt: {
+        last_char_was_digit = false;
+
+        if (num_sys == nullptr) {
+          if (any_digits_so_far == false) {
+            num_sys = &m_k_hex_num_sys;
+          } else {
+            std::string what_arg{
+                "numeral system prefix must appear before integer digits"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } else {
+          std::string what_arg{"only one numeral system prefix may be used"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        }
+      } break;
+
+      default: {
+        num_sys = ((num_sys == nullptr) ? (&m_k_dec_num_sys) : (num_sys));
+
+        if (is_digit(cur_char, *num_sys)) {
+          last_char_was_digit = true;
+          any_digits_so_far = true;
+          actual_digits.push_back(cur_char);
+        } else {
+          std::string what_arg{"invalid character in integer"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        }
+      } break;
+      }
+    }
+
+    node_ptr<end_value_node<integer_end_value_node_t>> ret_val{nullptr};
+
+    static_assert((sizeof(long long) >= sizeof(integer_end_value_node_t)),
+                  "no string-to-int conversion function (std::stoi(), "
+                  "std::stol(), std::stoll()) with return type large "
+                  "enough for integer_end_value_node_t");
+
+    if constexpr (sizeof(int) >= sizeof(integer_end_value_node_t)) {
+      ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+          std::stoi(actual_digits, nullptr, num_sys->base));
+    } else if constexpr (sizeof(long) >= sizeof(integer_end_value_node_t)) {
+      ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+          std::stol(actual_digits, nullptr, num_sys->base));
+    } else {
+      ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+          std::stoll(actual_digits, nullptr, num_sys->base));
+    }
+
+    if (is_negative == true) {
+      ret_val->set(ret_val->get() * -1);
+    }
+
+    return ret_val;
+  }
+}
+
+libconfigfile::node_ptr<
+    libconfigfile::end_value_node<libconfigfile::float_end_value_node_t>>
+libconfigfile::parser::parse_float_value(const std::string &raw_value) {
+  // TODO
+}
+
+libconfigfile::node_ptr<
+    libconfigfile::end_value_node<libconfigfile::string_end_value_node_t>>
+libconfigfile::parser::parse_string_value(const std::string &raw_value) {
   // TODO
 }
 
@@ -1087,7 +1381,7 @@ std::variant<std::string /*result*/,
              std::string::size_type /*invalid_escape_sequence_pos*/>
 libconfigfile::parser::replace_escape_sequences(const std::string &str) {
   static const auto is_hex_digit{[](const char ch) {
-    return ((m_k_hex_digits.find(ch)) != (std::string::npos));
+    return ((m_k_hex_num_sys.digits.find(ch)) != (std::string::npos));
   }};
 
   std::string result{};
@@ -1303,4 +1597,9 @@ libconfigfile::parser::contains_invalid_character_invalid_provided(
     }
   }
   return {false, std::string::npos};
+}
+
+bool libconfigfile::parser::is_digit(
+    char ch, const numeral_system &num_sys /*= m_k_dec_num_sys*/) {
+  return (num_sys.digits.find(ch) != std::string::npos);
 }

@@ -16,6 +16,8 @@
 #include <variant>
 #include <vector>
 
+#include <string_view>
+
 namespace libconfigfile {
 class parser {
 private:
@@ -43,7 +45,6 @@ private:
   static constexpr char m_k_escape_leader{'\\'};
   static const std::unordered_map<char, char> m_k_basic_escape_chars;
   static constexpr char m_k_hex_escape_char{'x'};
-  static const std::string m_k_hex_digits;
   static constexpr int m_k_ascii_start{0x00};
   static constexpr int m_k_ascii_end{0x7F};
 
@@ -56,6 +57,22 @@ private:
 
   static constexpr char m_k_key_value_assign{'='};
   static constexpr char m_k_key_value_terminate{';'};
+
+  static constexpr char m_k_int_digit_separator{'_'};
+  static constexpr char m_k_int_positive_sign{'+'};
+  static constexpr char m_k_int_negative_sign{'-'};
+
+  struct numeral_system {
+    int base;
+    char prefix;
+    char prefix_alt;
+    std::string digits;
+  };
+
+  static constexpr numeral_system m_k_dec_num_sys{10, '\0', '\0', "0123456789"};
+  static constexpr numeral_system m_k_bin_num_sys{2, 'b', 'B', "01"};
+  static constexpr numeral_system m_k_oct_num_sys{8, 'o', 'O', "01234567"};
+  static const numeral_system m_k_hex_num_sys;
 
 public:
   parser();
@@ -80,7 +97,14 @@ private:
 
   std::tuple<node_ptr<value_node>, std::string> parse_key_value(); // TODO
   std::string parse_key_value_key();
-  node_ptr<value_node> parse_key_value_value(); // TODO
+  node_ptr<value_node> parse_key_value_value();   // TODO
+  node_ptr<array_value_node> parse_array_value(); // TODO
+  node_ptr<end_value_node<integer_end_value_node_t>>
+  parse_integer_value(const std::string &raw_value); // TODO
+  node_ptr<end_value_node<float_end_value_node_t>>
+  parse_float_value(const std::string &raw_value); // TODO
+  node_ptr<end_value_node<string_end_value_node_t>>
+  parse_string_value(const std::string &raw_value); // TODO
 
   void parse_directive();
   void parse_version_directive();
@@ -131,6 +155,9 @@ private:
   static std::tuple<bool, std::string::size_type>
   contains_invalid_character_invalid_provided(const std::string &str,
                                               const std::string &invalid_chars);
+
+  static bool is_digit(char ch,
+                       const numeral_system &num_sys = m_k_dec_num_sys);
 };
 } // namespace libconfigfile
 
