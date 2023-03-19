@@ -12,6 +12,7 @@
 #include "value_node.hpp"
 
 #include <cassert>
+#include <cctype>
 #include <cstddef>
 #include <exception>
 #include <stdexcept>
@@ -679,8 +680,6 @@ libconfigfile::node_ptr<
 libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
   // m_cur_pos = first char of raw value
 
-  // TODO std::string::starts_with() could likely be optimized
-
   if (raw_value.empty()) {
     std::string what_arg{"empty value"};
     throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
@@ -694,6 +693,9 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
     bool last_char_was_digit{false};
     bool any_digits_so_far{false};
 
+    bool last_char_was_leading_zero{false};
+    size_t num_of_leading_zeroes{0};
+
     /* m_k_hex_num_sys can't be constexpr because the digits string is too long,
      * this means that we can't use the prefix members as case labels in the
      * switch statement below, resulting in this nasty workaround */
@@ -704,13 +706,16 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
     assert((constexpr_workaround_m_k_hex_num_sys_prefix_alt ==
             m_k_hex_num_sys.prefix_alt));
 
+    assert(m_k_num_sys_prefix_leader == '0'); /* parsing logic breaks down if
+           the numeral system prefix leader is not zero*/
+
     for (std::string::size_type raw_value_idx{0};
          raw_value_idx < raw_value.size(); ++raw_value_idx) {
       char cur_char{raw_value[raw_value_idx]};
 
       switch (cur_char) {
 
-      case m_k_int_digit_separator: {
+      case m_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
             (raw_value_idx == (raw_value.size() - 1))) {
           std::string what_arg{"integer digit separator must be durrounded by "
@@ -719,13 +724,15 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
               m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
         } else {
           last_char_was_digit = false;
+          last_char_was_leading_zero = false;
         }
       } break;
 
-      case m_k_int_positive_sign: {
+      case m_k_num_positive_sign: {
         if (raw_value_idx == 0) {
           is_negative = false;
           last_char_was_digit = false;
+          last_char_was_leading_zero = false;
         } else {
           std::string what_arg{"positive sign must appear at start of integer"};
           throw syntax_error::generate_formatted_error(
@@ -733,10 +740,11 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
         }
       } break;
 
-      case m_k_int_negative_sign: {
+      case m_k_num_negative_sign: {
         if (raw_value_idx == 0) {
           is_negative = true;
           last_char_was_digit = false;
+          last_char_was_leading_zero = false;
         } else {
           std::string what_arg{"negative sign must appear at start of integer"};
           throw syntax_error::generate_formatted_error(
@@ -744,13 +752,40 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
         }
       } break;
 
+      case m_k_num_sys_prefix_leader: {
+        if (any_digits_so_far == false) {
+          last_char_was_digit = false;
+          last_char_was_leading_zero = true;
+          ++num_of_leading_zeroes;
+        } else {
+          last_char_was_digit = true;
+          last_char_was_leading_zero = false;
+          any_digits_so_far = true;
+          actual_digits.push_back(cur_char);
+        }
+      } break;
+
       case m_k_bin_num_sys.prefix:
       case m_k_bin_num_sys.prefix_alt: {
         last_char_was_digit = false;
+        last_char_was_leading_zero = false;
 
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
-            num_sys = &m_k_bin_num_sys;
+            if (last_char_was_leading_zero == true) {
+              if (num_of_leading_zeroes == 1) {
+                num_sys = &m_k_bin_num_sys;
+              } else {
+                std::string what_arg{
+                    "numeral system prefix must appear before integer digits"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+              }
+            } else {
+              std::string what_arg{"invalid character in integer"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
           } else {
             std::string what_arg{
                 "numeral system prefix must appear before integer digits"};
@@ -767,10 +802,24 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
       case m_k_oct_num_sys.prefix:
       case m_k_oct_num_sys.prefix_alt: {
         last_char_was_digit = false;
+        last_char_was_leading_zero = false;
 
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
-            num_sys = &m_k_oct_num_sys;
+            if (last_char_was_leading_zero == true) {
+              if (num_of_leading_zeroes == 1) {
+                num_sys = &m_k_oct_num_sys;
+              } else {
+                std::string what_arg{
+                    "numeral system prefix must appear before integer digits"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+              }
+            } else {
+              std::string what_arg{"invalid character in integer"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
           } else {
             std::string what_arg{
                 "numeral system prefix must appear before integer digits"};
@@ -787,10 +836,24 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
       case constexpr_workaround_m_k_hex_num_sys_prefix:
       case constexpr_workaround_m_k_hex_num_sys_prefix_alt: {
         last_char_was_digit = false;
+        last_char_was_leading_zero = false;
 
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
-            num_sys = &m_k_hex_num_sys;
+            if (last_char_was_leading_zero == true) {
+              if (num_of_leading_zeroes == 1) {
+                num_sys = &m_k_hex_num_sys;
+              } else {
+                std::string what_arg{
+                    "numeral system prefix must appear before integer digits"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+              }
+            } else {
+              std::string what_arg{"invalid character in integer"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
           } else {
             std::string what_arg{
                 "numeral system prefix must appear before integer digits"};
@@ -810,8 +873,11 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
         if (is_digit(cur_char, *num_sys)) {
           last_char_was_digit = true;
           any_digits_so_far = true;
+          last_char_was_leading_zero = false;
           actual_digits.push_back(cur_char);
         } else {
+          last_char_was_digit = false;
+          last_char_was_leading_zero = false;
           std::string what_arg{"invalid character in integer"};
           throw syntax_error::generate_formatted_error(
               m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
@@ -839,7 +905,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
     }
 
     if (is_negative == true) {
-      ret_val->set(ret_val->get() * -1);
+      ret_val->set(-(ret_val->get()));
     }
 
     return ret_val;
@@ -849,7 +915,35 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
 libconfigfile::node_ptr<
     libconfigfile::end_value_node<libconfigfile::float_end_value_node_t>>
 libconfigfile::parser::parse_float_value(const std::string &raw_value) {
-  // TODO
+  // m_cur_pos = first char of raw value
+
+  if (raw_value.empty()) {
+    std::string what_arg{"empty value"};
+    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                 what_arg);
+  } else {
+    std::string sanitized_string{};
+    sanitized_string.reserve(raw_value.size());
+
+    enum class char_type {
+      start,
+      digit,
+      positive,
+      negative,
+      decimal,
+      exponent,
+      separator,
+    };
+
+    char_type last_char{char_type::start};
+
+    for (std::string::size_type raw_value_idx; raw_value_idx < raw_value.size();
+         ++raw_value_idx) {
+      char cur_char{raw_value[raw_value_idx]};
+      switch (cur_char) { // TODO continue from here
+      }
+    }
+  }
 }
 
 libconfigfile::node_ptr<
@@ -1602,4 +1696,18 @@ libconfigfile::parser::contains_invalid_character_invalid_provided(
 bool libconfigfile::parser::is_digit(
     char ch, const numeral_system &num_sys /*= m_k_dec_num_sys*/) {
   return (num_sys.digits.find(ch) != std::string::npos);
+}
+
+bool libconfigfile::parser::case_insensitive_string_compare(
+    const std::string &str1, const std::string &str2) {
+  if (str1.size() == str2.size()) {
+    for (std::string::size_type i{0}; i < str1.size(); ++i) {
+      if (std::tolower(str1[i]) != std::tolower(str1[i])) {
+        return false;
+      }
+    }
+  } else {
+    return false;
+  }
+  return true;
 }
