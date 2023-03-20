@@ -197,6 +197,10 @@ libconfigfile::section_node::find(const key_type &key) const {
   return m_contents.find(key);
 }
 
+bool libconfigfile::section_node::contains(const key_type &key) const {
+  return m_contents.contains(key);
+}
+
 std::pair<libconfigfile::section_node::iterator,
           libconfigfile::section_node::iterator>
 libconfigfile::section_node::equal_range(const key_type &key) {
