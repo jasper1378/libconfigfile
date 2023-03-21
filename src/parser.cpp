@@ -964,8 +964,8 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value) {
 
     const std::string::size_type last_raw_value_idx{raw_value.size() - 1};
 
-    for (std::string::size_type raw_value_idx; raw_value_idx < raw_value.size();
-         ++raw_value_idx) {
+    for (std::string::size_type raw_value_idx{0};
+         raw_value_idx < raw_value.size(); ++raw_value_idx) {
       char cur_char{raw_value[raw_value_idx]};
 
       switch (cur_location) {
@@ -974,18 +974,14 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value) {
         switch (cur_char) {
 
         case m_k_num_positive_sign: {
-          switch (last_char) {
-          case char_type::start: {
+          if (last_char == char_type::start) {
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
-          } break;
-          default: {
+          } else {
             std::string what_arg{"positive sign may only appear at start of "
                                  "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
                 m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
-
-          } break;
           }
         } break;
 
@@ -1061,17 +1057,106 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value) {
 
         case m_k_float_exponent_sign_lower:
         case m_k_float_exponent_sign_upper: {
-          // TODO continue from here
+          if (last_char == char_type::digit) {
+            if (raw_value_idx != last_raw_value_idx) {
+              char next_char{raw_value[raw_value_idx + 1]};
+              if ((is_digit(next_char, m_k_dec_num_sys) == true) ||
+                  (next_char == m_k_num_positive_sign) ||
+                  (m_k_num_negative_sign)) {
+                last_char = char_type::exponent;
+                cur_location = num_location::exponent;
+                sanitized_string.push_back(cur_char);
+              } else {
+                std::string what_arg{
+                    "float exponent sign must be surrounded by at "
+                    "least on digit on each side"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+              }
+            } else {
+              std::string what_arg{
+                  "float exponent sign must be surrounded by at "
+                  "least on digit on each side"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
+          } else {
+            std::string what_arg{"float exponent sign must be surrounded by at "
+                                 "least on digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
+
+        default: {
+          if (is_digit(cur_char, m_k_dec_num_sys) == true) {
+            last_char = char_type::digit;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"invalid character in float"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
         } break;
         }
-        break;
+      } break;
 
       case num_location::fractional: {
+        switch (cur_char) {
+
+        case m_k_num_positive_sign: {
+          std::string what_arg{"positive sign may only appear at start of "
+                               "integer part or exponent part of float"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        } break;
+
+        case m_k_num_negative_sign: {
+          std::string what_arg{"negative sign may only appear at start of "
+                               "integer part or exponent part of float"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        } break;
+
+        case m_k_num_digit_separator: {
+          if (last_char == char_type::digit) {
+            if (raw_value_idx != last_raw_value_idx) {
+              char next_char{raw_value[raw_value_idx + 1]};
+              if (is_digit(next_char, m_k_dec_num_sys) == true) {
+                last_char = char_type::separator;
+              } else {
+                std::string what_arg{
+                    "float digit separator must be surrounded by "
+                    "at least one digit on each side"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+              }
+            } else {
+              std::string what_arg{
+                  "float digit separator must be surrounded by "
+                  "at least one digit on each side"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
+          } else {
+            std::string what_arg{"float digit separator must be surrounded by "
+                                 "at least one digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
+
+        case m_k_float_decimal_point: {
+          std::string what_arg{"floats can only contain one decimal point"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        } break;
+          // TODO continue from here
+        }
       } break;
 
       case num_location::exponent: {
       } break;
-      }
       }
     }
   }
