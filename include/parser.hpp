@@ -175,58 +175,6 @@ private:
 
   static bool case_insensitive_string_compare(const std::string &str1,
                                               const std::string &str2);
-
-public:
-  static void test() {
-
-    parser p{"/home/jasper1378/Downloads/dummy_file.txt"};
-
-    std::string s1 = "+99";
-    int i1 = +99;
-    assert(i1 == p.parse_integer_value(s1)->get());
-    std::string s2 = "42";
-    int i2 = 42;
-    assert(i2 == p.parse_integer_value(s2)->get());
-    std::string s3 = "0";
-    int i3 = 0;
-    assert(i3 == p.parse_integer_value(s3)->get());
-    std::string s4 = "-17";
-    int i4 = -17;
-    assert(i4 == p.parse_integer_value(s4)->get());
-    std::string s5 = "1_000";
-    int i5 = 1'000;
-    assert(i5 == p.parse_integer_value(s5)->get());
-    std::string s6 = "5_349_221";
-    int i6 = 5'349'221;
-    assert(i6 == p.parse_integer_value(s6)->get());
-    std::string s7 = "_100_000";
-    // int i7 = '100'000;
-    // assert(i7 == p.parse_integer_value(s7)->get());
-    std::string s8 = "10_223_372_036_854_775_807";
-    // int i8 = 10_223_372_036_854_775_807;
-    // assert(i8 == p.parse_integer_value(s8)->get());
-    std::string s9 = "0xBADC0DE";
-    int i9 = 0xBADC0DE;
-    assert(i9 == p.parse_integer_value(s9)->get());
-    std::string s10 = "0xbadc0de";
-    int i10 = 0xbadc0de;
-    assert(i10 == p.parse_integer_value(s10)->get());
-    std::string s11 = "0xbad_c0de";
-    int i11 = 0xbad'c0de;
-    assert(i11 == p.parse_integer_value(s11)->get());
-    std::string s12 = "0o1234567";
-    int i12 = 01234567;
-    assert(i12 == p.parse_integer_value(s12)->get());
-    std::string s13 = "0o755";
-    int i13 = 0755;
-    assert(i13 == p.parse_integer_value(s13)->get());
-    std::string s14 = "0b11010110";
-    int i14 = 0b11010110;
-    assert(i14 == p.parse_integer_value(s14)->get());
-    std::string s15 = "-0b11010110";
-    int i15 = -0b11010110;
-    assert(i15 == p.parse_integer_value(s15)->get());
-  }
 };
 } // namespace libconfigfile
 #endif

@@ -24,6 +24,8 @@
 #include <variant>
 #include <vector>
 
+#include <iostream> //XXX
+
 const std::unordered_map<char, char>
     libconfigfile::parser::m_k_basic_escape_chars{
         {'a', 0x07}, {'b', 0x08}, {'f', 0x0C},  {'n', 0x0A},  {'r', 0x0D},
@@ -713,6 +715,26 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
          raw_value_idx < raw_value.size(); ++raw_value_idx) {
       char cur_char{raw_value[raw_value_idx]};
 
+      static const auto default_char_behaviour{
+          [&num_sys, &cur_char, &last_char_was_digit, &any_digits_so_far,
+           &last_char_was_leading_zero, &actual_digits, &raw_value_idx,
+           this]() {
+            num_sys = ((num_sys == nullptr) ? (&m_k_dec_num_sys) : (num_sys));
+
+            if (is_digit(cur_char, *num_sys)) {
+              last_char_was_digit = true;
+              any_digits_so_far = true;
+              last_char_was_leading_zero = false;
+              actual_digits.push_back(cur_char);
+            } else {
+              last_char_was_digit = false;
+              last_char_was_leading_zero = false;
+              std::string what_arg{"invalid character in integer"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
+          }};
+
       switch (cur_char) {
 
       case m_k_num_digit_separator: {
@@ -767,13 +789,13 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
 
       case m_k_bin_num_sys.prefix:
       case m_k_bin_num_sys.prefix_alt: {
-        last_char_was_digit = false;
-        last_char_was_leading_zero = false;
-
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
               if (num_of_leading_zeroes == 1) {
+                last_char_was_digit = false;
+                last_char_was_leading_zero = false;
+
                 num_sys = &m_k_bin_num_sys;
               } else {
                 std::string what_arg{
@@ -793,21 +815,19 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
                 m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
           }
         } else {
-          std::string what_arg{"only one numeral system prefix may be used"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          default_char_behaviour();
         }
       } break;
 
       case m_k_oct_num_sys.prefix:
       case m_k_oct_num_sys.prefix_alt: {
-        last_char_was_digit = false;
-        last_char_was_leading_zero = false;
-
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
               if (num_of_leading_zeroes == 1) {
+                last_char_was_digit = false;
+                last_char_was_leading_zero = false;
+
                 num_sys = &m_k_oct_num_sys;
               } else {
                 std::string what_arg{
@@ -827,21 +847,19 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
                 m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
           }
         } else {
-          std::string what_arg{"only one numeral system prefix may be used"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          default_char_behaviour();
         }
       } break;
 
       case constexpr_workaround_m_k_hex_num_sys_prefix:
       case constexpr_workaround_m_k_hex_num_sys_prefix_alt: {
-        last_char_was_digit = false;
-        last_char_was_leading_zero = false;
-
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
               if (num_of_leading_zeroes == 1) {
+                last_char_was_digit = false;
+                last_char_was_leading_zero = false;
+
                 num_sys = &m_k_hex_num_sys;
               } else {
                 std::string what_arg{
@@ -861,36 +879,23 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
                 m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
           }
         } else {
-          std::string what_arg{"only one numeral system prefix may be used"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          default_char_behaviour();
         }
       } break;
 
       default: {
-        num_sys = ((num_sys == nullptr) ? (&m_k_dec_num_sys) : (num_sys));
-
-        if (is_digit(cur_char, *num_sys)) {
-          last_char_was_digit = true;
-          any_digits_so_far = true;
-          last_char_was_leading_zero = false;
-          actual_digits.push_back(cur_char);
-        } else {
-          last_char_was_digit = false;
-          last_char_was_leading_zero = false;
-          std::string what_arg{"invalid character in integer"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
-        }
+        default_char_behaviour();
       } break;
       }
     }
 
-    // TODO account for all zeroes case vvv
-    if (actual_digits.empty())
-      if (num_sys == nullptr) {
-        num_sys = &m_k_dec_num_sys;
-      }
+    if (actual_digits.empty()) {
+      actual_digits = "0";
+    }
+
+    if (num_sys == nullptr) {
+      num_sys = &m_k_dec_num_sys;
+    }
 
     node_ptr<end_value_node<integer_end_value_node_t>> ret_val{nullptr};
 
@@ -899,15 +904,21 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
                   "std::stol(), std::stoll()) with return type large "
                   "enough for integer_end_value_node_t");
 
-    if constexpr (sizeof(int) >= sizeof(integer_end_value_node_t)) {
-      ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
-          std::stoi(actual_digits, nullptr, num_sys->base));
-    } else if constexpr (sizeof(long) >= sizeof(integer_end_value_node_t)) {
-      ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
-          std::stol(actual_digits, nullptr, num_sys->base));
-    } else {
-      ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
-          std::stoll(actual_digits, nullptr, num_sys->base));
+    try {
+      if constexpr (sizeof(int) >= sizeof(integer_end_value_node_t)) {
+        ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+            std::stoi(actual_digits, nullptr, num_sys->base));
+      } else if constexpr (sizeof(long) >= sizeof(integer_end_value_node_t)) {
+        ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+            std::stol(actual_digits, nullptr, num_sys->base));
+      } else {
+        ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+            std::stoll(actual_digits, nullptr, num_sys->base));
+      }
+    } catch (const std::out_of_range &ex) {
+      std::string what_arg{"integer value is too large"};
+      throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                   what_arg);
     }
 
     if (is_negative == true) {
