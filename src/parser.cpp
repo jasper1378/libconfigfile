@@ -899,16 +899,19 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value) {
 
     node_ptr<end_value_node<integer_end_value_node_t>> ret_val{nullptr};
 
-    static_assert((sizeof(long long) >= sizeof(integer_end_value_node_t)),
-                  "no string-to-int conversion function (std::stoi(), "
-                  "std::stol(), std::stoll()) with return type large "
-                  "enough for integer_end_value_node_t");
+    static_assert(
+        (sizeof(decltype(std::stoll(""))) >= sizeof(integer_end_value_node_t)),
+        "no string-to-int conversion function (std::stoi(), "
+        "std::stol(), std::stoll()) with return type large "
+        "enough for integer_end_value_node_t");
 
     try {
-      if constexpr (sizeof(int) >= sizeof(integer_end_value_node_t)) {
+      if constexpr ((sizeof(decltype(std::stoi("")))) >=
+                    (sizeof(integer_end_value_node_t))) {
         ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
             std::stoi(actual_digits, nullptr, num_sys->base));
-      } else if constexpr (sizeof(long) >= sizeof(integer_end_value_node_t)) {
+      } else if constexpr ((sizeof(decltype(std::stol("")))) >=
+                           (sizeof(integer_end_value_node_t))) {
         ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
             std::stol(actual_digits, nullptr, num_sys->base));
       } else {
@@ -1151,14 +1154,169 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value) {
           throw syntax_error::generate_formatted_error(
               m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
         } break;
-          // TODO continue from here
+
+        case m_k_float_exponent_sign_lower:
+        case m_k_float_exponent_sign_upper: {
+          if (last_char == char_type::digit) {
+            if (raw_value_idx != last_raw_value_idx) {
+              char next_char{raw_value[raw_value_idx + 1]};
+              if ((is_digit(next_char, m_k_dec_num_sys) == true) ||
+                  (next_char == m_k_num_positive_sign) ||
+                  (m_k_num_negative_sign)) {
+                last_char = char_type::exponent;
+                cur_location = num_location::exponent;
+                sanitized_string.push_back(cur_char);
+              } else {
+                std::string what_arg{
+                    "float exponent sign must be surrounded by at "
+                    "least on digit on each side"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+              }
+            } else {
+              std::string what_arg{
+                  "float exponent sign must be surrounded by at "
+                  "least on digit on each side"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
+          } else {
+            std::string what_arg{"float exponent sign must be surrounded by at "
+                                 "least on digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
+
+        default: {
+          if (is_digit(cur_char, m_k_dec_num_sys) == true) {
+            last_char = char_type::digit;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"invalid character in float"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
         }
       } break;
 
       case num_location::exponent: {
+        switch (cur_char) {
+
+        case m_k_num_positive_sign: {
+          if (last_char == char_type::exponent) {
+            last_char = char_type::positive;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"positive sign may only appear at start of "
+                                 "integer part or exponent part of float"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
+
+        case m_k_num_negative_sign: {
+          if (last_char == char_type::exponent) {
+            last_char = char_type::positive;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"negative sign may only appear at start of "
+                                 "integer part or exponent part of float"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
+
+        case m_k_num_digit_separator: {
+          if (last_char == char_type::digit) {
+            if (raw_value_idx != last_raw_value_idx) {
+              char next_char{raw_value[raw_value_idx + 1]};
+              if (is_digit(next_char, m_k_dec_num_sys) == true) {
+                last_char = char_type::separator;
+              } else {
+                std::string what_arg{
+                    "float digit separator must be surrounded by "
+                    "at least one digit on each side"};
+                throw syntax_error::generate_formatted_error(
+                    m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+              }
+            } else {
+              std::string what_arg{
+                  "float digit separator must be surrounded by "
+                  "at least one digit on each side"};
+              throw syntax_error::generate_formatted_error(
+                  m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+            }
+          } else {
+            std::string what_arg{"float digit separator must be surrounded by "
+                                 "at least one digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
+
+        case m_k_float_decimal_point: {
+          std::string what_arg{
+              "float decimal point can not appear after exponent sign"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        } break;
+
+        case m_k_float_exponent_sign_lower:
+        case m_k_float_exponent_sign_upper: {
+          std::string what_arg{"float exponent sign can only appear once"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        } break;
+
+        default: {
+          if (is_digit(cur_char, m_k_dec_num_sys) == true) {
+            last_char = char_type::digit;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"invalid character in float"};
+            throw syntax_error::generate_formatted_error(
+                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+          }
+        } break;
+        }
       } break;
       }
     }
+
+    if (sanitized_string.empty()) {
+      sanitized_string = "0";
+    }
+
+    node_ptr<end_value_node<float_end_value_node_t>> ret_val{nullptr};
+
+    static_assert(
+        (sizeof(decltype(std::stod(""))) >= sizeof(float_end_value_node_t)),
+        "no string-to-float conversion function with return type large enough "
+        "for float_end_value_node_t");
+
+    try {
+      if constexpr ((sizeof(decltype(std::stof("")))) >=
+                    (sizeof(float_end_value_node_t))) {
+        ret_val = make_node_ptr<end_value_node<float_end_value_node_t>>(
+            std::stof(sanitized_string, nullptr));
+      } else if constexpr ((sizeof(decltype(std::stod("")))) >=
+                           (sizeof(float_end_value_node_t))) {
+        ret_val = make_node_ptr<end_value_node<float_end_value_node_t>>(
+            std::stod(sanitized_string, nullptr));
+      } else {
+        ret_val = make_node_ptr<end_value_node<float_end_value_node_t>>(
+            std::stold(sanitized_string, nullptr));
+      }
+
+    } catch (const std::out_of_range &ex) {
+      std::string what_arg{"float value is too large"};
+      throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                   what_arg);
+    }
+
+    return ret_val;
   }
 }
 
