@@ -11,13 +11,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <concepts>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 #include <variant>
 #include <vector>
-
-#include <cassert>
 
 namespace libconfigfile {
 class parser {
@@ -175,6 +174,17 @@ private:
 
   static bool case_insensitive_string_compare(const std::string &str1,
                                               const std::string &str2);
+
+  template <std::floating_point T>
+  static bool compare_floats(T a, T b, T abs_epsilon = T{1e-12},
+                             T rel_epsilon = T{1e-8}) {
+    T diff{std::abs(a - b)};
+    if (diff <= abs_epsilon) {
+      return true;
+    } else {
+      return (diff <= (std::max(std::abs(a), std::abs(b)) * rel_epsilon));
+    }
+  }
 };
 } // namespace libconfigfile
 #endif

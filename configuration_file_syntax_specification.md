@@ -158,19 +158,19 @@ flt6 = -2E-2;
 
 flt7 = 6.626e-24;
 
-float_8 = .7;
-float_9 = 7.;
-float_10 = 3.e+20;
+flt8 = .7; // invalid
+flt9 = 7.; // invalid
+flt10 = 3.e+20; // invalid
 
 flt11 = 224_617.445_991_228;
 
-sf1 = inf;
-sf2 = +inf;
-sf3 = -inf;
+ftl12 = inf;
+ftl13 = +inf;
+ftl14 = -inf;
 
-sf4 = nan;
-sf5 = +nan;
-sf6 = -nan;
+flt15 = nan;
+flt16 = +nan;
+flt17 = -nan;
 ```
 
 ## Booleans
