@@ -27,6 +27,7 @@ private:
 
 private:
   static constexpr std::string m_k_whitespace_chars{" \t"};
+  static_assert(true);
   static constexpr char m_k_newline{'\n'};
 
   static constexpr char m_k_comment_script{'#'};
@@ -110,14 +111,16 @@ private:
 
   std::tuple<node_ptr<value_node>, std::string> parse_key_value(); // TODO
   std::string parse_key_value_key();
-  node_ptr<value_node> parse_key_value_value();   // TODO
-  node_ptr<array_value_node> parse_array_value(); // TODO
+  node_ptr<value_node> parse_key_value_value(); // TODO
+  node_ptr<array_value_node>
+  parse_array_value(const std::string &raw_value,
+                    const file_pos &start_pos); // TODO
   node_ptr<end_value_node<integer_end_value_node_t>>
-  parse_integer_value(const std::string &raw_value);
+  parse_integer_value(const std::string &raw_value, const file_pos &start_pos);
   node_ptr<end_value_node<float_end_value_node_t>>
-  parse_float_value(const std::string &raw_value); // TODO
+  parse_float_value(const std::string &raw_value, const file_pos &start_pos);
   node_ptr<end_value_node<string_end_value_node_t>>
-  parse_string_value(const std::string &raw_value); // TODO
+  parse_string_value(const std::string &raw_value, const file_pos &start_pos);
 
   void parse_directive();
   void parse_version_directive();
