@@ -564,6 +564,8 @@ libconfigfile::node_ptr<libconfigfile::value_node>
 libconfigfile::parser::parse_key_value_value() {
   // m_cur_pos = equal sign
 
+  std::string value_contents{};
+
   {
     enum class value_location {
       equal_sign,
@@ -574,12 +576,14 @@ libconfigfile::parser::parse_key_value_value() {
     };
 
     file_pos value_start_pos{m_cur_pos.get_end_of_file_pos()};
-    std::string value_contents{};
 
     bool first_loop{true};
     bool in_string{false};
+    char cur_char{'\0'};
+    char last_char{'\0'};
     for (value_location last_state{value_location::equal_sign};
-         last_state != value_location::done; ++m_cur_pos, first_loop = false) {
+         last_state != value_location::done;
+         ++m_cur_pos, first_loop = false, last_char = cur_char) {
       switch (last_state) {
 
       case value_location::equal_sign: {
@@ -588,7 +592,7 @@ libconfigfile::parser::parse_key_value_value() {
           throw syntax_error::generate_formatted_error(
               m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
         } else {
-          char cur_char{m_file_contents.get_char(m_cur_pos)};
+          // char cur_char{m_file_contents.get_char(m_cur_pos)}; //XXX
 
           if ((first_loop == true) && (cur_char == m_k_key_value_assign)) {
             ;
@@ -654,7 +658,9 @@ libconfigfile::parser::parse_key_value_value() {
             value_contents.push_back(cur_char);
 
             if (cur_char == m_k_string_delimiter) {
-              in_string = !in_string;
+              if (last_char != m_k_escape_leader) {
+                in_string = !in_string;
+              }
             }
           }
         }
@@ -671,8 +677,10 @@ libconfigfile::parser::parse_key_value_value() {
     }
   }
 
-  // TODO continue from here (identify value type; trim trailing whitespace;
-  // parse value string)
+  value_contents =
+      trim_whitespace(value_contents, m_k_whitespace_chars, false, true);
+
+  // TODO continue from here (identify value type; parse value string)
 }
 
 libconfigfile::node_ptr<libconfigfile::array_value_node>
@@ -722,9 +730,9 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
       char cur_char{raw_value[raw_value_idx]};
 
       static const auto default_char_behaviour{
-          [&num_sys, &cur_char, &last_char_was_digit, &any_digits_so_far,
-           &last_char_was_leading_zero, &actual_digits, &raw_value_idx,
-           this]() {
+          [&start_pos, &num_sys, &cur_char, &last_char_was_digit,
+           &any_digits_so_far, &last_char_was_leading_zero, &actual_digits,
+           &raw_value_idx, this]() {
             num_sys = ((num_sys == nullptr) ? (&m_k_dec_num_sys) : (num_sys));
 
             if (is_digit(cur_char, *num_sys)) {
@@ -1381,8 +1389,8 @@ libconfigfile::parser::parse_string_value(const std::string &raw_value,
     std::string string_contents{};
     string_contents.reserve(raw_value.size());
 
-    for (std::string::size_type raw_value_idx; raw_value_idx < raw_value.size();
-         ++raw_value_idx) {
+    for (std::string::size_type raw_value_idx{};
+         raw_value_idx < raw_value.size(); ++raw_value_idx) {
       char cur_char{raw_value[raw_value_idx]};
       if (in_string == true) {
         if (cur_char == m_k_string_delimiter) {
@@ -1981,6 +1989,29 @@ void libconfigfile::parser::handle_comments() {
   }
 }
 
+std::variant<libconfigfile::value_node_type, libconfigfile::end_value_node_type>
+libconfigfile::parser::identify_key_value_value_type(
+    const std::string &value_contents) {
+  std::string::size_type first_non_whitespace_char_pos{
+      value_contents.find_first_not_of(m_k_whitespace_chars)};
+  char first_non_whitespace_char{value_contents[first_non_whitespace_char_pos]};
+
+  switch (first_non_whitespace_char) {
+
+  case m_k_array_opening_delimiter: {
+    return value_node_type::ARRAY;
+  } break;
+
+  case m_k_string_delimiter: {
+    return end_value_node_type::STRING;
+  } break;
+
+  default: {
+    // TODO continue from here
+  } break;
+  }
+}
+
 std::variant<std::string /*result*/,
              std::string::size_type /*invalid_escape_sequence_pos*/>
 libconfigfile::parser::replace_escape_sequences(const std::string &str) {
@@ -2217,4 +2248,9 @@ bool libconfigfile::parser::case_insensitive_string_compare(
     return false;
   }
   return true;
+}
+
+bool libconfigfile::parser::string_contains_only(const std::string &str,
+                                                 const std::string &chars) {
+  return ((str.find_first_not_of(chars)) == (std::string::npos));
 }

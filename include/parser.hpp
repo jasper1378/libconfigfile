@@ -41,6 +41,10 @@ private:
   static constexpr int m_k_max_directive_name_length{std::max(
       m_k_version_directive_name.size(), m_k_include_directive_name.size())};
 
+  static constexpr char m_k_array_opening_delimiter{'['};
+  static constexpr char m_k_array_closing_delimiter{']'};
+  static constexpr char m_k_array_item_separator{','};
+
   static constexpr char m_k_string_delimiter{'"'};
 
   static constexpr char m_k_escape_leader{'\\'};
@@ -129,6 +133,9 @@ private:
   void handle_comments();
 
 private:
+  static std::variant<value_node_type, end_value_node_type>
+  identify_key_value_value_type(const std::string &value_contents);
+
   static std::variant<std::string /*result*/,
                       std::string::size_type /*invalid_escape_sequence_pos*/>
   replace_escape_sequences(const std::string &str);
@@ -188,6 +195,9 @@ private:
       return (diff <= (std::max(std::abs(a), std::abs(b)) * rel_epsilon));
     }
   }
+
+  static bool string_contains_only(const std::string &str,
+                                   const std::string &chars);
 };
 } // namespace libconfigfile
 #endif
