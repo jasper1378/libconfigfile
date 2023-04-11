@@ -92,6 +92,10 @@ private:
       m_k_float_not_a_number{
           std::numeric_limits<float_end_value_node_t>::quiet_NaN(), "nan"};
 
+  // TODO vvv
+  static constexpr std::string m_k_all_valid_int_chars{};
+  static constexpr std::string m_k_all_valid_float_chars{};
+
 public:
   parser();
   parser(const std::string &file_name);
@@ -135,6 +139,9 @@ private:
 private:
   static std::variant<value_node_type, end_value_node_type>
   identify_key_value_value_type(const std::string &value_contents);
+
+  static end_value_node_type
+  identify_key_value_numeric_value_type(const std::string &value_contents);
 
   static std::variant<std::string /*result*/,
                       std::string::size_type /*invalid_escape_sequence_pos*/>
@@ -198,6 +205,8 @@ private:
 
   static bool string_contains_only(const std::string &str,
                                    const std::string &chars);
+  static bool string_contains_any_of(const std::string &str,
+                                     const std::string &chars);
 };
 } // namespace libconfigfile
 #endif

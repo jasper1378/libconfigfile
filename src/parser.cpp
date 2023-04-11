@@ -2007,8 +2007,27 @@ libconfigfile::parser::identify_key_value_value_type(
   } break;
 
   default: {
-    // TODO continue from here
+    return identify_key_value_numeric_value_type(value_contents);
   } break;
+  }
+}
+
+libconfigfile::end_value_node_type
+libconfigfile::parser::identify_key_value_numeric_value_type(
+    const std::string &value_contents) {
+  static const std::string pure_int_chars{
+      m_k_dec_num_sys.digits + m_k_num_digit_separator + m_k_num_positive_sign +
+      m_k_num_negative_sign};
+  static const std::string num_sys_prefixes{
+      std::string{} + m_k_bin_num_sys.prefix + m_k_bin_num_sys.prefix_alt +
+      m_k_oct_num_sys.prefix + m_k_oct_num_sys.prefix_alt +
+      m_k_hex_num_sys.prefix + m_k_hex_num_sys.prefix_alt};
+
+  if ((string_contains_only(value_contents, pure_int_chars)) ||
+      (string_contains_any_of(value_contents, num_sys_prefixes))) {
+    return end_value_node_type::INTEGER;
+  } else {
+    return end_value_node_type::FLOAT;
   }
 }
 
@@ -2253,4 +2272,9 @@ bool libconfigfile::parser::case_insensitive_string_compare(
 bool libconfigfile::parser::string_contains_only(const std::string &str,
                                                  const std::string &chars) {
   return ((str.find_first_not_of(chars)) == (std::string::npos));
+}
+
+bool libconfigfile::parser::string_contains_any_of(const std::string &str,
+                                                   const std::string &chars) {
+  return ((str.find_first_of(chars)) != (std::string::npos));
 }
