@@ -2015,19 +2015,32 @@ libconfigfile::parser::identify_key_value_value_type(
 libconfigfile::end_value_node_type
 libconfigfile::parser::identify_key_value_numeric_value_type(
     const std::string &value_contents) {
-  static const std::string pure_int_chars{
-      m_k_dec_num_sys.digits + m_k_num_digit_separator + m_k_num_positive_sign +
-      m_k_num_negative_sign};
-  static const std::string num_sys_prefixes{
-      std::string{} + m_k_bin_num_sys.prefix + m_k_bin_num_sys.prefix_alt +
-      m_k_oct_num_sys.prefix + m_k_oct_num_sys.prefix_alt +
-      m_k_hex_num_sys.prefix + m_k_hex_num_sys.prefix_alt};
-
-  if ((string_contains_only(value_contents, pure_int_chars)) ||
-      (string_contains_any_of(value_contents, num_sys_prefixes))) {
-    return end_value_node_type::INTEGER;
-  } else {
+  if ((case_insensitive_string_find(
+           value_contents, m_k_float_infinity.second) != (std::string::npos)) ||
+      (case_insensitive_string_find(value_contents,
+                                    m_k_float_not_a_number.second) !=
+       (std::string::npos))) {
     return end_value_node_type::FLOAT;
+  } else {
+    if ((value_contents.find(m_k_float_decimal_point)) != (std::string::npos)) {
+      return end_value_node_type::FLOAT;
+    } else {
+      if (((value_contents.find(m_k_float_exponent_sign_lower)) !=
+           (std::string::npos)) ||
+          ((value_contents.find(m_k_float_exponent_sign_upper)) !=
+           (std::string::npos))) {
+        if (((value_contents.find(m_k_hex_num_sys.prefix)) !=
+             (std::string::npos)) ||
+            ((value_contents.find(m_k_hex_num_sys.prefix_alt)) !=
+             (std::string::npos))) {
+          return end_value_node_type::INTEGER;
+        } else {
+          return end_value_node_type::FLOAT;
+        }
+      } else {
+        return end_value_node_type::INTEGER;
+      }
+    }
   }
 }
 
@@ -2269,6 +2282,12 @@ bool libconfigfile::parser::case_insensitive_string_compare(
   return true;
 }
 
+std::string::size_type libconfigfile::parser::case_insensitive_string_find(
+    const std::string &str, const std::string &to_find,
+    std::string::size_type pos /*= 0*/) {
+  // TODO implement this
+}
+
 bool libconfigfile::parser::string_contains_only(const std::string &str,
                                                  const std::string &chars) {
   return ((str.find_first_not_of(chars)) == (std::string::npos));
@@ -2277,4 +2296,26 @@ bool libconfigfile::parser::string_contains_only(const std::string &str,
 bool libconfigfile::parser::string_contains_any_of(const std::string &str,
                                                    const std::string &chars) {
   return ((str.find_first_of(chars)) != (std::string::npos));
+}
+
+std::string libconfigfile::parser::string_to_upper(const std::string &str) {
+  std::string ret_val{};
+  ret_val.resize(str.size());
+
+  for (size_t i{0}; i < str.size(); ++i) {
+    ret_val[i] = std::toupper(str[i]);
+  }
+
+  return ret_val;
+}
+
+std::string libconfigfile::parser::string_to_lower(const std::string &str) {
+  std::string ret_val{};
+  ret_val.resize(str.size());
+
+  for (size_t i{0}; i < str.size(); ++i) {
+    ret_val[i] = std::tolower(str[i]);
+  }
+
+  return ret_val;
 }

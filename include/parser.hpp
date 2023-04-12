@@ -92,10 +92,6 @@ private:
       m_k_float_not_a_number{
           std::numeric_limits<float_end_value_node_t>::quiet_NaN(), "nan"};
 
-  // TODO vvv
-  static constexpr std::string m_k_all_valid_int_chars{};
-  static constexpr std::string m_k_all_valid_float_chars{};
-
 public:
   parser();
   parser(const std::string &file_name);
@@ -191,6 +187,10 @@ private:
 
   static bool case_insensitive_string_compare(const std::string &str1,
                                               const std::string &str2);
+  static std::string::size_type
+  case_insensitive_string_find(const std::string &str,
+                               const std::string &to_find,
+                               std::string::size_type pos = 0);
 
   template <std::floating_point T>
   static bool compare_floats(T a, T b, T abs_epsilon = T{1e-12},
@@ -207,6 +207,9 @@ private:
                                    const std::string &chars);
   static bool string_contains_any_of(const std::string &str,
                                      const std::string &chars);
+
+  static std::string string_to_upper(const std::string &str);
+  static std::string string_to_lower(const std::string &str);
 };
 } // namespace libconfigfile
 #endif
