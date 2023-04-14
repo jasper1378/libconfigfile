@@ -189,8 +189,7 @@ private:
                                               const std::string &str2);
   static std::string::size_type
   case_insensitive_string_find(const std::string &str,
-                               const std::string &to_find,
-                               std::string::size_type pos = 0);
+                               const std::string &to_find);
 
   template <std::floating_point T>
   static bool compare_floats(T a, T b, T abs_epsilon = T{1e-12},

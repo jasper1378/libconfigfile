@@ -11,6 +11,7 @@
 #include "syntax_error.hpp"
 #include "value_node.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cstddef>
@@ -687,7 +688,17 @@ libconfigfile::node_ptr<libconfigfile::array_value_node>
 libconfigfile::parser::parse_array_value(const std::string &raw_value,
                                          const file_pos &start_pos) {
   // start_pos = first char of raw value
-  // TODO continue from here
+
+  enum class char_type {
+    leading_whitespace,
+    opening_delimiter,
+    value_leading_whitespace,
+    value,
+    value_trailing_whitespace,
+    value_delimiter,
+    closing_delimiter,
+    trailing_whitespace,
+  };
 }
 
 libconfigfile::node_ptr<
@@ -2283,9 +2294,20 @@ bool libconfigfile::parser::case_insensitive_string_compare(
 }
 
 std::string::size_type libconfigfile::parser::case_insensitive_string_find(
-    const std::string &str, const std::string &to_find,
-    std::string::size_type pos /*= 0*/) {
-  // TODO implement this
+    const std::string &str, const std::string &to_find) {
+  static const auto case_insensitive_char_compare{
+      [](std::string::value_type ch1, std::string::value_type ch2) -> bool {
+        return ((std::tolower(ch1)) == (std::tolower(ch2)));
+      }};
+
+  auto found_iter{std::search(str.begin(), str.end(), to_find.begin(),
+                              to_find.end(), case_insensitive_char_compare)};
+
+  if (found_iter == str.end()) {
+    return std::string::npos;
+  } else {
+    return ((found_iter) - (str.begin()));
+  }
 }
 
 bool libconfigfile::parser::string_contains_only(const std::string &str,

@@ -185,7 +185,7 @@ flt17 = -nan;
 integers = [ 1, 2, 3 ];
 colors = [ "red", "yellow", "green" ];
 
-nested_array_of_ints = [ [ 1, 2], [ 3, 4, 5 ] ];
+nested_array_of_ints = [ [ 1, 2 ], [ 3, 4, 5 ] ];
 nested_mixed_array = [ [ 1, 2 ], [ "a", "b", "c" ] ];
 
 numbers = [ 0.1, 0.2, 0.5, 1, 2, 5, "one", "two", "five" ];
