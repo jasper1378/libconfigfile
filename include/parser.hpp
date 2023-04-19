@@ -26,7 +26,8 @@ private:
   section_node m_root_section;
 
 private:
-  static constexpr std::string m_k_whitespace_chars{" \t"};
+  // static constexpr std::string m_k_whitespace_chars{" \t"};
+  static constexpr std::string m_k_whitespace_chars{' ', '\t'};
   static_assert(true);
   static constexpr char m_k_newline{'\n'};
 
@@ -43,7 +44,7 @@ private:
 
   static constexpr char m_k_array_opening_delimiter{'['};
   static constexpr char m_k_array_closing_delimiter{']'};
-  static constexpr char m_k_array_item_separator{','};
+  static constexpr char m_k_array_element_separator{','};
 
   static constexpr char m_k_string_delimiter{'"'};
 
@@ -117,8 +118,8 @@ private:
   std::string parse_key_value_key();
   node_ptr<value_node> parse_key_value_value(); // TODO
   node_ptr<array_value_node>
-  parse_array_value(const std::string &raw_value,
-                    const file_pos &start_pos); // TODO
+  parse_array_value(const std::string &raw_value, const file_pos &start_pos,
+                    bool check_past_closing_delimiter = true); // TODO
   node_ptr<end_value_node<integer_end_value_node_t>>
   parse_integer_value(const std::string &raw_value, const file_pos &start_pos);
   node_ptr<end_value_node<float_end_value_node_t>>
