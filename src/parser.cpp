@@ -587,6 +587,10 @@ libconfigfile::parser::parse_key_value_value() {
          ++m_cur_pos, first_loop = false, last_char = cur_char) {
       switch (last_state) {
 
+        if (m_cur_pos.is_eof() == false) {
+          cur_char = m_file_contents.get_char(m_cur_pos);
+        }
+
       case value_location::equal_sign: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"missing value part of key-value"};
@@ -659,7 +663,10 @@ libconfigfile::parser::parse_key_value_value() {
             value_contents.push_back(cur_char);
 
             if (cur_char == m_k_string_delimiter) {
-              if (last_char != m_k_escape_leader) {
+              if (in_string == false) {
+                in_string = !in_string;
+              } else if ((in_string == true) &&
+                         (last_char != m_k_escape_leader)) {
                 in_string = !in_string;
               }
             }
@@ -685,9 +692,8 @@ libconfigfile::parser::parse_key_value_value() {
 }
 
 libconfigfile::node_ptr<libconfigfile::array_value_node>
-libconfigfile::parser::parse_array_value(
-    const std::string &raw_value, const file_pos &start_pos,
-    bool check_past_closing_delimiter /*= true*/) {
+libconfigfile::parser::parse_array_value(const std::string &raw_value,
+                                         const file_pos &start_pos) {
   // start_pos = first char of raw value
 
   enum class char_type {
@@ -702,128 +708,122 @@ libconfigfile::parser::parse_array_value(
     done,
   };
 
-  char_type last_char{char_type::leading_whitespace};
+  char_type last_char_type{char_type::leading_whitespace};
 
   bool in_string{false};
   int in_n_levels_of_sub_arrays{0};
+  char cur_char{'\0'};
+  char last_char{'\0'};
   std::string cur_raw_element{};
   std::vector<std::string> raw_elements{};
 
-  for (std::string::size_type raw_value_idx; raw_value_idx < raw_value.size();
-       ++raw_value_idx) {
+  for (std::string::size_type raw_value_idx{0};
+       (raw_value_idx < raw_value.size()) &&
+       (last_char_type != char_type::done);
+       ++raw_value_idx, last_char = cur_char) {
 
-    switch (last_char) {
+    cur_char = raw_value[raw_value_idx];
+
+    switch (last_char_type) {
     case char_type::leading_whitespace: {
-      if (m_cur_pos.is_eof() == true) {
-        std::string what_arg{"expected array"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+      if (is_whitespace(cur_char) == true) {
+        ;
+      } else if (cur_char == m_k_array_opening_delimiter) {
+        last_char_type = char_type::opening_delimiter;
       } else {
-        char cur_char{raw_value[raw_value_idx]};
-
-        if (is_whitespace(cur_char) == true) {
-          ;
-        } else if (cur_char == m_k_array_opening_delimiter) {
-          last_char = char_type::opening_delimiter;
-        } else {
-          std::string what_arg{"expected array opening delimiter"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
-        }
+        std::string what_arg{"expected array opening delimiter"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, (start_pos + raw_value_idx), what_arg);
       }
     } break;
 
     case char_type::opening_delimiter: {
-      if (m_cur_pos.is_eof() == true) {
-        std::string what_arg{"expected array closing delimiter"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+      if (is_whitespace(cur_char) == true) {
+        last_char_type = char_type::element_leading_whitespace;
       } else {
-        char cur_char{raw_value[raw_value_idx]};
-
-        if (is_whitespace(cur_char) == true) {
-          last_char = char_type::element_leading_whitespace;
+        if (cur_char == m_k_array_closing_delimiter) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char == m_k_array_element_separator) {
+          std::string what_arg{"expected array element before separator"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (start_pos + raw_value_idx), what_arg);
         } else {
-          if (cur_char == m_k_array_closing_delimiter) {
-            last_char = char_type::closing_delimiter;
-          } else if (cur_char == m_k_array_element_separator) {
-            std::string what_arg{"expected array element before separator"};
-            throw syntax_error::generate_formatted_error(
-                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
-          } else {
-            last_char = char_type::element_proper;
-            cur_raw_element.push_back(cur_char);
+          last_char_type = char_type::element_proper;
+          cur_raw_element.push_back(cur_char);
 
-            if (cur_char == m_k_string_delimiter) {
-              in_string = !in_string;
-            } else if (cur_char == m_k_array_opening_delimiter) {
-              ++in_n_levels_of_sub_arrays;
-            }
+          if (cur_char == m_k_string_delimiter) {
+            in_string = !in_string;
+          } else if (cur_char == m_k_array_opening_delimiter) {
+            ++in_n_levels_of_sub_arrays;
           }
         }
       }
     } break;
 
     case char_type::element_leading_whitespace: {
-      if (m_cur_pos.is_eof() == true) {
-        std::string what_arg{"expected array closing delimiter"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+      if (is_whitespace(cur_char) == true) {
+        ;
       } else {
-        char cur_char{raw_value[raw_value_idx]};
-
-        if (is_whitespace(cur_char) == true) {
-          ;
+        if (cur_char == m_k_array_closing_delimiter) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char == m_k_array_element_separator) {
+          std::string what_arg{"expected array element before separator"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (start_pos + raw_value_idx), what_arg);
         } else {
-          if (cur_char == m_k_array_closing_delimiter) {
-            last_char = char_type::closing_delimiter;
-          } else if (cur_char == m_k_array_element_separator) {
-            std::string what_arg{"expected array element before separator"};
-            throw syntax_error::generate_formatted_error(
-                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
-          } else {
-            last_char = char_type::element_proper;
-            cur_raw_element.push_back(cur_char);
+          last_char_type = char_type::element_proper;
+          cur_raw_element.push_back(cur_char);
 
-            if (cur_char == m_k_string_delimiter) {
-              in_string = !in_string;
-            } else if (cur_char == m_k_array_opening_delimiter) {
-              ++in_n_levels_of_sub_arrays;
-            }
+          if (cur_char == m_k_string_delimiter) {
+            in_string = !in_string;
+          } else if (cur_char == m_k_array_opening_delimiter) {
+            ++in_n_levels_of_sub_arrays;
           }
         }
       }
     } break;
 
     case char_type::element_proper: {
-      /*TODO*/
+      if ((cur_char == m_k_array_element_separator) && (in_string == false) &&
+          (in_n_levels_of_sub_arrays == 0)) {
+        last_char_type = char_type::element_separator;
+      } else if ((cur_char == m_k_array_closing_delimiter) &&
+                 (in_string == false) && (in_n_levels_of_sub_arrays == 0)) {
+        last_char_type = char_type::closing_delimiter;
+      } else {
+        cur_raw_element.push_back(cur_char);
+
+        if (cur_char == m_k_string_delimiter) {
+          if (in_string == false) {
+            in_string = !in_string;
+          } else if ((in_string == true) && (last_char != m_k_escape_leader)) {
+            in_string = !in_string;
+          }
+        }
+
+        /*sub-arrays...*/
+
+        // TODO continue from here
+      }
     } break;
 
     case char_type::element_trailing_whitespace: {
-      if (m_cur_pos.is_eof() == true) {
-        std::string what_arg{"expected array closing delimiter"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+      if (is_whitespace(cur_char) == true) {
+        ;
       } else {
-        char cur_char{raw_value[raw_value_idx]};
-
-        if (is_whitespace(cur_char) == true) {
-          ;
-        } else {
-          if (cur_char == m_k_array_closing_delimiter) {
-            last_char = char_type::closing_delimiter;
-          } else if (cur_char == m_k_array_element_separator) {
-            last_char = char_type::element_separator;
-            if (cur_raw_element.empty() == false) {
-              raw_elements.push_back(std::move(cur_raw_element));
-              cur_raw_element.clear();
-            }
-          } else {
-            std::string what_arg{
-                "expected array closing delimiter or element separator"};
-            throw syntax_error::generate_formatted_error(
-                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+        if (cur_char == m_k_array_closing_delimiter) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char == m_k_array_element_separator) {
+          last_char_type = char_type::element_separator;
+          if (cur_raw_element.empty() == false) {
+            raw_elements.push_back(std::move(cur_raw_element));
+            cur_raw_element.clear();
           }
+        } else {
+          std::string what_arg{
+              "expected array closing delimiter or element separator"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (start_pos + raw_value_idx), what_arg);
         }
       }
     } break;
@@ -835,37 +835,27 @@ libconfigfile::parser::parse_array_value(
         cur_raw_element.clear();
       }
 
-      if (m_cur_pos.is_eof() == true) {
-        std::string what_arg{"expected array closing delimiter"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
+      if (is_whitespace(cur_char) == true) {
+        last_char_type = char_type::element_leading_whitespace;
       } else {
-        char cur_char{raw_value[raw_value_idx]};
-
-        if (is_whitespace(cur_char) == true) {
-          last_char = char_type::element_leading_whitespace;
+        if (cur_char == m_k_array_closing_delimiter) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char == m_k_array_element_separator) {
+          std::string what_arg{"expected array element or closing delimiter"};
+          throw syntax_error::generate_formatted_error(
+              m_file_contents, (start_pos + raw_value_idx), what_arg);
         } else {
-          if (cur_char == m_k_array_closing_delimiter) {
-            last_char = char_type::closing_delimiter;
-          } else if (cur_char == m_k_array_element_separator) {
-            std::string what_arg{"expected array element or closing delimiter"};
-            throw syntax_error::generate_formatted_error(
-                m_file_contents, (m_cur_pos + raw_value_idx), what_arg);
-          } else {
-            last_char = char_type::element_proper;
-            cur_raw_element.push_back(cur_char);
+          last_char_type = char_type::element_proper;
+          cur_raw_element.push_back(cur_char);
 
-            if (cur_char == m_k_string_delimiter) {
-              in_string = !in_string;
-            } else if (cur_char == m_k_array_opening_delimiter) {
-              ++in_n_levels_of_sub_arrays;
-            }
+          if (cur_char == m_k_string_delimiter) {
+            in_string = !in_string;
+          } else if (cur_char == m_k_array_opening_delimiter) {
+            ++in_n_levels_of_sub_arrays;
           }
         }
       }
     } break;
-
-      // TODO continue from here
 
     case char_type::closing_delimiter: {
       if (cur_raw_element.empty() == false) {
@@ -873,14 +863,36 @@ libconfigfile::parser::parse_array_value(
         raw_elements.push_back(std::move(cur_raw_element));
         cur_raw_element.clear();
       }
+
+      if (is_whitespace(cur_char) == true) {
+        last_char_type = char_type::trailing_whitespace;
+      } else {
+        std::string what_arg{"extraneous character(s) after array"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, (start_pos + raw_value_idx), what_arg);
+      }
     } break;
 
     case char_type::trailing_whitespace: {
+      if (is_whitespace(cur_char) == true) {
+        ;
+      } else {
+        std::string what_arg{"extraneous character(s) after array"};
+        throw syntax_error::generate_formatted_error(
+            m_file_contents, (start_pos + raw_value_idx), what_arg);
+      }
     } break;
 
     case char_type::done: {
+      throw std::runtime_error{"impossible!"};
     } break;
     }
+  }
+
+  if (last_char_type != char_type::done) {
+    std::string what_arg{"unterminated array"};
+    throw syntax_error::generate_formatted_error(
+        m_file_contents, (start_pos + (raw_value.size() - 1)), what_arg);
   }
 }
 

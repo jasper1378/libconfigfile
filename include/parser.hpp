@@ -118,8 +118,8 @@ private:
   std::string parse_key_value_key();
   node_ptr<value_node> parse_key_value_value(); // TODO
   node_ptr<array_value_node>
-  parse_array_value(const std::string &raw_value, const file_pos &start_pos,
-                    bool check_past_closing_delimiter = true); // TODO
+  parse_array_value(const std::string &raw_value,
+                    const file_pos &start_pos); // TODO
   node_ptr<end_value_node<integer_end_value_node_t>>
   parse_integer_value(const std::string &raw_value, const file_pos &start_pos);
   node_ptr<end_value_node<float_end_value_node_t>>
