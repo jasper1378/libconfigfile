@@ -597,8 +597,6 @@ libconfigfile::parser::parse_key_value_value() {
           throw syntax_error::generate_formatted_error(
               m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
         } else {
-          // char cur_char{m_file_contents.get_char(m_cur_pos)}; //XXX
-
           if ((first_loop == true) && (cur_char == m_k_key_value_assign)) {
             ;
           } else {
@@ -714,8 +712,9 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
   int in_n_levels_of_sub_arrays{0};
   char cur_char{'\0'};
   char last_char{'\0'};
-  std::string cur_raw_element{};
-  std::vector<std::string> raw_elements{};
+
+  std::pair<std::string, file_pos> cur_raw_element{{}, start_pos};
+  std::vector<std::pair<std::string, file_pos>> raw_elements{};
 
   for (std::string::size_type raw_value_idx{0};
        (raw_value_idx < raw_value.size()) &&
@@ -749,7 +748,8 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
               m_file_contents, (start_pos + raw_value_idx), what_arg);
         } else {
           last_char_type = char_type::element_proper;
-          cur_raw_element.push_back(cur_char);
+          cur_raw_element.second = (start_pos + raw_value_idx);
+          cur_raw_element.first.push_back(cur_char);
 
           if (cur_char == m_k_string_delimiter) {
             in_string = !in_string;
@@ -772,7 +772,8 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
               m_file_contents, (start_pos + raw_value_idx), what_arg);
         } else {
           last_char_type = char_type::element_proper;
-          cur_raw_element.push_back(cur_char);
+          cur_raw_element.second = (start_pos + raw_value_idx);
+          cur_raw_element.first.push_back(cur_char);
 
           if (cur_char == m_k_string_delimiter) {
             in_string = !in_string;
@@ -791,7 +792,7 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
                  (in_string == false) && (in_n_levels_of_sub_arrays == 0)) {
         last_char_type = char_type::closing_delimiter;
       } else {
-        cur_raw_element.push_back(cur_char);
+        cur_raw_element.first.push_back(cur_char);
 
         if (cur_char == m_k_string_delimiter) {
           if (in_string == false) {
@@ -799,11 +800,13 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
           } else if ((in_string == true) && (last_char != m_k_escape_leader)) {
             in_string = !in_string;
           }
+        } else if ((cur_char == m_k_array_opening_delimiter) &&
+                   (in_string == false)) {
+          ++in_n_levels_of_sub_arrays;
+        } else if ((cur_char == m_k_array_closing_delimiter) &&
+                   (in_string == false)) {
+          --in_n_levels_of_sub_arrays;
         }
-
-        /*sub-arrays...*/
-
-        // TODO continue from here
       }
     } break;
 
@@ -815,10 +818,6 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char == m_k_array_element_separator) {
           last_char_type = char_type::element_separator;
-          if (cur_raw_element.empty() == false) {
-            raw_elements.push_back(std::move(cur_raw_element));
-            cur_raw_element.clear();
-          }
         } else {
           std::string what_arg{
               "expected array closing delimiter or element separator"};
@@ -829,10 +828,9 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     } break;
 
     case char_type::element_separator: {
-      if (cur_raw_element.empty() == false) {
-        // TODO where to put this?
+      if (cur_raw_element.first.empty() == false) {
         raw_elements.push_back(std::move(cur_raw_element));
-        cur_raw_element.clear();
+        cur_raw_element.first.clear();
       }
 
       if (is_whitespace(cur_char) == true) {
@@ -846,7 +844,8 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
               m_file_contents, (start_pos + raw_value_idx), what_arg);
         } else {
           last_char_type = char_type::element_proper;
-          cur_raw_element.push_back(cur_char);
+          cur_raw_element.second = (start_pos + raw_value_idx);
+          cur_raw_element.first.push_back(cur_char);
 
           if (cur_char == m_k_string_delimiter) {
             in_string = !in_string;
@@ -858,10 +857,9 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     } break;
 
     case char_type::closing_delimiter: {
-      if (cur_raw_element.empty() == false) {
-        // TODO where to put this?
+      if (cur_raw_element.first.empty() == false) {
         raw_elements.push_back(std::move(cur_raw_element));
-        cur_raw_element.clear();
+        cur_raw_element.first.clear();
       }
 
       if (is_whitespace(cur_char) == true) {
@@ -894,6 +892,16 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     throw syntax_error::generate_formatted_error(
         m_file_contents, (start_pos + (raw_value.size() - 1)), what_arg);
   }
+
+  node_ptr<array_value_node> ret_val{make_node_ptr<array_value_node>()};
+  ret_val->reserve(raw_elements.size());
+
+  for (size_t i{0}; i < raw_elements.size(); ++i) {
+    ret_val->push_back(call_appropriate_value_parse_func(
+        raw_elements[i].first, raw_elements[i].second));
+  }
+
+  return ret_val;
 }
 
 libconfigfile::node_ptr<
@@ -1673,6 +1681,63 @@ libconfigfile::parser::parse_string_value(const std::string &raw_value,
       return make_node_ptr<end_value_node<string_end_value_node_t>>(
           string_contents);
     }
+  }
+}
+
+libconfigfile::node_ptr<libconfigfile::value_node>
+libconfigfile::parser::call_appropriate_value_parse_func(
+    const std::string &raw_value, const file_pos &start_pos) {
+
+  std::variant<value_node_type, end_value_node_type> value_type_variant{
+      identify_key_value_value_type(raw_value)};
+
+  switch (value_type_variant.index()) {
+
+  case 0: {
+    value_node_type value_type_extracted{std::get<0>(value_type_variant)};
+
+    switch (value_type_extracted) {
+
+    case value_node_type::ARRAY: {
+      return node_ptr_cast<value_node>(parse_array_value(raw_value, start_pos));
+    } break;
+
+    default: {
+      throw std::runtime_error{
+          "invalid value type returned by identify_key_value_value_type()"};
+    } break;
+    }
+  } break;
+
+  case 1: {
+    end_value_node_type value_type_extracted{std::get<1>(value_type_variant)};
+
+    switch (value_type_extracted) {
+
+    case end_value_node_type::STRING: {
+      return node_ptr_cast<value_node>(
+          parse_string_value(raw_value, start_pos));
+    } break;
+
+    case end_value_node_type::INTEGER: {
+      return node_ptr_cast<value_node>(
+          parse_integer_value(raw_value, start_pos));
+    } break;
+
+    case end_value_node_type::FLOAT: {
+      return node_ptr_cast<value_node>(parse_float_value(raw_value, start_pos));
+    } break;
+
+    default: {
+      throw std::runtime_error{
+          "invalid value type returned by identify_key_value_value_type()"};
+    } break;
+    }
+  } break;
+
+  default: {
+    throw std::runtime_error{"impossible"};
+  } break;
   }
 }
 
