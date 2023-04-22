@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -11,13 +12,13 @@
 
 libconfigfile::file::file() : m_file_path{}, m_file_contents{} {}
 
-libconfigfile::file::file(const std::string &file_path,
-                          bool insert_newlines /*= true*/)
+libconfigfile::file::file(const std::filesystem::path &file_path,
+                          bool insert_newlines /*= false*/)
     : m_file_path{file_path}, m_file_contents{
                                   read_file(m_file_path, insert_newlines)} {}
 
-libconfigfile::file::file(std::string &&file_path,
-                          bool insert_newlines /*= true*/)
+libconfigfile::file::file(std::filesystem::path &&file_path,
+                          bool insert_newlines /*= false*/)
     : m_file_path{std::move(file_path)}, m_file_contents{read_file(
                                              m_file_path, insert_newlines)} {}
 
@@ -45,7 +46,13 @@ libconfigfile::file::create_file_pos(const file_pos &start_pos) const {
   return file_pos{this, start_pos};
 }
 
-const char &libconfigfile::file::get_char(const file_pos &pos) const {
+libconfigfile::file_pos
+libconfigfile::file::create_file_pos(const size_t start_pos_line,
+                                     const size_t start_pos_char) {
+  return file_pos{this, start_pos_line, start_pos_char};
+}
+
+char libconfigfile::file::get_char(const file_pos &pos) const {
   if (pos.get_paired_file() != this) {
     throw std::runtime_error{"given file_pos is not paired with "
                              "this file"};
@@ -132,7 +139,7 @@ libconfigfile::file::read_file(const std::string &file_path,
                                const bool insert_newlines /*= false*/) {
   std::ifstream input_file{file_path};
 
-  if (!input_file) {
+  if (!input_file.is_open()) {
     throw std::runtime_error{"file \"" + file_path +
                              "\" could not be opened for "
                              "reading"};
@@ -148,7 +155,7 @@ libconfigfile::file::read_file(const std::string &file_path,
       new_line.push_back(m_k_newline);
     }
 
-    file_contents.push_back(new_line);
+    file_contents.push_back(std::move(new_line));
   }
 
   return file_contents;
@@ -160,6 +167,23 @@ libconfigfile::file_pos::file_pos(const file *file_in_which_to_move)
   if (file_in_which_to_move == nullptr) {
     throw std::runtime_error{"file cannot be null"};
   }
+
+  if (file_in_which_to_move->get_array().empty() == true) {
+    set_bof();
+    set_eof();
+  } else {
+    bool all_empty{true};
+    for (size_t i{0}; i < file_in_which_to_move->get_array().size(); ++i) {
+      if (file_in_which_to_move->get_array()[i].empty() == false) {
+        all_empty = false;
+        break;
+      }
+    }
+    if (all_empty == true) {
+      set_bof();
+      set_eof();
+    }
+  }
 }
 
 libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
@@ -168,6 +192,22 @@ libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
       m_char{start_pos.m_char}, m_bof{start_pos.m_bof}, m_eof{start_pos.m_eof} {
   if (file_in_which_to_move == nullptr) {
     throw std::runtime_error{"file cannot be null"};
+  }
+}
+
+libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
+                                  const size_t start_pos_line,
+                                  const size_t start_pos_char)
+    : m_file{file_in_which_to_move}, m_line{start_pos_line},
+      m_char{start_pos_char}, m_bof{false}, m_eof{false} {
+
+  if (start_pos_line >= file_in_which_to_move->get_array().size()) {
+    throw std::runtime_error{"out-of-range starting line position argument "
+                             "provided to file_pos constructor"};
+  } else if (start_pos_char >=
+             file_in_which_to_move->get_array()[start_pos_line].size()) {
+    throw std::runtime_error{"out-of-range starting char position argument "
+                             "provided to file_pos constructor"};
   }
 }
 
@@ -190,6 +230,15 @@ const libconfigfile::file *libconfigfile::file_pos::get_paired_file() const {
   return m_file;
 }
 
+libconfigfile::file_pos libconfigfile::file_pos::get_start_of_file_pos() const {
+  return file_pos{m_file, 0, 0};
+};
+
+libconfigfile::file_pos libconfigfile::file_pos::get_end_of_file_pos() const {
+  return file_pos{m_file, (m_file->get_array().size() - 1),
+                  (m_file->get_array().back().size() - 1)};
+};
+
 bool libconfigfile::file_pos::is_bof() const { return m_bof; }
 
 bool libconfigfile::file_pos::is_eof() const { return m_eof; }
@@ -200,7 +249,8 @@ size_t libconfigfile::file_pos::get_char() const { return m_char; }
 
 void libconfigfile::file_pos::set_line(const size_t line_val) {
   if (line_val >= m_file->get_array().size()) {
-    throw std::runtime_error{"line value is out of range"};
+    throw std::runtime_error{
+        "out-of-range line position argument provided to file_pos::set_line()"};
   } else {
     m_line = line_val;
   }
@@ -208,7 +258,8 @@ void libconfigfile::file_pos::set_line(const size_t line_val) {
 
 void libconfigfile::file_pos::set_char(const size_t char_val) {
   if (char_val >= m_file->get_line(*this).size()) {
-    throw std::runtime_error{"char value is out of range"};
+    throw std::runtime_error{
+        "out-of-range line position argument provided to file_pos::set_char()"};
   } else {
     m_char = char_val;
   }
@@ -304,6 +355,29 @@ void libconfigfile::file_pos::goto_find_start(const std::string &to_find) {
   }
 }
 
+void libconfigfile::file_pos::goto_find_start(const char to_find) {
+  if (m_eof == true) {
+    return;
+  }
+
+  while (true) {
+    std::string::size_type pos{m_file->get_line(*this).find(to_find, m_char)};
+
+    if (pos == std::string::npos) {
+      goto_next_line();
+
+      if (m_eof == true) {
+        return;
+      } else {
+        continue;
+      }
+    } else {
+      m_char = pos;
+      return;
+    }
+  }
+}
+
 void libconfigfile::file_pos::goto_find_end(const std::string &to_find) {
   if (m_eof == true) {
     return;
@@ -313,7 +387,39 @@ void libconfigfile::file_pos::goto_find_end(const std::string &to_find) {
   goto_next_char(to_find.size());
 }
 
+void libconfigfile::file_pos::goto_find_end(const char to_find) {
+  if (m_eof == true) {
+    return;
+  }
+
+  goto_find_start(to_find);
+  goto_next_char(1);
+}
+
 void libconfigfile::file_pos::goto_rfind_start(const std::string &to_find) {
+  if (m_bof == true) {
+    return;
+  }
+
+  while (true) {
+    std::string::size_type pos{m_file->get_line(*this).rfind(to_find, m_char)};
+
+    if (pos == std::string::npos) {
+      goto_prev_line();
+
+      if (m_bof == true) {
+        return;
+      } else {
+        continue;
+      }
+    } else {
+      m_char = pos;
+      return;
+    }
+  }
+}
+
+void libconfigfile::file_pos::goto_rfind_start(const char to_find) {
   if (m_bof == true) {
     return;
   }
@@ -343,6 +449,15 @@ void libconfigfile::file_pos::goto_rfind_end(const std::string &to_find) {
 
   goto_rfind_start(to_find);
   goto_next_char(to_find.size());
+}
+
+void libconfigfile::file_pos::goto_rfind_end(const char to_find) {
+  if (m_bof == true) {
+    return;
+  }
+
+  goto_rfind_start(to_find);
+  goto_next_char(1);
 }
 
 void libconfigfile::file_pos::goto_find_first_of(const std::string &to_find) {
@@ -472,13 +587,7 @@ void libconfigfile::file_pos::goto_end_of_whitespace(
   }
 
   static const auto is_whitespace{[&whitespace_chars](char c) -> bool {
-    for (size_t i{0}; i < whitespace_chars.size(); ++i) {
-      if (c == whitespace_chars[i]) {
-        return true;
-      }
-    }
-
-    return false;
+    return ((whitespace_chars.find(c)) != (std::string::npos));
   }};
 
   if (is_whitespace(m_file->get_char(*this)) == false) {
@@ -517,13 +626,7 @@ void libconfigfile::file_pos::goto_start_of_whitespace(
   }
 
   static const auto is_whitespace{[&whitespace_chars](char c) -> bool {
-    for (size_t i{0}; i < whitespace_chars.size(); ++i) {
-      if (c == whitespace_chars[i]) {
-        return true;
-      }
-    }
-
-    return false;
+    return ((whitespace_chars.find(c)) != (std::string::npos));
   }};
 
   if (is_whitespace(m_file->get_char(*this)) == false) {
@@ -553,6 +656,15 @@ void libconfigfile::file_pos::goto_start_of_whitespace(
     const std::vector<char> &whitespace_chars) {
   goto_start_of_whitespace(
       std::string{whitespace_chars.begin(), whitespace_chars.end()});
+}
+
+bool libconfigfile::file_pos::is_located_on_occurence_of(
+    const std::string &str) const {
+  return ((m_char) == ((m_file->get_line(*this)).find(str, m_char)));
+}
+
+bool libconfigfile::file_pos::is_located_on_occurence_of(const char ch) const {
+  return ((m_file->get_char(*this)) == (ch));
 }
 
 libconfigfile::file_pos &

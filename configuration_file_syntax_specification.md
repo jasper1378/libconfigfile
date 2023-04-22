@@ -49,6 +49,7 @@ key4 = "/* string, not a comment */";
 - Keys may only containt ACII letters, ASCII digits, and underscores. Note that
   keys composed only of ASCII digits (eg. `1234`) are allowed, but are always
   interpreted as strings.
+- Key names must appear completely on one line.
 - Undefined keys are invalid.
 - Defining a key multiple times in the same scope is invalid.
 - Undefined values are invalid.
@@ -115,7 +116,7 @@ value3 = "The quick" /* comment */ " brown fox " // another comment
 - For large numbers, you may use underscores between digits to enhance readability. Each underscore must be surrounded by at least one digit on each side.
 - Integers values must be within the range of a signed 64-bit integer ((-2^(63)) to (2^(63)-1)).
 - `-0` and `+0` are valid and identical to an unprefixed zero.
-- Non-negative integer values may also be expressed in hexadecimal (`0x` prefix), octal (`0o` prefix), or binary (`0b` prefix) formats. In these formats, a leading plus sign is not allowed. Hexadecimal values are case-insensitive.
+- Integer values may also be expressed in hexadecimal (`0x` or `0X` prefix), octal (`0o` or `0O` prefix), or binary (`0b` or `0B` prefix) formats. Hexadecimal values are case-insensitive.
 ```
 int1 = +99;
 int2 = 42;
@@ -134,7 +135,7 @@ oct1 = 0o1234567;
 oct2 = 0o755;
 
 bin1 = 0b11010110;
-bin2 = +0b1010; // invalid
+bin2 = -0b11010110;
 ```
 
 ## Floats
@@ -157,19 +158,19 @@ flt6 = -2E-2;
 
 flt7 = 6.626e-24;
 
-invalid_float_1 = .7;
-invalid_float_2 = 7.;
-invaid_float_3 = 3.e+20;
+flt8 = .7; // invalid
+flt9 = 7.; // invalid
+flt10 = 3.e+20; // invalid
 
-flt8 = 224_617.445_991_228;
+flt11 = 224_617.445_991_228;
 
-sf1 = inf;
-sf2 = +inf;
-sf3 = -inf;
+ftl12 = inf;
+ftl13 = +inf;
+ftl14 = -inf;
 
-sf4 = nan;
-sf5 = +nan;
-sf6 = -nan;
+flt15 = nan;
+flt16 = +nan;
+flt17 = -nan;
 ```
 
 ## Booleans
@@ -184,7 +185,7 @@ sf6 = -nan;
 integers = [ 1, 2, 3 ];
 colors = [ "red", "yellow", "green" ];
 
-nested_array_of_ints = [ [ 1, 2], [ 3, 4, 5 ] ];
+nested_array_of_ints = [ [ 1, 2 ], [ 3, 4, 5 ] ];
 nested_mixed_array = [ [ 1, 2 ], [ "a", "b", "c" ] ];
 
 numbers = [ 0.1, 0.2, 0.5, 1, 2, 5, "one", "two", "five" ];
@@ -206,7 +207,10 @@ integers3 = [
 - Sections may be nested.
 - Keys/sections may not share names with other keys/sections in the same direct scope.
 - Naming rules for sections are the same as for keys.
+- Section names must appear completely on one line.
+- Whitespace between the opening/closing round bracket and the section name is allowed and will be ignored.
 - Empty sections are allowed and simply have no key-value pairs and/or sections within them.
+- Empty section names are not permitted.
 - The ordering of objects within a section is not preserved (for performance reasons).
 - The top-level section, also called the root section, starts at the beginning of the document and ends at end-of-file, encompassing everything else in its scope. Unlike other sections, it is nameless.
 ```
@@ -281,8 +285,8 @@ key = "value"; @directive "argument1" // invalid
 ### Include Directive
 - This directive directs the parser to inline the contents of another file at the location of the directive.
 - This directive takes one required argument: the path of the file to be inlined, enclosed by double quotes.
-- If the path of the inlined file is not absolute (i.e. beginning with `/`), it is interpreted as being relative to the location of the current config file.
- - Currently the parser does not check for recursive includeds. You have been warned! If the parser segfaults due to a stack overflow, you only have yourself to blame!
+- The file path string supports the same escape characters as regular key-value strings; adjacent strings will not be concatenated.
+- Currently the parser does not check for recursive includeds. You have been warned! If the parser segfaults due to a stack overflow, you only have yourself to blame!
 ```
 // main.conf
 key1 = "value";

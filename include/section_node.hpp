@@ -160,7 +160,7 @@ public:
   auto find(const K &x) const -> decltype(m_contents.find(x)) {
     return m_contents.find(x);
   }
-  bool contains(const key &key) const;
+  bool contains(const key_type &key) const;
   template <typename K>
   auto contains(const K &x) const -> decltype(m_contents.contains(x)) {
     return m_contents.contains(x);

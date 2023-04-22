@@ -1,6 +1,7 @@
 #ifndef LIBCONFIGFILE_FILE_HPP
 #define LIBCONFIGFILE_FILE_HPP
 
+#include <filesystem>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -10,7 +11,7 @@ class file_pos;
 
 class file {
 private:
-  std::string m_file_path;
+  std::filesystem::path m_file_path;
   std::vector<std::string> m_file_contents;
 
 private:
@@ -18,8 +19,8 @@ private:
 
 public:
   file();
-  file(const std::string &file_path, bool insert_newlines = true);
-  file(std::string &&file_path, bool insert_newlines = true);
+  file(const std::filesystem::path &file_path, bool insert_newlines = false);
+  file(std::filesystem::path &&file_path, bool insert_newlines = false);
   file(const file &other);
   file(file &&other) noexcept;
 
@@ -32,8 +33,10 @@ public:
 
   file_pos create_file_pos() const;
   file_pos create_file_pos(const file_pos &start_pos) const;
+  file_pos create_file_pos(const size_t start_pos_line,
+                           const size_t start_pos_char);
 
-  const char &get_char(const file_pos &pos) const;
+  char get_char(const file_pos &pos) const;
   const std::string &get_line(const file_pos &pos) const;
   const std::vector<std::string> &get_array() const;
 
@@ -67,6 +70,8 @@ private:
 public:
   file_pos(const file *file_in_which_to_move);
   file_pos(const file *file_in_which_to_move, const file_pos &start_pos);
+  file_pos(const file *file_in_which_to_move, const size_t start_pos_line,
+           const size_t start_pos_char);
   file_pos(const file_pos &other);
   file_pos(file_pos &&other);
 
@@ -76,6 +81,9 @@ public:
 public:
   bool is_paired(const file &f) const;
   const file *get_paired_file() const;
+
+  file_pos get_start_of_file_pos() const;
+  file_pos get_end_of_file_pos() const;
 
   bool is_bof() const;
   bool is_eof() const;
@@ -91,9 +99,13 @@ public:
   void goto_prev_char(size_t chars_to_move = 1);
 
   void goto_find_start(const std::string &to_find);
+  void goto_find_start(const char to_find);
   void goto_find_end(const std::string &to_find);
+  void goto_find_end(const char to_find);
   void goto_rfind_start(const std::string &to_find);
+  void goto_rfind_start(const char to_find);
   void goto_rfind_end(const std::string &to_find);
+  void goto_rfind_end(const char to_find);
 
   void goto_find_first_of(const std::string &to_find);
   void goto_find_first_of(const std::vector<char> &to_find);
@@ -110,6 +122,9 @@ public:
   void goto_start_of_whitespace(const std::string &whitespace_chars = " \t");
   void goto_start_of_whitespace(const std::vector<char> &whitespace_chars = {
                                     ' ', '\t'});
+
+  bool is_located_on_occurence_of(const std::string &str) const;
+  bool is_located_on_occurence_of(const char ch) const;
 
 public:
   file_pos &operator=(const file_pos &other);

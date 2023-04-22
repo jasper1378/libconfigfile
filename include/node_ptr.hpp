@@ -28,11 +28,9 @@ public:
 
   explicit node_ptr(ptr_t ptr) : m_ptr{ptr} {}
 
-  node_ptr(const node_ptr &other) : m_ptr{other.m_ptr->create_clone()} {}
+  node_ptr(const node_ptr &other) : m_ptr{other.get()->create_clone()} {}
 
-  node_ptr(node_ptr &&other) noexcept : m_ptr{other.m_ptr} {
-    other.m_ptr = nullptr;
-  }
+  node_ptr(node_ptr &&other) noexcept : m_ptr{other.release()} {};
 
   ~node_ptr() {
     delete m_ptr;
@@ -49,7 +47,6 @@ public:
   void reset(ptr_t ptr = nullptr) {
     ptr_t old_ptr{m_ptr};
     m_ptr = ptr;
-
     delete old_ptr;
   }
 
@@ -60,18 +57,13 @@ public:
 
   ptr_t get() const { return m_ptr; }
 
-  template <is_node_type cast_t> node_ptr<cast_t> cast() const {
-    return node_ptr<cast_t>{dynamic_cast<decltype(node_ptr<cast_t>{}.m_ptr)>(
-        m_ptr->create_clone())};
-  }
-
 public:
   node_ptr &operator=(const node_ptr &other) {
     if (this == &other) {
       return *this;
     }
 
-    reset(other.m_ptr->create_clone());
+    reset(other.get()->create_clone());
 
     return *this;
   }
@@ -81,8 +73,7 @@ public:
       return *this;
     }
 
-    reset(other.m_ptr);
-    other.m_ptr = nullptr;
+    reset(other.release());
 
     return *this;
   }
@@ -98,6 +89,11 @@ public:
   ptr_t operator->() const { return m_ptr; }
 
 public:
+  template <is_node_type cast_t, is_node_type start_t>
+  friend node_ptr<cast_t> node_ptr_cast(const node_ptr<start_t> &np);
+  template <is_node_type cast_t, is_node_type start_t>
+  friend node_ptr<cast_t> node_ptr_cast(node_ptr<start_t> &&np);
+
   template <is_node_type node_t1, is_node_type node_t2>
   friend bool operator==(const node_ptr<node_t1> &x,
                          const node_ptr<node_t2> &y);
@@ -149,6 +145,17 @@ public:
   friend std::compare_three_way_result_t<typename node_ptr<node_t1>::ptr_t>
   operator<=>(const node_ptr<node_t1> &x, std::nullptr_t);
 };
+
+template <is_node_type cast_t, is_node_type start_t>
+node_ptr<cast_t> node_ptr_cast(const node_ptr<start_t> &np) {
+  return node_ptr<cast_t>{
+      dynamic_cast<typename node_ptr<cast_t>::ptr_t>(np.get()->create_clone())};
+};
+template <is_node_type cast_t, is_node_type start_t>
+node_ptr<cast_t> node_ptr_cast(node_ptr<start_t> &&np) {
+  return node_ptr<cast_t>{
+      dynamic_cast<typename node_ptr<cast_t>::ptr_t>(np.release())};
+}
 
 template <is_node_type node_t, typename... args_t>
 node_ptr<node_t> make_node_ptr(args_t &&...args) {
@@ -268,47 +275,3 @@ operator<=>(const node_ptr<node_t1> &x, std::nullptr_t) {
 } // namespace libconfigfile
 
 #endif
-
-// friend bool operator==(const node_ptr &first, const node_ptr &second);
-//
-// friend bool operator==(const node_ptr &first, std::nullptr_t);
-//
-// friend bool operator==(std::nullptr_t, const node_ptr &second);
-//
-// friend bool operator!=(const node_ptr &first, const node_ptr &second);
-//
-// friend bool operator!=(const node_ptr &first, std::nullptr_t);
-//
-// friend bool operator!=(std::nullptr_t, const node_ptr &second);
-
-// template <is_node_type node_t>
-// bool operator==(const node_ptr<node_t> &first, const node_ptr<node_t>
-// &second) {
-//   return first.m_ptr == second.m_ptr;
-// }
-//
-// template <is_node_type node_t>
-// bool operator==(const node_ptr<node_t> &first, std::nullptr_t) {
-//   return first.m_ptr == nullptr;
-// }
-//
-// template <is_node_type node_t>
-// bool operator==(std::nullptr_t, const node_ptr<node_t> &second) {
-//   return nullptr == second.m_ptr;
-// }
-//
-// template <is_node_type node_t>
-// bool operator!=(const node_ptr<node_t> &first, const node_ptr<node_t>
-// &second) {
-//   return first.m_ptr != second.m_ptr;
-// }
-//
-// template <is_node_type node_t>
-// bool operator!=(const node_ptr<node_t> &first, std::nullptr_t) {
-//   return first.m_ptr != nullptr;
-// }
-//
-// template <is_node_type node_t>
-// bool operator!=(std::nullptr_t, const node_ptr<node_t> &second) {
-//   return nullptr != second.m_ptr;
-// }
