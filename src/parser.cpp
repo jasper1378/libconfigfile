@@ -25,6 +25,8 @@
 #include <variant>
 #include <vector>
 
+#include <iostream> //XXX
+
 const std::unordered_map<char, char>
     libconfigfile::parser::m_k_basic_escape_chars{
         {'a', 0x07}, {'b', 0x08}, {'f', 0x0C},  {'n', 0x0A},  {'r', 0x0D},
@@ -887,7 +889,8 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     }
   }
 
-  if (last_char_type != char_type::done) {
+  if (!((last_char_type == char_type::done) ||
+        (last_char_type == char_type::closing_delimiter))) {
     std::string what_arg{"unterminated array"};
     throw syntax_error::generate_formatted_error(
         m_file_contents, (start_pos + (raw_value.size() - 1)), what_arg);
@@ -2600,4 +2603,127 @@ std::string libconfigfile::parser::string_to_lower(const std::string &str) {
   }
 
   return ret_val;
+}
+
+void libconfigfile::parser::test() {
+  parser p{"/home/jasper1378/Downloads/dummy_file.txt"};
+
+  std::string arr_str_0{"[ 1, 2, 3 ]"};
+  node_ptr<array_value_node> arr_arr_0{make_node_ptr<array_value_node>(
+      std::initializer_list<node_ptr<value_node>>{
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<integer_end_value_node_t>>(2))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<integer_end_value_node_t>>(3)))})};
+  if (p.call_appropriate_value_parse_func(arr_str_0, p.m_cur_pos) !=
+      arr_arr_0) {
+    std::cerr << "test 0 failed\n";
+    std::exit(1);
+  } else {
+    std::cerr << "test 0 passed\n";
+  }
+
+  std::string arr_str_1{" \"red\", \"yellow\", \"green\" ]"};
+  node_ptr<array_value_node> arr_arr_1{make_node_ptr<
+      array_value_node>(std::initializer_list<node_ptr<value_node>>{
+      (node_ptr_cast<value_node>(
+          make_node_ptr<end_value_node<string_end_value_node_t>>("red"))),
+      (node_ptr_cast<value_node>(
+          make_node_ptr<end_value_node<string_end_value_node_t>>("yellow"))),
+      (node_ptr_cast<value_node>(
+          make_node_ptr<end_value_node<string_end_value_node_t>>("green")))})};
+  if (p.call_appropriate_value_parse_func(arr_str_1, p.m_cur_pos) !=
+      arr_arr_1) {
+    std::cerr << "test 1 failed\n";
+    std::exit(1);
+  } else {
+    std::cerr << "test 1 passed\n";
+  }
+
+  std::string arr_str_2{"[ [ 1, 2 ], [ 3, 4, 5 ] ]"};
+  node_ptr<array_value_node> arr_arr_2{make_node_ptr<
+      array_value_node>(std::initializer_list<node_ptr<value_node>>{
+      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+          std::initializer_list<node_ptr<value_node>>{
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<integer_end_value_node_t>>(
+                      2)))}))),
+      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+          std::initializer_list<node_ptr<value_node>>{
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<integer_end_value_node_t>>(3))),
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<integer_end_value_node_t>>(4))),
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<integer_end_value_node_t>>(
+                      5)))})))})};
+  if (p.call_appropriate_value_parse_func(arr_str_2, p.m_cur_pos) !=
+      arr_arr_2) {
+    std::cerr << "test 2 failed\n";
+    std::exit(1);
+  } else {
+    std::cerr << "test 2 passed\n";
+  }
+
+  std::string arr_str_3{"[ [ 1, 2 ], [ \"a\", \"b\", \"c\" ] ]"};
+  node_ptr<array_value_node> arr_arr_3{make_node_ptr<
+      array_value_node>(std::initializer_list<node_ptr<value_node>>{
+      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+          std::initializer_list<node_ptr<value_node>>{
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<integer_end_value_node_t>>(
+                      2)))}))),
+      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+          std::initializer_list<node_ptr<value_node>>{
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<string_end_value_node_t>>("a"))),
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<string_end_value_node_t>>("b"))),
+              (node_ptr_cast<value_node>(
+                  make_node_ptr<end_value_node<string_end_value_node_t>>(
+                      "c")))})))})};
+  if (p.call_appropriate_value_parse_func(arr_str_3, p.m_cur_pos) !=
+      arr_arr_3) {
+    std::cerr << "test 3 failed\n";
+    std::exit(1);
+  } else {
+    std::cerr << "test 3 passed\n";
+  }
+
+  std::string arr_str_4{
+      "[ 0.1, 0.2, 0.5, 1, 2, 5, \"one\", \"two\", \"five\" ]"};
+  node_ptr<array_value_node> arr_arr_4{make_node_ptr<array_value_node>(
+      std::initializer_list<node_ptr<value_node>>{
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<float_end_value_node_t>>(0.1))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<float_end_value_node_t>>(0.2))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<float_end_value_node_t>>(0.5))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<integer_end_value_node_t>>(2))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<integer_end_value_node_t>>(5))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<string_end_value_node_t>>("one"))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<string_end_value_node_t>>("two"))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<end_value_node<string_end_value_node_t>>(
+                  "five")))})};
+  if (p.call_appropriate_value_parse_func(arr_str_4, p.m_cur_pos) !=
+      arr_arr_4) {
+    std::cerr << "test 4 failed\n";
+    std::exit(1);
+  } else {
+    std::cerr << "test 4 passed\n";
+  }
 }
