@@ -4,8 +4,6 @@
 #include "node.hpp"
 #include "node_types.hpp"
 
-#include <cstddef>
-
 namespace libconfigfile {
 class value_node : public node {
 public:
