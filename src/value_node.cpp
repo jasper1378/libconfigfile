@@ -3,9 +3,6 @@
 #include "node.hpp"
 #include "node_types.hpp"
 
-#include <cstddef>
-#include <utility>
-
 libconfigfile::value_node::~value_node() {}
 
 libconfigfile::node_type libconfigfile::value_node::get_node_type() const {
