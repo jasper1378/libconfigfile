@@ -2605,6 +2605,58 @@ std::string libconfigfile::parser::string_to_lower(const std::string &str) {
 }
 
 void libconfigfile::parser::test() {
+
+  std::function<void(const node_ptr<array_value_node> &)> print_array{
+      [&print_array](const node_ptr<array_value_node> &arr) -> void {
+        std::cout << "[";
+        for (size_t i{0}; i < arr->size(); ++i) {
+          switch (arr->operator[](i)->get_value_node_type()) {
+          case value_node_type::ARRAY: {
+            print_array(node_ptr_cast<array_value_node>(arr->operator[](i)));
+          } break;
+
+          case value_node_type::END_VALUE: {
+            node_ptr<end_value_node> arr_as_end_value_node{
+                node_ptr_cast<end_value_node>(arr->operator[](i))};
+            switch (arr_as_end_value_node->get_end_value_node_type()) {
+            case end_value_node_type::INTEGER: {
+              std::cout << node_ptr_cast<integer_end_value_node>(
+                               arr_as_end_value_node)
+                               ->get();
+            } break;
+
+            case end_value_node_type::FLOAT: {
+              std::cout << node_ptr_cast<float_end_value_node>(
+                               arr_as_end_value_node)
+                               ->get();
+            } break;
+
+            case end_value_node_type::STRING: {
+              std::cout << node_ptr_cast<float_end_value_node>(
+                               arr_as_end_value_node)
+                               ->get();
+            } break;
+
+            default: {
+              std::cerr << "can't print\n";
+              std::exit(1);
+            } break;
+            }
+          } break;
+
+          default: {
+            std::cerr << "can't print\n";
+            std::exit(1);
+          } break;
+          }
+
+          if (i != (arr->size() - 1)) {
+            std::cout << ",";
+          }
+        }
+        std::cout << "]";
+      }};
+
   parser p{"/home/jasper1378/Downloads/dummy_file.txt"};
 
   std::string arr_str_0{"[ 1, 2, 3 ]"};
@@ -2614,13 +2666,18 @@ void libconfigfile::parser::test() {
           (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(2))),
           (node_ptr_cast<value_node>(
               make_node_ptr<integer_end_value_node>(3)))})};
-  if (p.call_appropriate_value_parse_func(arr_str_0, p.m_cur_pos) !=
-      arr_arr_0) {
-    std::cerr << "test 0 failed\n";
+  node_ptr<value_node> arr_res_0{
+      p.call_appropriate_value_parse_func(arr_str_0, p.m_cur_pos)};
+  std::cout << "test 0\n";
+  print_array(node_ptr_cast<array_value_node>(arr_res_0));
+  std::cout << '\n';
+  if ((*(node_ptr_cast<array_value_node>(arr_res_0))) != (*arr_arr_0)) {
+    std::cerr << "failed\n";
     std::exit(1);
   } else {
-    std::cerr << "test 0 passed\n";
+    std::cerr << "passed\n";
   }
+  std::cout << '\n';
 
   std::string arr_str_1{" \"red\", \"yellow\", \"green\" ]"};
   node_ptr<array_value_node> arr_arr_1{make_node_ptr<array_value_node>(
@@ -2631,13 +2688,18 @@ void libconfigfile::parser::test() {
               make_node_ptr<string_end_value_node>("yellow"))),
           (node_ptr_cast<value_node>(
               make_node_ptr<string_end_value_node>("green")))})};
-  if (p.call_appropriate_value_parse_func(arr_str_1, p.m_cur_pos) !=
-      arr_arr_1) {
-    std::cerr << "test 1 failed\n";
+  node_ptr<value_node> arr_res_1{
+      p.call_appropriate_value_parse_func(arr_str_1, p.m_cur_pos)};
+  std::cout << "test 1\n";
+  print_array(node_ptr_cast<array_value_node>(arr_res_1));
+  std::cout << '\n';
+  if ((*(node_ptr_cast<array_value_node>(arr_res_1))) != (*arr_arr_1)) {
+    std::cerr << "failed\n";
     std::exit(1);
   } else {
-    std::cerr << "test 1 passed\n";
+    std::cerr << "passed\n";
   }
+  std::cout << "\n";
 
   std::string arr_str_2{"[ [ 1, 2 ], [ 3, 4, 5 ] ]"};
   node_ptr<array_value_node> arr_arr_2{make_node_ptr<array_value_node>(
@@ -2656,13 +2718,18 @@ void libconfigfile::parser::test() {
                       make_node_ptr<integer_end_value_node>(4))),
                   (node_ptr_cast<value_node>(
                       make_node_ptr<integer_end_value_node>(5)))})))})};
-  if (p.call_appropriate_value_parse_func(arr_str_2, p.m_cur_pos) !=
-      arr_arr_2) {
-    std::cerr << "test 2 failed\n";
+  node_ptr<value_node> arr_res_2{
+      p.call_appropriate_value_parse_func(arr_str_2, p.m_cur_pos)};
+  std::cout << "test 2\n";
+  print_array(node_ptr_cast<array_value_node>(arr_res_2));
+  std::cout << '\n';
+  if ((*(node_ptr_cast<array_value_node>(arr_res_2))) != (*arr_arr_2)) {
+    std::cerr << "failed\n";
     std::exit(1);
   } else {
-    std::cerr << "test 2 passed\n";
+    std::cerr << "passed\n";
   }
+  std::cout << '\n';
 
   std::string arr_str_3{"[ [ 1, 2 ], [ \"a\", \"b\", \"c\" ] ]"};
   node_ptr<array_value_node> arr_arr_3{make_node_ptr<array_value_node>(
@@ -2681,13 +2748,18 @@ void libconfigfile::parser::test() {
                       make_node_ptr<string_end_value_node>("b"))),
                   (node_ptr_cast<value_node>(
                       make_node_ptr<string_end_value_node>("c")))})))})};
-  if (p.call_appropriate_value_parse_func(arr_str_3, p.m_cur_pos) !=
-      arr_arr_3) {
-    std::cerr << "test 3 failed\n";
+  node_ptr<value_node> arr_res_3{
+      p.call_appropriate_value_parse_func(arr_str_3, p.m_cur_pos)};
+  std::cout << "test 3\n";
+  print_array(node_ptr_cast<array_value_node>(arr_res_3));
+  std::cout << '\n';
+  if ((*(node_ptr_cast<array_value_node>(arr_res_3))) != (*arr_arr_3)) {
+    std::cerr << "failed\n";
     std::exit(1);
   } else {
-    std::cerr << "test 3 passed\n";
+    std::cerr << "passed\n";
   }
+  std::cout << '\n';
 
   std::string arr_str_4{
       "[ 0.1, 0.2, 0.5, 1, 2, 5, \"one\", \"two\", \"five\" ]"};
@@ -2703,11 +2775,16 @@ void libconfigfile::parser::test() {
       (node_ptr_cast<value_node>(make_node_ptr<string_end_value_node>("two"))),
       (node_ptr_cast<value_node>(
           make_node_ptr<string_end_value_node>("five")))})};
-  if (p.call_appropriate_value_parse_func(arr_str_4, p.m_cur_pos) !=
-      arr_arr_4) {
-    std::cerr << "test 4 failed\n";
+  node_ptr<value_node> arr_res_4{
+      p.call_appropriate_value_parse_func(arr_str_4, p.m_cur_pos)};
+  std::cout << "test 4\n";
+  print_array(node_ptr_cast<array_value_node>(arr_res_4));
+  std::cout << '\n';
+  if ((*(node_ptr_cast<array_value_node>(arr_res_4))) != (*arr_arr_4)) {
+    std::cerr << "failed\n";
     std::exit(1);
   } else {
-    std::cerr << "test 4 passed\n";
+    std::cerr << "passed\n";
   }
+  std::cout << '\n';
 }

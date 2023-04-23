@@ -86,7 +86,9 @@ public:
 
   explicit operator bool() const { return m_ptr != nullptr; }
 
-  ptr_t operator->() const { return m_ptr; }
+  node_t operator*() const { return *get(); };
+
+  ptr_t operator->() const { return get(); }
 
 public:
   template <is_node_type cast_t, is_node_type start_t>
