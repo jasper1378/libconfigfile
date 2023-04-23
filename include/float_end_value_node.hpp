@@ -1,5 +1,5 @@
-#ifndef LIBCONFIGFILE_INTEGER_END_VALUE_NODE
-#define LIBCONFIGFILE_INTEGER_END_VALUE_NODE
+#ifndef LIBCONFIGFILE_FLOAT_END_VALUE_NODE
+#define LIBCONFIGFILE_FLOAT_END_VALUE_NODE
 
 #include "end_value_node.hpp"
 #include "node_types.hpp"

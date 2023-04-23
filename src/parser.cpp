@@ -3,11 +3,14 @@
 #include "array_value_node.hpp"
 #include "end_value_node.hpp"
 #include "file.hpp"
+#include "float_end_value_node.hpp"
+#include "integer_end_value_node.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
 #include "section_node.hpp"
 #include "semantic_error.hpp"
+#include "string_end_value_node.hpp"
 #include "syntax_error.hpp"
 #include "value_node.hpp"
 
@@ -907,8 +910,7 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
   return ret_val;
 }
 
-libconfigfile::node_ptr<
-    libconfigfile::end_value_node<libconfigfile::integer_end_value_node_t>>
+libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
 libconfigfile::parser::parse_integer_value(const std::string &raw_value,
                                            const file_pos &start_pos) {
   // start_pos = first char of raw value
@@ -1128,25 +1130,25 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
       num_sys = &m_k_dec_num_sys;
     }
 
-    node_ptr<end_value_node<integer_end_value_node_t>> ret_val{nullptr};
+    node_ptr<integer_end_value_node> ret_val{nullptr};
 
-    static_assert(
-        (sizeof(decltype(std::stoll(""))) >= sizeof(integer_end_value_node_t)),
-        "no string-to-int conversion function (std::stoi(), "
-        "std::stol(), std::stoll()) with return type large "
-        "enough for integer_end_value_node_t");
+    static_assert((sizeof(decltype(std::stoll(""))) >=
+                   sizeof(integer_end_value_node_data_t)),
+                  "no string-to-int conversion function (std::stoi(), "
+                  "std::stol(), std::stoll()) with return type large "
+                  "enough for integer_end_value_node_t");
 
     try {
       if constexpr ((sizeof(decltype(std::stoi("")))) >=
-                    (sizeof(integer_end_value_node_t))) {
-        ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+                    (sizeof(integer_end_value_node_data_t))) {
+        ret_val = make_node_ptr<integer_end_value_node>(
             std::stoi(actual_digits, nullptr, num_sys->base));
       } else if constexpr ((sizeof(decltype(std::stol("")))) >=
-                           (sizeof(integer_end_value_node_t))) {
-        ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+                           (sizeof(integer_end_value_node_data_t))) {
+        ret_val = make_node_ptr<integer_end_value_node>(
             std::stol(actual_digits, nullptr, num_sys->base));
       } else {
-        ret_val = make_node_ptr<end_value_node<integer_end_value_node_t>>(
+        ret_val = make_node_ptr<integer_end_value_node>(
             std::stoll(actual_digits, nullptr, num_sys->base));
       }
     } catch (const std::out_of_range &ex) {
@@ -1163,8 +1165,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
   }
 }
 
-libconfigfile::node_ptr<
-    libconfigfile::end_value_node<libconfigfile::float_end_value_node_t>>
+libconfigfile::node_ptr<libconfigfile::float_end_value_node>
 libconfigfile::parser::parse_float_value(const std::string &raw_value,
                                          const file_pos &start_pos) {
   // start_pos = first char of raw value
@@ -1177,7 +1178,7 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
     std::string sanitized_string{};
     sanitized_string.reserve(raw_value.size());
 
-    static const std::unordered_map<std::string, float_end_value_node_t>
+    static const std::unordered_map<std::string, float_end_value_node_data_t>
         special_floats{
             {m_k_float_infinity.second, m_k_float_infinity.first},
             {(m_k_num_positive_sign + m_k_float_infinity.second),
@@ -1191,8 +1192,7 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
              (-m_k_float_not_a_number.first)}};
 
     if (special_floats.contains(raw_value)) {
-      return make_node_ptr<end_value_node<float_end_value_node_t>>(
-          special_floats.at(raw_value));
+      return make_node_ptr<float_end_value_node>(special_floats.at(raw_value));
     } else {
 
       enum class char_type {
@@ -1545,25 +1545,26 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
         sanitized_string = "0";
       }
 
-      node_ptr<end_value_node<float_end_value_node_t>> ret_val{nullptr};
+      node_ptr<float_end_value_node> ret_val{nullptr};
 
       static_assert(
-          (sizeof(decltype(std::stod(""))) >= sizeof(float_end_value_node_t)),
+          (sizeof(decltype(std::stod(""))) >=
+           sizeof(float_end_value_node_data_t)),
           "no string-to-float conversion function with return type large "
           "enough "
           "for float_end_value_node_t");
 
       try {
         if constexpr ((sizeof(decltype(std::stof("")))) >=
-                      (sizeof(float_end_value_node_t))) {
-          ret_val = make_node_ptr<end_value_node<float_end_value_node_t>>(
+                      (sizeof(float_end_value_node_data_t))) {
+          ret_val = make_node_ptr<float_end_value_node>(
               std::stof(sanitized_string, nullptr));
         } else if constexpr ((sizeof(decltype(std::stod("")))) >=
-                             (sizeof(float_end_value_node_t))) {
-          ret_val = make_node_ptr<end_value_node<float_end_value_node_t>>(
+                             (sizeof(float_end_value_node_data_t))) {
+          ret_val = make_node_ptr<float_end_value_node>(
               std::stod(sanitized_string, nullptr));
         } else {
-          ret_val = make_node_ptr<end_value_node<float_end_value_node_t>>(
+          ret_val = make_node_ptr<float_end_value_node>(
               std::stold(sanitized_string, nullptr));
         }
 
@@ -1578,8 +1579,7 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
   }
 }
 
-libconfigfile::node_ptr<
-    libconfigfile::end_value_node<libconfigfile::string_end_value_node_t>>
+libconfigfile::node_ptr<libconfigfile::string_end_value_node>
 libconfigfile::parser::parse_string_value(const std::string &raw_value,
                                           const file_pos &start_pos) {
   // start_pos = first char of raw value
@@ -1681,8 +1681,7 @@ libconfigfile::parser::parse_string_value(const std::string &raw_value,
       throw syntax_error::generate_formatted_error(
           m_file_contents, (start_pos + (raw_value.size() - 1)), what_arg);
     } else {
-      return make_node_ptr<end_value_node<string_end_value_node_t>>(
-          string_contents);
+      return make_node_ptr<string_end_value_node>(string_contents);
     }
   }
 }
@@ -2611,12 +2610,10 @@ void libconfigfile::parser::test() {
   std::string arr_str_0{"[ 1, 2, 3 ]"};
   node_ptr<array_value_node> arr_arr_0{make_node_ptr<array_value_node>(
       std::initializer_list<node_ptr<value_node>>{
+          (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(1))),
+          (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(2))),
           (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<integer_end_value_node_t>>(2))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<integer_end_value_node_t>>(3)))})};
+              make_node_ptr<integer_end_value_node>(3)))})};
   if (p.call_appropriate_value_parse_func(arr_str_0, p.m_cur_pos) !=
       arr_arr_0) {
     std::cerr << "test 0 failed\n";
@@ -2626,14 +2623,14 @@ void libconfigfile::parser::test() {
   }
 
   std::string arr_str_1{" \"red\", \"yellow\", \"green\" ]"};
-  node_ptr<array_value_node> arr_arr_1{make_node_ptr<
-      array_value_node>(std::initializer_list<node_ptr<value_node>>{
-      (node_ptr_cast<value_node>(
-          make_node_ptr<end_value_node<string_end_value_node_t>>("red"))),
-      (node_ptr_cast<value_node>(
-          make_node_ptr<end_value_node<string_end_value_node_t>>("yellow"))),
-      (node_ptr_cast<value_node>(
-          make_node_ptr<end_value_node<string_end_value_node_t>>("green")))})};
+  node_ptr<array_value_node> arr_arr_1{make_node_ptr<array_value_node>(
+      std::initializer_list<node_ptr<value_node>>{
+          (node_ptr_cast<value_node>(
+              make_node_ptr<string_end_value_node>("red"))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<string_end_value_node>("yellow"))),
+          (node_ptr_cast<value_node>(
+              make_node_ptr<string_end_value_node>("green")))})};
   if (p.call_appropriate_value_parse_func(arr_str_1, p.m_cur_pos) !=
       arr_arr_1) {
     std::cerr << "test 1 failed\n";
@@ -2643,24 +2640,22 @@ void libconfigfile::parser::test() {
   }
 
   std::string arr_str_2{"[ [ 1, 2 ], [ 3, 4, 5 ] ]"};
-  node_ptr<array_value_node> arr_arr_2{make_node_ptr<
-      array_value_node>(std::initializer_list<node_ptr<value_node>>{
-      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-          std::initializer_list<node_ptr<value_node>>{
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<integer_end_value_node_t>>(
-                      2)))}))),
-      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-          std::initializer_list<node_ptr<value_node>>{
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<integer_end_value_node_t>>(3))),
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<integer_end_value_node_t>>(4))),
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<integer_end_value_node_t>>(
-                      5)))})))})};
+  node_ptr<array_value_node> arr_arr_2{make_node_ptr<array_value_node>(
+      std::initializer_list<node_ptr<value_node>>{
+          (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+              std::initializer_list<node_ptr<value_node>>{
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<integer_end_value_node>(1))),
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<integer_end_value_node>(2)))}))),
+          (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+              std::initializer_list<node_ptr<value_node>>{
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<integer_end_value_node>(3))),
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<integer_end_value_node>(4))),
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<integer_end_value_node>(5)))})))})};
   if (p.call_appropriate_value_parse_func(arr_str_2, p.m_cur_pos) !=
       arr_arr_2) {
     std::cerr << "test 2 failed\n";
@@ -2670,24 +2665,22 @@ void libconfigfile::parser::test() {
   }
 
   std::string arr_str_3{"[ [ 1, 2 ], [ \"a\", \"b\", \"c\" ] ]"};
-  node_ptr<array_value_node> arr_arr_3{make_node_ptr<
-      array_value_node>(std::initializer_list<node_ptr<value_node>>{
-      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-          std::initializer_list<node_ptr<value_node>>{
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<integer_end_value_node_t>>(
-                      2)))}))),
-      (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-          std::initializer_list<node_ptr<value_node>>{
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<string_end_value_node_t>>("a"))),
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<string_end_value_node_t>>("b"))),
-              (node_ptr_cast<value_node>(
-                  make_node_ptr<end_value_node<string_end_value_node_t>>(
-                      "c")))})))})};
+  node_ptr<array_value_node> arr_arr_3{make_node_ptr<array_value_node>(
+      std::initializer_list<node_ptr<value_node>>{
+          (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+              std::initializer_list<node_ptr<value_node>>{
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<integer_end_value_node>(1))),
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<integer_end_value_node>(2)))}))),
+          (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
+              std::initializer_list<node_ptr<value_node>>{
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<string_end_value_node>("a"))),
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<string_end_value_node>("b"))),
+                  (node_ptr_cast<value_node>(
+                      make_node_ptr<string_end_value_node>("c")))})))})};
   if (p.call_appropriate_value_parse_func(arr_str_3, p.m_cur_pos) !=
       arr_arr_3) {
     std::cerr << "test 3 failed\n";
@@ -2698,27 +2691,18 @@ void libconfigfile::parser::test() {
 
   std::string arr_str_4{
       "[ 0.1, 0.2, 0.5, 1, 2, 5, \"one\", \"two\", \"five\" ]"};
-  node_ptr<array_value_node> arr_arr_4{make_node_ptr<array_value_node>(
-      std::initializer_list<node_ptr<value_node>>{
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<float_end_value_node_t>>(0.1))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<float_end_value_node_t>>(0.2))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<float_end_value_node_t>>(0.5))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<integer_end_value_node_t>>(1))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<integer_end_value_node_t>>(2))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<integer_end_value_node_t>>(5))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<string_end_value_node_t>>("one"))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<string_end_value_node_t>>("two"))),
-          (node_ptr_cast<value_node>(
-              make_node_ptr<end_value_node<string_end_value_node_t>>(
-                  "five")))})};
+  node_ptr<array_value_node> arr_arr_4{make_node_ptr<
+      array_value_node>(std::initializer_list<node_ptr<value_node>>{
+      (node_ptr_cast<value_node>(make_node_ptr<float_end_value_node>(0.1))),
+      (node_ptr_cast<value_node>(make_node_ptr<float_end_value_node>(0.2))),
+      (node_ptr_cast<value_node>(make_node_ptr<float_end_value_node>(0.5))),
+      (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(1))),
+      (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(2))),
+      (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(5))),
+      (node_ptr_cast<value_node>(make_node_ptr<string_end_value_node>("one"))),
+      (node_ptr_cast<value_node>(make_node_ptr<string_end_value_node>("two"))),
+      (node_ptr_cast<value_node>(
+          make_node_ptr<string_end_value_node>("five")))})};
   if (p.call_appropriate_value_parse_func(arr_str_4, p.m_cur_pos) !=
       arr_arr_4) {
     std::cerr << "test 4 failed\n";
