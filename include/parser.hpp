@@ -4,9 +4,13 @@
 #include "array_value_node.hpp"
 #include "end_value_node.hpp"
 #include "file.hpp"
+#include "float_end_value_node.hpp"
+#include "integer_end_value_node.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
+#include "node_types.hpp"
 #include "section_node.hpp"
+#include "string_end_value_node.hpp"
 #include "value_node.hpp"
 
 #include <algorithm>
@@ -84,14 +88,15 @@ private:
   static constexpr char m_k_float_decimal_point{'.'};
   static constexpr char m_k_float_exponent_sign_lower{'e'};
   static constexpr char m_k_float_exponent_sign_upper{'E'};
-  static_assert(std::numeric_limits<float_end_value_node_t>::has_infinity);
-  static constexpr std::pair<float_end_value_node_t, std::string>
+  static_assert(std::numeric_limits<float_end_value_node_data_t>::has_infinity);
+  static constexpr std::pair<float_end_value_node_data_t, std::string>
       m_k_float_infinity{
-          std::numeric_limits<float_end_value_node_t>::infinity(), "inf"};
-  static_assert(std::numeric_limits<float_end_value_node_t>::has_quiet_NaN);
-  static constexpr std::pair<float_end_value_node_t, std::string>
+          std::numeric_limits<float_end_value_node_data_t>::infinity(), "inf"};
+  static_assert(
+      std::numeric_limits<float_end_value_node_data_t>::has_quiet_NaN);
+  static constexpr std::pair<float_end_value_node_data_t, std::string>
       m_k_float_not_a_number{
-          std::numeric_limits<float_end_value_node_t>::quiet_NaN(), "nan"};
+          std::numeric_limits<float_end_value_node_data_t>::quiet_NaN(), "nan"};
 
 public:
   parser();
@@ -121,11 +126,11 @@ private:
   node_ptr<array_value_node>
   parse_array_value(const std::string &raw_value,
                     const file_pos &start_pos); // TODO test
-  node_ptr<end_value_node<integer_end_value_node_t>>
+  node_ptr<integer_end_value_node>
   parse_integer_value(const std::string &raw_value, const file_pos &start_pos);
-  node_ptr<end_value_node<float_end_value_node_t>>
-  parse_float_value(const std::string &raw_value, const file_pos &start_pos);
-  node_ptr<end_value_node<string_end_value_node_t>>
+  node_ptr<float_end_value_node> parse_float_value(const std::string &raw_value,
+                                                   const file_pos &start_pos);
+  node_ptr<string_end_value_node>
   parse_string_value(const std::string &raw_value, const file_pos &start_pos);
 
   node_ptr<value_node>
