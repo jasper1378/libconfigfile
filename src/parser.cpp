@@ -793,9 +793,13 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
       if ((cur_char == m_k_array_element_separator) && (in_string == false) &&
           (in_n_levels_of_sub_arrays == 0)) {
         last_char_type = char_type::element_separator;
+        raw_elements.push_back(std::move(cur_raw_element));
+        cur_raw_element.first.clear();
       } else if ((cur_char == m_k_array_closing_delimiter) &&
                  (in_string == false) && (in_n_levels_of_sub_arrays == 0)) {
         last_char_type = char_type::closing_delimiter;
+        raw_elements.push_back(std::move(cur_raw_element));
+        cur_raw_element.first.clear();
       } else {
         cur_raw_element.first.push_back(cur_char);
 
@@ -833,11 +837,6 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     } break;
 
     case char_type::element_separator: {
-      if (cur_raw_element.first.empty() == false) {
-        raw_elements.push_back(std::move(cur_raw_element));
-        cur_raw_element.first.clear();
-      }
-
       if (is_whitespace(cur_char) == true) {
         last_char_type = char_type::element_leading_whitespace;
       } else {
@@ -862,11 +861,6 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     } break;
 
     case char_type::closing_delimiter: {
-      if (cur_raw_element.first.empty() == false) {
-        raw_elements.push_back(std::move(cur_raw_element));
-        cur_raw_element.first.clear();
-      }
-
       if (is_whitespace(cur_char) == true) {
         last_char_type = char_type::trailing_whitespace;
       } else {
@@ -901,6 +895,11 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
 
   node_ptr<array_value_node> ret_val{make_node_ptr<array_value_node>()};
   ret_val->reserve(raw_elements.size());
+
+  for (size_t i{0}; i < raw_elements.size(); ++i) {
+    raw_elements[i].first = trim_whitespace(raw_elements[i].first,
+                                            m_k_whitespace_chars, false, true);
+  }
 
   for (size_t i{0}; i < raw_elements.size(); ++i) {
     ret_val->push_back(call_appropriate_value_parse_func(
