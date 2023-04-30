@@ -38,8 +38,22 @@ libconfigfile::section_node *libconfigfile::section_node::create_clone() const {
   return new section_node{*this};
 }
 
+libconfigfile::absolute_node_type
+libconfigfile::section_node::get_absolute_node_type() const {
+  return absolute_node_type::SECTION;
+}
+
 libconfigfile::node_type libconfigfile::section_node::get_node_type() const {
   return libconfigfile::node_type::SECTION;
+}
+
+bool libconfigfile::section_node::polymorphic_value_compare(
+    const node *other) const {
+  if ((other->get_absolute_node_type()) == (absolute_node_type::SECTION)) {
+    return ((*(dynamic_cast<const section_node *>(other))) == (*this));
+  } else {
+    return false;
+  }
 }
 
 libconfigfile::section_node::allocator_type
@@ -310,12 +324,12 @@ libconfigfile::section_node::operator=(section_node &&other) noexcept(
 
 bool libconfigfile::operator==(const section_node &lhs,
                                const section_node &rhs) {
-  return lhs.m_contents == rhs.m_contents;
+  return (lhs.m_contents == rhs.m_contents);
 }
 
 bool libconfigfile::operator!=(const section_node &lhs,
                                const section_node &rhs) {
-  return lhs.m_contents != rhs.m_contents;
+  return (lhs.m_contents == rhs.m_contents);
 }
 
 void libconfigfile::swap(section_node &lhs, section_node &rhs) {

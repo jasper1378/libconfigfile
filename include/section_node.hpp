@@ -15,7 +15,7 @@
 namespace libconfigfile {
 class section_node : public node {
 public:
-  using unordered_map_t = std::unordered_map<key, node_ptr<node>>;
+  using unordered_map_t = std::unordered_map<key, node_ptr<node, true>>;
   using key_type = unordered_map_t::key_type;
   using mapped_type = unordered_map_t::mapped_type;
   using value_type = unordered_map_t::value_type;
@@ -56,7 +56,9 @@ public:
 public:
   virtual section_node *create_new() const override;
   virtual section_node *create_clone() const override;
+  virtual absolute_node_type get_absolute_node_type() const override;
   virtual libconfigfile::node_type get_node_type() const override final;
+  virtual bool polymorphic_value_compare(const node *other) const override;
 
   allocator_type get_allocator() const;
 

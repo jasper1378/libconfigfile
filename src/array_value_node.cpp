@@ -4,6 +4,7 @@
 #include "node_types.hpp"
 #include "value_node.hpp"
 
+#include <algorithm>
 #include <initializer_list>
 #include <memory>
 #include <utility>
@@ -41,9 +42,23 @@ libconfigfile::array_value_node::create_clone() const {
   return new array_value_node{*this};
 }
 
+libconfigfile::absolute_node_type
+libconfigfile::array_value_node::get_absolute_node_type() const {
+  return absolute_node_type::ARRAY;
+}
+
 libconfigfile::value_node_type
 libconfigfile::array_value_node::get_value_node_type() const {
   return value_node_type::ARRAY;
+}
+
+bool libconfigfile::array_value_node::polymorphic_value_compare(
+    const node *other) const {
+  if ((other->get_absolute_node_type()) == (absolute_node_type::ARRAY)) {
+    return ((*(dynamic_cast<const array_value_node *>(other))) == (*this));
+  } else {
+    return false;
+  }
 }
 
 void libconfigfile::array_value_node::assign(size_type count,
@@ -277,39 +292,39 @@ libconfigfile::array_value_node::operator=(array_value_node &&other) noexcept(
 
 bool libconfigfile::operator==(const array_value_node &lhs,
                                const array_value_node &rhs) {
-  return lhs.m_contents == rhs.m_contents;
+  return (lhs.m_contents == rhs.m_contents);
 }
 
 bool libconfigfile::operator!=(const array_value_node &lhs,
                                const array_value_node &rhs) {
-  return lhs.m_contents != rhs.m_contents;
+  return (lhs.m_contents == rhs.m_contents);
 }
 
-bool libconfigfile::operator<(const array_value_node &lhs,
-                              const array_value_node &rhs) {
-  return lhs.m_contents < rhs.m_contents;
-}
-
-bool libconfigfile::operator<=(const array_value_node &lhs,
-                               const array_value_node &rhs) {
-  return lhs.m_contents <= rhs.m_contents;
-}
-
-bool libconfigfile::operator>(const array_value_node &lhs,
-                              const array_value_node &rhs) {
-  return lhs.m_contents > rhs.m_contents;
-}
-
-bool libconfigfile::operator>=(const array_value_node &lhs,
-                               const array_value_node &rhs) {
-  return lhs.m_contents >= rhs.m_contents;
-}
-
-auto libconfigfile::operator<=>(const array_value_node &lhs,
-                                const array_value_node &rhs)
-    -> decltype(lhs.m_contents <=> rhs.m_contents) {
-  return lhs.m_contents <=> rhs.m_contents;
-}
+// bool libconfigfile::operator<(const array_value_node &lhs,
+//                               const array_value_node &rhs) {
+//   return lhs.m_contents < rhs.m_contents;
+// }
+//
+// bool libconfigfile::operator<=(const array_value_node &lhs,
+//                                const array_value_node &rhs) {
+//   return lhs.m_contents <= rhs.m_contents;
+// }
+//
+// bool libconfigfile::operator>(const array_value_node &lhs,
+//                               const array_value_node &rhs) {
+//   return lhs.m_contents > rhs.m_contents;
+// }
+//
+// bool libconfigfile::operator>=(const array_value_node &lhs,
+//                                const array_value_node &rhs) {
+//   return lhs.m_contents >= rhs.m_contents;
+// }
+//
+// auto libconfigfile::operator<=>(const array_value_node &lhs,
+//                                 const array_value_node &rhs)
+//     -> decltype(lhs.m_contents <=> rhs.m_contents) {
+//   return lhs.m_contents <=> rhs.m_contents;
+// }
 
 void libconfigfile::swap(array_value_node &lhs, array_value_node &rhs) {
   using std::swap;
