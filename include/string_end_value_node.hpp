@@ -31,7 +31,9 @@ public:
 public:
   virtual string_end_value_node *create_new() const override;
   virtual string_end_value_node *create_clone() const override;
-  virtual end_value_node_type get_end_value_node_type() const override;
+  virtual absolute_node_type get_absolute_node_type() const override;
+  virtual end_value_node_type get_end_value_node_type() const override final;
+  virtual bool polymorphic_value_compare(const node *other) const override;
 
   const value_t &get() const;
   value_t &get();
@@ -43,7 +45,16 @@ public:
       std::is_nothrow_move_assignable_v<value_t>);
   string_end_value_node &operator=(const value_t &value);
   string_end_value_node &operator=(value_t &&value);
+
+public:
+  friend bool operator==(const string_end_value_node &x,
+                         const string_end_value_node &y);
+  friend bool operator!=(const string_end_value_node &x,
+                         const string_end_value_node &y);
 };
+
+bool operator==(const string_end_value_node &x, const string_end_value_node &y);
+bool operator!=(const string_end_value_node &x, const string_end_value_node &y);
 } // namespace libconfigfile
 
 #endif

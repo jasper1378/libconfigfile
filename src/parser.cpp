@@ -28,7 +28,8 @@
 #include <variant>
 #include <vector>
 
-#include <iostream> //XXX
+#include <functional> //XXX
+#include <iostream>   //XXX
 
 const std::unordered_map<char, char>
     libconfigfile::parser::m_k_basic_escape_chars{
@@ -2604,7 +2605,6 @@ std::string libconfigfile::parser::string_to_lower(const std::string &str) {
 }
 
 void libconfigfile::parser::test() {
-
   std::function<void(const node_ptr<array_value_node> &)> print_array{
       [&print_array](const node_ptr<array_value_node> &arr) -> void {
         std::cout << "[";
@@ -2660,7 +2660,7 @@ void libconfigfile::parser::test() {
 
   std::string arr_str_0{"[ 1, 2, 3 ]"};
   node_ptr<array_value_node> arr_arr_0{make_node_ptr<array_value_node>(
-      std::initializer_list<node_ptr<value_node>>{
+      std::initializer_list<node_ptr<value_node, true>>{
           (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(1))),
           (node_ptr_cast<value_node>(make_node_ptr<integer_end_value_node>(2))),
           (node_ptr_cast<value_node>(
@@ -2670,7 +2670,7 @@ void libconfigfile::parser::test() {
   std::cout << "test 0\n";
   print_array(node_ptr_cast<array_value_node>(arr_res_0));
   std::cout << '\n';
-  if ((*(node_ptr_cast<array_value_node>(arr_res_0))) != (*arr_arr_0)) {
+  if (!(node_ptr_val_equal_to(arr_res_0, arr_arr_0))) {
     std::cerr << "failed\n";
     std::exit(1);
   } else {
@@ -2680,7 +2680,7 @@ void libconfigfile::parser::test() {
 
   std::string arr_str_1{" \"red\", \"yellow\", \"green\" ]"};
   node_ptr<array_value_node> arr_arr_1{make_node_ptr<array_value_node>(
-      std::initializer_list<node_ptr<value_node>>{
+      std::initializer_list<node_ptr<value_node, true>>{
           (node_ptr_cast<value_node>(
               make_node_ptr<string_end_value_node>("red"))),
           (node_ptr_cast<value_node>(
@@ -2692,7 +2692,7 @@ void libconfigfile::parser::test() {
   std::cout << "test 1\n";
   print_array(node_ptr_cast<array_value_node>(arr_res_1));
   std::cout << '\n';
-  if ((*(node_ptr_cast<array_value_node>(arr_res_1))) != (*arr_arr_1)) {
+  if (!(node_ptr_val_equal_to(arr_res_1, arr_arr_1))) {
     std::cerr << "failed\n";
     std::exit(1);
   } else {
@@ -2702,15 +2702,15 @@ void libconfigfile::parser::test() {
 
   std::string arr_str_2{"[ [ 1, 2 ], [ 3, 4, 5 ] ]"};
   node_ptr<array_value_node> arr_arr_2{make_node_ptr<array_value_node>(
-      std::initializer_list<node_ptr<value_node>>{
+      std::initializer_list<node_ptr<value_node, true>>{
           (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-              std::initializer_list<node_ptr<value_node>>{
+              std::initializer_list<node_ptr<value_node, true>>{
                   (node_ptr_cast<value_node>(
                       make_node_ptr<integer_end_value_node>(1))),
                   (node_ptr_cast<value_node>(
                       make_node_ptr<integer_end_value_node>(2)))}))),
           (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-              std::initializer_list<node_ptr<value_node>>{
+              std::initializer_list<node_ptr<value_node, true>>{
                   (node_ptr_cast<value_node>(
                       make_node_ptr<integer_end_value_node>(3))),
                   (node_ptr_cast<value_node>(
@@ -2722,7 +2722,7 @@ void libconfigfile::parser::test() {
   std::cout << "test 2\n";
   print_array(node_ptr_cast<array_value_node>(arr_res_2));
   std::cout << '\n';
-  if ((*(node_ptr_cast<array_value_node>(arr_res_2))) != (*arr_arr_2)) {
+  if (!(node_ptr_val_equal_to(arr_res_2, arr_arr_2))) {
     std::cerr << "failed\n";
     std::exit(1);
   } else {
@@ -2732,15 +2732,15 @@ void libconfigfile::parser::test() {
 
   std::string arr_str_3{"[ [ 1, 2 ], [ \"a\", \"b\", \"c\" ] ]"};
   node_ptr<array_value_node> arr_arr_3{make_node_ptr<array_value_node>(
-      std::initializer_list<node_ptr<value_node>>{
+      std::initializer_list<node_ptr<value_node, true>>{
           (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-              std::initializer_list<node_ptr<value_node>>{
+              std::initializer_list<node_ptr<value_node, true>>{
                   (node_ptr_cast<value_node>(
                       make_node_ptr<integer_end_value_node>(1))),
                   (node_ptr_cast<value_node>(
                       make_node_ptr<integer_end_value_node>(2)))}))),
           (node_ptr_cast<value_node>(make_node_ptr<array_value_node>(
-              std::initializer_list<node_ptr<value_node>>{
+              std::initializer_list<node_ptr<value_node, true>>{
                   (node_ptr_cast<value_node>(
                       make_node_ptr<string_end_value_node>("a"))),
                   (node_ptr_cast<value_node>(
@@ -2752,7 +2752,7 @@ void libconfigfile::parser::test() {
   std::cout << "test 3\n";
   print_array(node_ptr_cast<array_value_node>(arr_res_3));
   std::cout << '\n';
-  if ((*(node_ptr_cast<array_value_node>(arr_res_3))) != (*arr_arr_3)) {
+  if (!(node_ptr_val_equal_to(arr_res_3, arr_arr_3))) {
     std::cerr << "failed\n";
     std::exit(1);
   } else {
@@ -2763,7 +2763,7 @@ void libconfigfile::parser::test() {
   std::string arr_str_4{
       "[ 0.1, 0.2, 0.5, 1, 2, 5, \"one\", \"two\", \"five\" ]"};
   node_ptr<array_value_node> arr_arr_4{make_node_ptr<
-      array_value_node>(std::initializer_list<node_ptr<value_node>>{
+      array_value_node>(std::initializer_list<node_ptr<value_node, true>>{
       (node_ptr_cast<value_node>(make_node_ptr<float_end_value_node>(0.1))),
       (node_ptr_cast<value_node>(make_node_ptr<float_end_value_node>(0.2))),
       (node_ptr_cast<value_node>(make_node_ptr<float_end_value_node>(0.5))),
@@ -2779,7 +2779,7 @@ void libconfigfile::parser::test() {
   std::cout << "test 4\n";
   print_array(node_ptr_cast<array_value_node>(arr_res_4));
   std::cout << '\n';
-  if ((*(node_ptr_cast<array_value_node>(arr_res_4))) != (*arr_arr_4)) {
+  if (!(node_ptr_val_equal_to(arr_res_4, arr_arr_4))) {
     std::cerr << "failed\n";
     std::exit(1);
   } else {

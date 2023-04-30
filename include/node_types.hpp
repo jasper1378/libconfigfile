@@ -20,6 +20,15 @@ enum class end_value_node_type {
   STRING,
   MAX,
 };
+
+enum class absolute_node_type {
+  SECTION,
+  ARRAY,
+  INTEGER,
+  FLOAT,
+  STRING,
+  MAX,
+};
 } // namespace libconfigfile
 
 #endif
