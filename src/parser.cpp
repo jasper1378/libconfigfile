@@ -2605,59 +2605,11 @@ std::string libconfigfile::parser::string_to_lower(const std::string &str) {
 }
 
 void libconfigfile::parser::test() {
-  std::function<void(const node_ptr<array_value_node> &)> print_array{
-      [&print_array](const node_ptr<array_value_node> &arr) -> void {
-        std::cout << "[";
-        for (size_t i{0}; i < arr->size(); ++i) {
-          switch (arr->operator[](i)->get_value_node_type()) {
-          case value_node_type::ARRAY: {
-            print_array(node_ptr_cast<array_value_node>(arr->operator[](i)));
-          } break;
-
-          case value_node_type::END_VALUE: {
-            node_ptr<end_value_node> arr_as_end_value_node{
-                node_ptr_cast<end_value_node>(arr->operator[](i))};
-            switch (arr_as_end_value_node->get_end_value_node_type()) {
-            case end_value_node_type::INTEGER: {
-              std::cout << node_ptr_cast<integer_end_value_node>(
-                               arr_as_end_value_node)
-                               ->get();
-            } break;
-
-            case end_value_node_type::FLOAT: {
-              std::cout << node_ptr_cast<float_end_value_node>(
-                               arr_as_end_value_node)
-                               ->get();
-            } break;
-
-            case end_value_node_type::STRING: {
-              std::cout << node_ptr_cast<float_end_value_node>(
-                               arr_as_end_value_node)
-                               ->get();
-            } break;
-
-            default: {
-              std::cerr << "can't print\n";
-              std::exit(1);
-            } break;
-            }
-          } break;
-
-          default: {
-            std::cerr << "can't print\n";
-            std::exit(1);
-          } break;
-          }
-
-          if (i != (arr->size() - 1)) {
-            std::cout << ",";
-          }
-        }
-        std::cout << "]";
-      }};
-
   parser p{"/home/jasper1378/Downloads/dummy_file.txt"};
 
+  auto arr_pos_0{p.m_cur_pos};
+  arr_pos_0.set_char(0);
+  arr_pos_0.set_line(0);
   std::string arr_str_0{"[ 1, 2, 3 ]"};
   node_ptr<array_value_node> arr_arr_0{make_node_ptr<array_value_node>(
       std::initializer_list<node_ptr<value_node, true>>{
@@ -2666,10 +2618,8 @@ void libconfigfile::parser::test() {
           (node_ptr_cast<value_node>(
               make_node_ptr<integer_end_value_node>(3)))})};
   node_ptr<value_node> arr_res_0{
-      p.call_appropriate_value_parse_func(arr_str_0, p.m_cur_pos)};
+      p.call_appropriate_value_parse_func(arr_str_0, arr_pos_0)};
   std::cout << "test 0\n";
-  print_array(node_ptr_cast<array_value_node>(arr_res_0));
-  std::cout << '\n';
   if (!(node_ptr_val_equal_to(arr_res_0, arr_arr_0))) {
     std::cerr << "failed\n";
     std::exit(1);
@@ -2678,7 +2628,10 @@ void libconfigfile::parser::test() {
   }
   std::cout << '\n';
 
-  std::string arr_str_1{" \"red\", \"yellow\", \"green\" ]"};
+  auto arr_pos_1{p.m_cur_pos};
+  arr_pos_1.set_char(0);
+  arr_pos_1.set_line(1);
+  std::string arr_str_1{"[ \"red\", \"yellow\", \"green\" ]"};
   node_ptr<array_value_node> arr_arr_1{make_node_ptr<array_value_node>(
       std::initializer_list<node_ptr<value_node, true>>{
           (node_ptr_cast<value_node>(
@@ -2688,18 +2641,19 @@ void libconfigfile::parser::test() {
           (node_ptr_cast<value_node>(
               make_node_ptr<string_end_value_node>("green")))})};
   node_ptr<value_node> arr_res_1{
-      p.call_appropriate_value_parse_func(arr_str_1, p.m_cur_pos)};
+      p.call_appropriate_value_parse_func(arr_str_1, arr_pos_1)};
   std::cout << "test 1\n";
-  print_array(node_ptr_cast<array_value_node>(arr_res_1));
-  std::cout << '\n';
   if (!(node_ptr_val_equal_to(arr_res_1, arr_arr_1))) {
     std::cerr << "failed\n";
     std::exit(1);
   } else {
     std::cerr << "passed\n";
   }
-  std::cout << "\n";
+  std::cout << '\n';
 
+  auto arr_pos_2{p.m_cur_pos};
+  arr_pos_2.set_char(0);
+  arr_pos_2.set_line(2);
   std::string arr_str_2{"[ [ 1, 2 ], [ 3, 4, 5 ] ]"};
   node_ptr<array_value_node> arr_arr_2{make_node_ptr<array_value_node>(
       std::initializer_list<node_ptr<value_node, true>>{
@@ -2718,10 +2672,8 @@ void libconfigfile::parser::test() {
                   (node_ptr_cast<value_node>(
                       make_node_ptr<integer_end_value_node>(5)))})))})};
   node_ptr<value_node> arr_res_2{
-      p.call_appropriate_value_parse_func(arr_str_2, p.m_cur_pos)};
+      p.call_appropriate_value_parse_func(arr_str_2, arr_pos_2)};
   std::cout << "test 2\n";
-  print_array(node_ptr_cast<array_value_node>(arr_res_2));
-  std::cout << '\n';
   if (!(node_ptr_val_equal_to(arr_res_2, arr_arr_2))) {
     std::cerr << "failed\n";
     std::exit(1);
@@ -2730,6 +2682,9 @@ void libconfigfile::parser::test() {
   }
   std::cout << '\n';
 
+  auto arr_pos_3{p.m_cur_pos};
+  arr_pos_3.set_char(0);
+  arr_pos_3.set_line(3);
   std::string arr_str_3{"[ [ 1, 2 ], [ \"a\", \"b\", \"c\" ] ]"};
   node_ptr<array_value_node> arr_arr_3{make_node_ptr<array_value_node>(
       std::initializer_list<node_ptr<value_node, true>>{
@@ -2748,10 +2703,8 @@ void libconfigfile::parser::test() {
                   (node_ptr_cast<value_node>(
                       make_node_ptr<string_end_value_node>("c")))})))})};
   node_ptr<value_node> arr_res_3{
-      p.call_appropriate_value_parse_func(arr_str_3, p.m_cur_pos)};
+      p.call_appropriate_value_parse_func(arr_str_3, arr_pos_3)};
   std::cout << "test 3\n";
-  print_array(node_ptr_cast<array_value_node>(arr_res_3));
-  std::cout << '\n';
   if (!(node_ptr_val_equal_to(arr_res_3, arr_arr_3))) {
     std::cerr << "failed\n";
     std::exit(1);
@@ -2760,6 +2713,9 @@ void libconfigfile::parser::test() {
   }
   std::cout << '\n';
 
+  auto arr_pos_4{p.m_cur_pos};
+  arr_pos_4.set_char(0);
+  arr_pos_4.set_line(4);
   std::string arr_str_4{
       "[ 0.1, 0.2, 0.5, 1, 2, 5, \"one\", \"two\", \"five\" ]"};
   node_ptr<array_value_node> arr_arr_4{make_node_ptr<
@@ -2775,10 +2731,8 @@ void libconfigfile::parser::test() {
       (node_ptr_cast<value_node>(
           make_node_ptr<string_end_value_node>("five")))})};
   node_ptr<value_node> arr_res_4{
-      p.call_appropriate_value_parse_func(arr_str_4, p.m_cur_pos)};
+      p.call_appropriate_value_parse_func(arr_str_4, arr_pos_4)};
   std::cout << "test 4\n";
-  print_array(node_ptr_cast<array_value_node>(arr_res_4));
-  std::cout << '\n';
   if (!(node_ptr_val_equal_to(arr_res_4, arr_arr_4))) {
     std::cerr << "failed\n";
     std::exit(1);
