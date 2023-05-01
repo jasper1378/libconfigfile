@@ -6,6 +6,8 @@
 
 #include <compare>
 #include <cstddef>
+#include <exception>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -111,6 +113,11 @@ public:
             is_node_type t_start, bool t_compare_equality_by_value_2>
   friend node_ptr<t_cast, t_compare_equality_by_value_1>
   node_ptr_cast(node_ptr<t_start, t_compare_equality_by_value_2> &&np);
+
+  template <is_node_type t_cast, bool t_compare_equality_by_value_1,
+            is_node_type t_start, bool t_compare_equality_by_value_2>
+  friend bool node_ptr_is_castable(
+      const node_ptr<t_start, t_compare_equality_by_value_2> &np);
 
   template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
             typename... t_args>
@@ -311,18 +318,58 @@ template <is_node_type t_cast, bool t_compare_equality_by_value_1 = false,
           is_node_type t_start, bool t_compare_equality_by_value_2 = false>
 node_ptr<t_cast, t_compare_equality_by_value_1>
 node_ptr_cast(const node_ptr<t_start, t_compare_equality_by_value_2> &np) {
-  return node_ptr<t_cast, t_compare_equality_by_value_1>{dynamic_cast<
-      typename node_ptr<t_cast, t_compare_equality_by_value_1>::t_ptr>(
-      np.get()->create_clone())};
+  if (np.get() == nullptr) {
+    return (node_ptr<t_cast, t_compare_equality_by_value_1>{nullptr});
+  } else {
+    auto temp{np.get()->create_clone()};
+
+    auto ret_val{node_ptr<t_cast, t_compare_equality_by_value_1>{dynamic_cast<
+        typename node_ptr<t_cast, t_compare_equality_by_value_1>::t_ptr>(
+        temp)}};
+
+    if (ret_val.get() != nullptr) {
+      return ret_val;
+    } else {
+      delete temp;
+      return std::runtime_error{"bad node_ptr_cast"};
+    }
+  }
 }
 
 template <is_node_type t_cast, bool t_compare_equality_by_value_1 = false,
           is_node_type t_start, bool t_compare_equality_by_value_2 = false>
 node_ptr<t_cast, t_compare_equality_by_value_1>
 node_ptr_cast(node_ptr<t_start, t_compare_equality_by_value_2> &&np) {
-  return node_ptr<t_cast, t_compare_equality_by_value_1>{dynamic_cast<
+  if (np.get() == nullptr) {
+    return (node_ptr<t_cast, t_compare_equality_by_value_1>{nullptr});
+  } else {
+    auto temp{np.get()};
+
+    auto ret_val{node_ptr<t_cast, t_compare_equality_by_value_1>{dynamic_cast<
+        typename node_ptr<t_cast, t_compare_equality_by_value_1>::t_ptr>(
+        temp)}};
+
+    if (ret_val.get() != nullptr) {
+      np.release();
+      return ret_val;
+    } else {
+      return std::runtime_error{"bad node_ptr_cast"};
+    }
+  }
+}
+
+template <is_node_type t_cast, bool t_compare_equality_by_value_1,
+          is_node_type t_start, bool t_compare_equality_by_value_2>
+bool node_ptr_is_castable(
+    const node_ptr<t_start, t_compare_equality_by_value_2> &np) {
+  auto p{dynamic_cast<
       typename node_ptr<t_cast, t_compare_equality_by_value_1>::t_ptr>(
-      np.release())};
+      np.get())};
+  if ((p == nullptr) && (np.get() != nullptr)) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
