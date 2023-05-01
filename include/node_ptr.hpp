@@ -331,7 +331,7 @@ node_ptr_cast(const node_ptr<t_start, t_compare_equality_by_value_2> &np) {
       return ret_val;
     } else {
       delete temp;
-      return std::runtime_error{"bad node_ptr_cast"};
+      throw std::runtime_error{"bad node_ptr_cast"};
     }
   }
 }
@@ -353,7 +353,7 @@ node_ptr_cast(node_ptr<t_start, t_compare_equality_by_value_2> &&np) {
       np.release();
       return ret_val;
     } else {
-      return std::runtime_error{"bad node_ptr_cast"};
+      throw std::runtime_error{"bad node_ptr_cast"};
     }
   }
 }
