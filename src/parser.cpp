@@ -28,9 +28,6 @@
 #include <variant>
 #include <vector>
 
-#include <functional> //XXX
-#include <iostream>   //XXX
-
 const std::unordered_map<char, char>
     libconfigfile::parser::m_k_basic_escape_chars{
         {'a', 0x07}, {'b', 0x08}, {'f', 0x0C},  {'n', 0x0A},  {'r', 0x0D},
@@ -82,84 +79,6 @@ libconfigfile::parser &libconfigfile::parser::operator=(parser &&other) {
 void libconfigfile::parser::parse_file() {
   // TODO
 }
-
-/*
-std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
-libconfigfile::parser::parse_section(bool is_root_section = false) {
-  // if is_root_section is true, m_cur_pos is located at file start, else
-  // m_cur_pos is located on opening round bracket
-
-  std::string section_name{};
-
-  if (is_root_section == false) {
-    if (m_cur_pos.is_located_on_occurence_of(
-            m_k_section_name_opening_delimiter) == false) {
-      throw std::runtime_error{"parser::parse_section() called with m_cur_pos "
-                               "in incorrect position"};
-    }
-
-    ++m_cur_pos;
-    if (m_cur_pos.is_eof() == true) {
-      std::string what_arg{"expected section name"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
-    }
-    m_cur_pos.goto_end_of_whitespace(m_k_whitespace_chars);
-    if (m_cur_pos.is_eof()) {
-      std::string what_arg{"expected section name"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
-    }
-    file_pos section_name_start_pos{m_cur_pos};
-
-    m_cur_pos.goto_find_start(m_k_section_name_closing_delimiter);
-    if (m_cur_pos.is_eof() == true) {
-      std::string what_arg{"unterminated section name"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
-    }
-
-    file_pos section_name_closing_delimiter{m_cur_pos};
-    --m_cur_pos;
-    m_cur_pos.goto_start_of_whitespace(m_k_whitespace_chars);
-    file_pos section_name_end_pos{m_cur_pos};
-
-    if (section_name_start_pos.get_line() != section_name_end_pos.get_line()) {
-      std::string what_arg{"section name must appear completely on one line"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, section_name_end_pos, what_arg);
-    }
-
-    std::string section_name_raw{get_substr_between_indices_inclusive(
-        m_file_contents.get_line(section_name_start_pos),
-        section_name_start_pos.get_char(), section_name_end_pos.get_char())};
-    section_name_raw =
-        trim_whitespace(section_name_raw, m_k_whitespace_chars, true, true);
-
-    if (section_name_raw.empty() == true) {
-      std::string what_arg{"empty section names are not permitted"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, section_name_end_pos, what_arg);
-    }
-
-    std::tuple<bool, std::string::size_type> section_name_raw_invalid_chars{
-        contains_invalid_character_valid_provided(section_name_raw,
-                                                  m_k_valid_name_chars)};
-
-    if (std::get<0>(section_name_raw_invalid_chars) == true) {
-      std::string what_arg{"invalid character in section name"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, section_name_end_pos.get_line(),
-          std::get<1>(section_name_raw_invalid_chars), what_arg);
-    }
-
-    section_name = section_name_raw;
-    m_cur_pos = section_name_closing_delimiter;
-  } else {
-    section_name = "";
-  }
-}
-*/
 
 std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
 libconfigfile::parser::parse_section(bool is_root_section) {
@@ -425,12 +344,16 @@ libconfigfile::parser::parse_section(bool is_root_section) {
   // m_cur_pos is one past closing body delimiter
 }
 
-std::tuple<libconfigfile::node_ptr<libconfigfile::value_node>, std::string>
+std::pair<std::string, libconfigfile::node_ptr<libconfigfile::value_node>>
 libconfigfile::parser::parse_key_value() {
   // m_cur_pos = first char of key name or leading whitespace before key name
 
-  std::string key_name{parse_key_value_key()};
-  // TODO
+  std::pair<std::string, node_ptr<value_node>> ret_val{};
+
+  ret_val.first = parse_key_value_key();
+  ret_val.second = parse_key_value_value();
+
+  return ret_val;
 }
 
 std::string libconfigfile::parser::parse_key_value_key() {
@@ -572,6 +495,7 @@ libconfigfile::parser::parse_key_value_value() {
   // m_cur_pos = equal sign
 
   std::string value_contents{};
+  file_pos value_start_pos{m_cur_pos.get_end_of_file_pos()};
 
   {
     enum class value_location {
@@ -581,8 +505,6 @@ libconfigfile::parser::parse_key_value_value() {
       semicolon,
       done,
     };
-
-    file_pos value_start_pos{m_cur_pos.get_end_of_file_pos()};
 
     bool first_loop{true};
     bool in_string{false};
@@ -692,7 +614,10 @@ libconfigfile::parser::parse_key_value_value() {
   value_contents =
       trim_whitespace(value_contents, m_k_whitespace_chars, false, true);
 
-  // TODO continue from here (identify value type; parse value string)
+  node_ptr<value_node> ret_val{node_ptr_cast<value_node>(
+      call_appropriate_value_parse_func(value_contents, value_start_pos))};
+
+  return ret_val;
 }
 
 libconfigfile::node_ptr<libconfigfile::array_value_node>
@@ -1743,72 +1668,6 @@ libconfigfile::parser::call_appropriate_value_parse_func(
   }
 }
 
-/*
-void libconfigfile::parser::parse_directive() {
-  // m_cur_pos = directive leader
-
-  file_pos test_pos{m_cur_pos - 1};
-  test_pos.goto_find_last_not_of(m_k_whitespace_chars);
-  if ((test_pos.get_line() == m_cur_pos.get_line()) &&
-      (test_pos.is_bof() == false)) {
-    std::string what_arg{"directive must be the only text on its line"};
-    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                 what_arg);
-  } else {
-
-    const std::string &directive_line{m_file_contents.get_line(m_cur_pos)};
-    std::string::size_type line_pos{m_cur_pos.get_char()};
-
-    ++line_pos;
-    line_pos = directive_line.find_first_not_of(m_k_whitespace_chars,
-line_pos); if (line_pos == std::string::npos) { std::string what_arg{"expected
-directive name"}; throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_line(), line_pos, what_arg);
-    } else {
-      std::string::size_type start_of_name{line_pos};
-
-      line_pos = directive_line.find_first_of(m_k_whitespace_chars, line_pos);
-      if (line_pos == std::string::npos) {
-        line_pos = (directive_line.size() - 1);
-      }
-      std::string::size_type end_of_name{line_pos};
-
-      std::string name{get_substr_between_indices_inclusive(
-          directive_line, start_of_name, end_of_name)};
-
-      std::string args{};
-      std::string::size_type start_of_args{};
-      ++line_pos;
-      line_pos =
-          directive_line.find_first_not_of(m_k_whitespace_chars, line_pos);
-      if (line_pos == std::string::npos) {
-        start_of_args = end_of_name;
-        args = "";
-      } else {
-        start_of_args = line_pos;
-        args = get_substr_between_indices_inclusive(
-            directive_line, start_of_args, (directive_line.size() - 1));
-      }
-
-      m_cur_pos.set_char(start_of_args);
-
-      if (name == "version") {
-        std::string what_arg{
-            "alpha version does not support version directive"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_line(), start_of_name, what_arg);
-      } else if (name == "include") {
-        parse_include_directive(args);
-      } else {
-        std::string what_arg{"unknown directive"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_line(), start_of_name, what_arg);
-      }
-    }
-  }
-}
-*/
-
 void libconfigfile::parser::parse_directive() {
   // m_cur_pos = directive leader
   // caller must check that directive is the only text on its line
@@ -1937,93 +1796,6 @@ void libconfigfile::parser::parse_version_directive() {
   throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
                                                what_arg);
 }
-
-/*
-void libconfigfile::parser::parse_include_directive(const std::string &args) {
-  // m_cur_pos =
-  // start of directive arguments if arguments exist or
-  // end of directive name if arguments don't exist
-
-  if (args.empty() == true) {
-    std::string what_arg{"include directive requires file path argument"};
-    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                 what_arg);
-  } else if (args.front() != m_k_string_delimiter) {
-    std::string what_arg{"include directive requires file path argument"};
-    throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
-                                                 what_arg);
-  } else {
-    std::string file_path{};
-    file_path.reserve(args.size());
-
-    std::string::size_type end_pos{std::string::npos};
-
-    for (std::string::size_type i{1}; i < args.size(); ++i) {
-      if (is_actual_delimiter(i, args, m_k_string_delimiter,
-                              m_k_escape_leader)) {
-        end_pos = i;
-      } else {
-        file_path.push_back(args[i]);
-      }
-    }
-
-    if (end_pos == std::string::npos) {
-      std::string what_arg{"unterminated string in include directive
-argument"}; throw syntax_error::generate_formatted_error( m_file_contents,
-m_cur_pos.get_line(), (m_file_contents.get_line(m_cur_pos).size() - 1),
-what_arg);
-    }
-
-    {
-      std::string::size_type extra_args_pos{
-          args.find_first_not_of(m_k_whitespace_chars, (end_pos + 1))};
-      if (extra_args_pos != std::string::npos) {
-        std::string what_arg{"excess arguments given to include directive"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_line(),
-            (m_cur_pos.get_char() + extra_args_pos), what_arg);
-      }
-    }
-
-    std::variant<std::string, std::string::size_type> file_path_escaped{
-        replace_escape_sequences(file_path)};
-
-    switch (file_path_escaped.index()) {
-    case 0: {
-      file_path = std::get<std::string>(std::move(file_path_escaped));
-
-      file included_file{file_path};
-
-      std::remove_reference_t<decltype(m_file_contents.get_underlying())>::
-          const_iterator include_pos_iter{
-              m_file_contents.get_underlying().begin() +
-m_cur_pos.get_line()};
-
-      m_file_contents.get_underlying().erase(include_pos_iter);
-      m_file_contents.get_underlying().insert(
-          include_pos_iter,
-          std::make_move_iterator(included_file.get_underlying().begin()),
-          std::make_move_iterator(included_file.get_underlying().end()));
-
-      m_cur_pos = m_file_contents.create_file_pos(m_cur_pos);
-      m_cur_pos.set_char(0);
-      return;
-    } break;
-
-    case 1: {
-      std::string::size_type invalid_escape_sequence_pos{
-          std::get<std::string::size_type>(file_path_escaped)};
-
-      std::string what_arg{
-          "invalid escape sequence in include directive argument"};
-      throw syntax_error::generate_formatted_error(
-          m_file_contents, m_cur_pos.get_line(),
-          (m_cur_pos.get_char() + invalid_escape_sequence_pos), what_arg);
-    } break;
-    }
-  }
-}
-*/
 
 void libconfigfile::parser::parse_include_directive() {
   // m_cur_pos = start of directive arguments
