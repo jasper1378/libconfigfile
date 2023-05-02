@@ -119,13 +119,12 @@ private:
   std::tuple<node_ptr<section_node>, std::string>
   parse_section(bool is_root_section = false); // TODO
 
-  std::tuple<node_ptr<value_node>, std::string> parse_key_value(); // TODO
+  std::pair<std::string, node_ptr<value_node>> parse_key_value();
   std::string parse_key_value_key();
-  node_ptr<value_node> parse_key_value_value(); // TODO
+  node_ptr<value_node> parse_key_value_value();
 
-  node_ptr<array_value_node>
-  parse_array_value(const std::string &raw_value,
-                    const file_pos &start_pos); // TODO test
+  node_ptr<array_value_node> parse_array_value(const std::string &raw_value,
+                                               const file_pos &start_pos);
   node_ptr<integer_end_value_node>
   parse_integer_value(const std::string &raw_value, const file_pos &start_pos);
   node_ptr<float_end_value_node> parse_float_value(const std::string &raw_value,
