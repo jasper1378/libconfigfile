@@ -219,9 +219,6 @@ private:
 
   static std::string string_to_upper(const std::string &str);
   static std::string string_to_lower(const std::string &str);
-
-public:
-  static void test(); // XXX
 };
 } // namespace libconfigfile
 #endif
