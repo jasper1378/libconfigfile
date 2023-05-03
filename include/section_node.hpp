@@ -1,13 +1,13 @@
 #ifndef LIBCONFIGFILE_SECTION_NODE_HPP
 #define LIBCONFIGFILE_SECTION_NODE_HPP
 
-#include "key.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
 
 #include <initializer_list>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -15,7 +15,7 @@
 namespace libconfigfile {
 class section_node : public node {
 public:
-  using unordered_map_t = std::unordered_map<key, node_ptr<node, true>>;
+  using unordered_map_t = std::unordered_map<std::string, node_ptr<node, true>>;
   using key_type = unordered_map_t::key_type;
   using mapped_type = unordered_map_t::mapped_type;
   using value_type = unordered_map_t::value_type;

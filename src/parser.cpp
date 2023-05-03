@@ -21,7 +21,6 @@
 #include <exception>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -40,52 +39,24 @@ const libconfigfile::parser::numeral_system
     libconfigfile::parser::m_k_hex_num_sys{16, 'x', 'X',
                                            "0123456789abcdefABCDEF"};
 
-libconfigfile::parser::parser()
-    : m_file_contents{}, m_cur_pos{m_file_contents.create_file_pos()},
-      m_root_section{} {}
-
 libconfigfile::parser::parser(const std::string &file_name)
     : m_file_contents{file_name}, m_cur_pos{m_file_contents.create_file_pos()},
-      m_root_section{} {}
-
-libconfigfile::parser::parser(const parser &other)
-    : m_file_contents{other.m_file_contents},
-      m_cur_pos{m_file_contents.create_file_pos(other.m_cur_pos)},
-      m_root_section{other.m_root_section} {}
-
-libconfigfile::parser::parser(parser &&other)
-    : m_file_contents{std::move(other.m_file_contents)},
-      m_cur_pos{m_file_contents.create_file_pos(other.m_cur_pos)},
-      m_root_section{std::move(other.m_root_section)} {}
+      m_root_section{parse_section(false).second} {}
 
 libconfigfile::parser::~parser() {}
 
-libconfigfile::parser &libconfigfile::parser::operator=(const parser &other) {
-  m_file_contents = other.m_file_contents;
-  m_cur_pos = m_file_contents.create_file_pos(other.m_cur_pos);
-  m_root_section = other.m_root_section;
-
-  return *this;
+libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::parser::get_result() const {
+  return m_root_section;
 }
 
-libconfigfile::parser &libconfigfile::parser::operator=(parser &&other) {
-  m_file_contents = std::move(other.m_file_contents);
-  m_cur_pos = m_file_contents.create_file_pos(other.m_cur_pos);
-  m_root_section = std::move(other.m_root_section);
-
-  return *this;
-}
-
-void libconfigfile::parser::parse_file() {
-  // TODO
-}
-
-std::tuple<libconfigfile::node_ptr<libconfigfile::section_node>, std::string>
+std::pair<std::string, libconfigfile::node_ptr<libconfigfile::section_node>>
 libconfigfile::parser::parse_section(bool is_root_section) {
-  // m_cur_pos = opening round bracket
+  // m_cur_pos = opening name delimiter
   //  or beginning of file is is_root_section is true
 
-  std::string section_name{};
+  std::pair<std::string, node_ptr<section_node>> ret_val{
+      "", make_node_ptr<section_node>()};
 
   if (is_root_section == false) {
 
@@ -109,8 +80,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       case name_location::opening_delimiter: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"expected section name"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -137,7 +108,7 @@ libconfigfile::parser::parse_section(bool is_root_section) {
                   throw syntax_error::generate_formatted_error(
                       m_file_contents, m_cur_pos, what_arg);
                 } else {
-                  section_name.push_back(cur_char);
+                  ret_val.first.push_back(cur_char);
                 }
               }
             }
@@ -148,8 +119,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       case name_location::leading_whitespace: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"expected section name"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -172,7 +143,7 @@ libconfigfile::parser::parse_section(bool is_root_section) {
                 throw syntax_error::generate_formatted_error(
                     m_file_contents, m_cur_pos, what_arg);
               } else {
-                section_name.push_back(cur_char);
+                ret_val.first.push_back(cur_char);
               }
             }
           }
@@ -182,8 +153,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       case name_location::name_proper: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"unterminated section name"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -205,7 +176,7 @@ libconfigfile::parser::parse_section(bool is_root_section) {
                   throw syntax_error::generate_formatted_error(
                       m_file_contents, m_cur_pos, what_arg);
                 } else {
-                  section_name.push_back(cur_char);
+                  ret_val.first.push_back(cur_char);
                 }
               }
             }
@@ -216,8 +187,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       case name_location::trailing_whitespace: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"unterminated section name"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -246,10 +217,10 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       }
     }
   } else {
-    section_name = "";
+    ret_val.first = "";
   }
 
-  // m_cur_pos is one past closing delimiter
+  // m_cur_pos is one past name closing delimiter
 
   if (is_root_section == false) {
 
@@ -293,14 +264,12 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       } break;
       }
     }
-  } else {
   }
 
-  // m_cur_pos is one past opening body delimiter
-
-  node_ptr<section_node> section_body{make_node_ptr<section_node>()};
+  // m_cur_pos is one past body opening delimiter
 
   {
+    bool ended_on_body_closing_delimiter{false};
     for (;; ++m_cur_pos) {
       if (m_cur_pos.is_eof() == true) {
         break;
@@ -310,36 +279,50 @@ libconfigfile::parser::parse_section(bool is_root_section) {
         if (is_whitespace(cur_char)) {
           ;
         } else if (cur_char == m_k_section_body_closing_delimiter) {
+          ended_on_body_closing_delimiter = true;
           ++m_cur_pos;
           break;
         } else if (cur_char == m_k_section_name_opening_delimiter) {
           file_pos start_pos{m_cur_pos};
 
-          std::tuple<node_ptr<section_node>, std::string> new_section{
+          std::pair<std::string, node_ptr<section_node>> new_section{
               parse_section(false)};
-          node_ptr<section_node> new_section_body{
-              std::get<node_ptr<section_node>>(std::move(new_section))};
-          std::string new_section_name{
-              std::get<std::string>(std::move(new_section))};
 
-          if (section_body->contains(new_section_name) == true) {
+          if (ret_val.second->contains(new_section.first) == true) {
             std::string what_arg{"duplicate name in scope"};
             throw syntax_error::generate_formatted_error(m_file_contents,
                                                          start_pos, what_arg);
           } else {
-            section_body->insert(
-                {new_section_name,
-                 node_ptr_cast<node>(std::move(new_section_body))});
+            ret_val.second->insert({std::move(new_section)});
           }
+        } else if (false) {
+          // TODO directives
         } else {
           file_pos start_pos{m_cur_pos};
 
-          // TODO parse key-value
-          // TODO continue from here
+          std::pair<std::string, node_ptr<value_node>> new_key_value{
+              parse_key_value()};
+
+          if (ret_val.second->contains(new_key_value.first) == true) {
+            std::string what_arg{"duplicate name in scope"};
+            throw syntax_error::generate_formatted_error(m_file_contents,
+                                                         start_pos, what_arg);
+          } else {
+            ret_val.second->insert({std::move(new_key_value)});
+          }
         }
       }
     }
+
+    if ((ended_on_body_closing_delimiter == false) &&
+        (is_root_section == false)) {
+      std::string what_arg{"expected section body closing delimiter"};
+      throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                   what_arg);
+    }
   }
+
+  return ret_val;
 
   // m_cur_pos is one past closing body delimiter
 }
@@ -375,8 +358,8 @@ std::string libconfigfile::parser::parse_key_value_key() {
     case key_name_location::leading_whitespace: {
       if (m_cur_pos.is_eof() == true) {
         std::string what_arg{"expected key name"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -418,8 +401,8 @@ std::string libconfigfile::parser::parse_key_value_key() {
     case key_name_location::name_proper: {
       if (m_cur_pos.is_eof() == true) {
         std::string what_arg{"missing value part of key-value"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -522,8 +505,8 @@ libconfigfile::parser::parse_key_value_value() {
       case value_location::equal_sign: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"missing value part of key-value"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
         } else {
           if ((first_loop == true) && (cur_char == m_k_key_value_assign)) {
             ;
@@ -551,8 +534,8 @@ libconfigfile::parser::parse_key_value_value() {
       case value_location::leading_whitespace: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"missing value part of key-value"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -578,8 +561,8 @@ libconfigfile::parser::parse_key_value_value() {
       case value_location::value_proper: {
         if (m_cur_pos.is_eof() == true) {
           std::string what_arg{"unterminated key-value"};
-          throw syntax_error::generate_formatted_error(
-              m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+          throw syntax_error::generate_formatted_error(m_file_contents,
+                                                       m_cur_pos, what_arg);
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -1690,8 +1673,8 @@ void libconfigfile::parser::parse_directive() {
     case name_location::directive_leader: {
       if (m_cur_pos.is_eof() == true) {
         std::string what_arg{"expected directive name"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -1716,8 +1699,8 @@ void libconfigfile::parser::parse_directive() {
     case name_location::leading_whitespace: {
       if (m_cur_pos.is_eof() == true) {
         std::string what_arg{"expected directive name"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -1824,8 +1807,8 @@ void libconfigfile::parser::parse_include_directive() {
     case args_location::leading_whitespace: {
       if (m_cur_pos.is_eof() == true) {
         std::string what_arg{"include directive requires file path argument"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
@@ -1851,8 +1834,8 @@ void libconfigfile::parser::parse_include_directive() {
       if (m_cur_pos.is_eof() == true) {
         std::string what_arg{
             "unterminated string in include directive argument"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
       } else {
         if (m_cur_pos.get_line() != start_pos.get_line()) {
           std::string what_arg{"entire directive must appear on one line"};
@@ -1882,8 +1865,8 @@ void libconfigfile::parser::parse_include_directive() {
       if (m_cur_pos.is_eof() == true) {
         std::string what_arg{
             "unterminated string in include directive argument"};
-        throw syntax_error::generate_formatted_error(
-            m_file_contents, m_cur_pos.get_end_of_file_pos(), what_arg);
+        throw syntax_error::generate_formatted_error(m_file_contents, m_cur_pos,
+                                                     what_arg);
       } else {
         if (m_cur_pos.get_line() != start_pos.get_line()) {
           std::string what_arg{"entire directive must appear on one line"};
@@ -2286,7 +2269,7 @@ bool libconfigfile::parser::is_invalid_character_invalid_provided(
   return (invalid_chars.find(ch) != std::string::npos);
 }
 
-std::tuple<bool, std::string::size_type>
+std::pair<bool, std::string::size_type>
 libconfigfile::parser::contains_invalid_character_valid_provided(
     const std::string &str, const std::string &valid_chars) {
   for (size_t i{0}; i < str.size(); ++i) {
@@ -2297,7 +2280,7 @@ libconfigfile::parser::contains_invalid_character_valid_provided(
   return {false, std::string::npos};
 }
 
-std::tuple<bool, std::string::size_type>
+std::pair<bool, std::string::size_type>
 libconfigfile::parser::contains_invalid_character_invalid_provided(
     const std::string &str, const std::string &invalid_chars) {
   for (size_t i{0}; i < str.size(); ++i) {
