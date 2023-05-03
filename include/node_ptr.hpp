@@ -2,9 +2,9 @@
 #define LIBCONFIGFILE_NODE_PTR_HPP
 
 #include "node.hpp"
-#include "node_concepts.hpp"
 
 #include <compare>
+#include <concepts>
 #include <cstddef>
 #include <exception>
 #include <stdexcept>
@@ -13,9 +13,19 @@
 
 namespace libconfigfile {
 
-template <is_node_type t_node, bool t_compare_equality_by_value = false>
+template <typename t_node>
+concept concept_node_type = std::derived_from<t_node, node>;
+
+template <typename t_node_to, typename t_node_from>
+concept concept_node_ptr_implicitly_upcastable =
+    concept_node_type<t_node_to> && concept_node_type<t_node_from> &&
+    (std::derived_from<t_node_from, t_node_to> ||
+     std::same_as<t_node_to, t_node_from>) &&
+    std::convertible_to<t_node_from *, t_node_to *>;
+
+template <concept_node_type t_node, bool t_compare_equality_by_value = false>
 class node_ptr {
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend class node_ptr;
 
 public:
@@ -93,239 +103,267 @@ public:
 
   t_ptr operator->() const { return get(); }
 
-  template <bool t_compare_equality_by_value_1>
-  operator const node_ptr<t_node, t_compare_equality_by_value_1>() const & {
-    return (
-        node_ptr<t_node, t_compare_equality_by_value_1>{get()->create_clone()});
+  template <concept_node_type t_node_to>
+    requires concept_node_ptr_implicitly_upcastable<t_node_to, t_node>
+  operator node_ptr<t_node_to, t_compare_equality_by_value>() const & {
+    return node_ptr<t_node_to, t_compare_equality_by_value>{
+        get()->create_clone()};
   }
 
-  template <bool t_compare_equality_by_value_1>
-  operator node_ptr<t_node, t_compare_equality_by_value_1>() && {
-    return (node_ptr<t_node, t_compare_equality_by_value_1>{release()});
+  template <concept_node_type t_node_to>
+    requires concept_node_ptr_implicitly_upcastable<t_node_to, t_node>
+  operator node_ptr<t_node_to, t_compare_equality_by_value>() && {
+    return node_ptr<t_node_to, t_compare_equality_by_value>{release()};
+  }
+
+  template <bool t_compare_equality_by_value_to>
+  operator node_ptr<t_node, t_compare_equality_by_value_to>() const & {
+    return node_ptr<t_node, t_compare_equality_by_value_to>{
+        get()->create_clone()};
+  }
+
+  template <bool t_compare_equality_by_value_to>
+  operator node_ptr<t_node, t_compare_equality_by_value_to>() && {
+    return node_ptr<t_node, t_compare_equality_by_value_to>{release()};
+  }
+
+  template <concept_node_type t_node_to, bool t_compare_equality_by_value_to>
+    requires concept_node_ptr_implicitly_upcastable<t_node_to, t_node>
+  operator node_ptr<t_node_to, t_compare_equality_by_value_to>() const & {
+    return node_ptr<t_node_to, t_compare_equality_by_value_to>{
+        get()->create_clone()};
+  }
+
+  template <concept_node_type t_node_to, bool t_compare_equality_by_value_to>
+    requires concept_node_ptr_implicitly_upcastable<t_node_to, t_node>
+  operator node_ptr<t_node_to, t_compare_equality_by_value_to>() && {
+    return node_ptr<t_node_to, t_compare_equality_by_value_to>{release()};
   }
 
 public:
-  template <is_node_type t_cast, bool t_compare_equality_by_value_1,
-            is_node_type t_start, bool t_compare_equality_by_value_2>
-  friend node_ptr<t_cast, t_compare_equality_by_value_1>
-  node_ptr_cast(const node_ptr<t_start, t_compare_equality_by_value_2> &np);
-  template <is_node_type t_cast, bool t_compare_equality_by_value_1,
-            is_node_type t_start, bool t_compare_equality_by_value_2>
-  friend node_ptr<t_cast, t_compare_equality_by_value_1>
-  node_ptr_cast(node_ptr<t_start, t_compare_equality_by_value_2> &&np);
+  template <concept_node_type t_node_to, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_from, bool t_compare_equality_by_value_2>
+  friend node_ptr<t_node_to, t_compare_equality_by_value_1>
+  node_ptr_cast(const node_ptr<t_node_from, t_compare_equality_by_value_2> &np);
+  template <concept_node_type t_node_to, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_from, bool t_compare_equality_by_value_2>
+  friend node_ptr<t_node_to, t_compare_equality_by_value_1>
+  node_ptr_cast(node_ptr<t_node_from, t_compare_equality_by_value_2> &&np);
 
-  template <is_node_type t_cast, bool t_compare_equality_by_value_1,
-            is_node_type t_start, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_to, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_from, bool t_compare_equality_by_value_2>
   friend bool node_ptr_is_castable(
-      const node_ptr<t_start, t_compare_equality_by_value_2> &np);
+      const node_ptr<t_node_from, t_compare_equality_by_value_2> &np);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
             typename... t_args>
   friend node_ptr<t_node_1, t_compare_equality_by_value_1>
   make_node_ptr(t_args &&...args);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_addr_equal_to(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_equal_to(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_equal_to(
       std::nullptr_t,
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_addr_not_equal_to(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_not_equal_to(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_not_equal_to(
       std::nullptr_t,
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_addr_greater(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_greater(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_greater(
       std::nullptr_t,
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_addr_less(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool
   node_ptr_addr_less(const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
                      std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_less(
       std::nullptr_t,
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_addr_greater_equal(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_greater_equal(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_greater_equal(
       std::nullptr_t,
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_addr_less_equal(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_less_equal(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   friend bool node_ptr_addr_less_equal(
       std::nullptr_t,
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
     requires std::three_way_comparable<node *>
   std::
       compare_three_way_result_t<node *> friend node_ptr_addr_compare_three_way(
           const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
           const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
     requires std::three_way_comparable<node *>
   std::
       compare_three_way_result_t<node *> friend node_ptr_addr_compare_three_way(
           const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
           std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
     requires std::three_way_comparable<node *>
   std::
       compare_three_way_result_t<node *> friend node_ptr_addr_compare_three_way(
           std::nullptr_t,
           const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_val_equal_to(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   friend bool node_ptr_val_not_equal_to(
       const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
       const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator==(const node_ptr<t_node_1, false> &x,
                          const node_ptr<t_node_2, false> &y);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator==(const node_ptr<t_node_1, false> &x, std::nullptr_t);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator==(std::nullptr_t, const node_ptr<t_node_1, false> &x);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator!=(const node_ptr<t_node_1, false> &x,
                          const node_ptr<t_node_2, false> &y);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator!=(const node_ptr<t_node_1, false> &x, std::nullptr_t);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator!=(std::nullptr_t, const node_ptr<t_node_1, false> &x);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator<(const node_ptr<t_node_1, false> &x,
                         const node_ptr<t_node_2, false> &y);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator<(const node_ptr<t_node_1, false> &x, std::nullptr_t);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator<(std::nullptr_t, const node_ptr<t_node_1, false> &x);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator<=(const node_ptr<t_node_1, false> &x,
                          const node_ptr<t_node_2, false> &y);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator<=(const node_ptr<t_node_1, false> &x, std::nullptr_t);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator<=(std::nullptr_t, const node_ptr<t_node_1, false> &x);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator>(const node_ptr<t_node_1, false> &x,
                         const node_ptr<t_node_2, false> &y);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator>(const node_ptr<t_node_1, false> &x, std::nullptr_t);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator>(std::nullptr_t, const node_ptr<t_node_1, false> &x);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator>=(const node_ptr<t_node_1, false> &x,
                          const node_ptr<t_node_2, false> &y);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator>=(const node_ptr<t_node_1, false> &x, std::nullptr_t);
-  template <is_node_type t_node_1>
+  template <concept_node_type t_node_1>
   friend bool operator>=(std::nullptr_t, const node_ptr<t_node_1, false> &x);
 
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-            is_node_type t_node_2, bool t_compare_equality_by_value_2>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+            concept_node_type t_node_2, bool t_compare_equality_by_value_2>
     requires std::three_way_comparable<node *>
   std::compare_three_way_result_t<node *> friend
   operator<=>(const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
               const node_ptr<t_node_2, t_compare_equality_by_value_2> &y);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
     requires std::three_way_comparable<node *>
   std::compare_three_way_result_t<node *> friend
   operator<=>(const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
               std::nullptr_t);
-  template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
     requires std::three_way_comparable<node *>
   std::compare_three_way_result_t<node *> friend
   operator<=>(std::nullptr_t,
               const node_ptr<t_node_1, t_compare_equality_by_value_1> &x);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator==(const node_ptr<t_node_1, true> &x,
                          const node_ptr<t_node_2, true> &y);
 
-  template <is_node_type t_node_1, is_node_type t_node_2>
+  template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator!=(const node_ptr<t_node_1, true> &x,
                          const node_ptr<t_node_2, true> &y);
 };
 
-template <is_node_type t_cast, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_start, bool t_compare_equality_by_value_2 = false>
-node_ptr<t_cast, t_compare_equality_by_value_1>
-node_ptr_cast(const node_ptr<t_start, t_compare_equality_by_value_2> &np) {
+template <
+    concept_node_type t_node_to, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_from, bool t_compare_equality_by_value_2 = false>
+node_ptr<t_node_to, t_compare_equality_by_value_1>
+node_ptr_cast(const node_ptr<t_node_from, t_compare_equality_by_value_2> &np) {
   if (np.get() == nullptr) {
-    return (node_ptr<t_cast, t_compare_equality_by_value_1>{nullptr});
+    return (node_ptr<t_node_to, t_compare_equality_by_value_1>{nullptr});
   } else {
     auto temp{np.get()->create_clone()};
 
-    auto ret_val{node_ptr<t_cast, t_compare_equality_by_value_1>{dynamic_cast<
-        typename node_ptr<t_cast, t_compare_equality_by_value_1>::t_ptr>(
-        temp)}};
+    auto ret_val{
+        node_ptr<t_node_to, t_compare_equality_by_value_1>{dynamic_cast<
+            typename node_ptr<t_node_to, t_compare_equality_by_value_1>::t_ptr>(
+            temp)}};
 
     if (ret_val.get() != nullptr) {
       return ret_val;
@@ -336,18 +374,20 @@ node_ptr_cast(const node_ptr<t_start, t_compare_equality_by_value_2> &np) {
   }
 }
 
-template <is_node_type t_cast, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_start, bool t_compare_equality_by_value_2 = false>
-node_ptr<t_cast, t_compare_equality_by_value_1>
-node_ptr_cast(node_ptr<t_start, t_compare_equality_by_value_2> &&np) {
+template <
+    concept_node_type t_node_to, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_from, bool t_compare_equality_by_value_2 = false>
+node_ptr<t_node_to, t_compare_equality_by_value_1>
+node_ptr_cast(node_ptr<t_node_from, t_compare_equality_by_value_2> &&np) {
   if (np.get() == nullptr) {
-    return (node_ptr<t_cast, t_compare_equality_by_value_1>{nullptr});
+    return (node_ptr<t_node_to, t_compare_equality_by_value_1>{nullptr});
   } else {
     auto temp{np.get()};
 
-    auto ret_val{node_ptr<t_cast, t_compare_equality_by_value_1>{dynamic_cast<
-        typename node_ptr<t_cast, t_compare_equality_by_value_1>::t_ptr>(
-        temp)}};
+    auto ret_val{
+        node_ptr<t_node_to, t_compare_equality_by_value_1>{dynamic_cast<
+            typename node_ptr<t_node_to, t_compare_equality_by_value_1>::t_ptr>(
+            temp)}};
 
     if (ret_val.get() != nullptr) {
       np.release();
@@ -358,12 +398,12 @@ node_ptr_cast(node_ptr<t_start, t_compare_equality_by_value_2> &&np) {
   }
 }
 
-template <is_node_type t_cast, bool t_compare_equality_by_value_1,
-          is_node_type t_start, bool t_compare_equality_by_value_2>
+template <concept_node_type t_node_to, bool t_compare_equality_by_value_1,
+          concept_node_type t_node_from, bool t_compare_equality_by_value_2>
 bool node_ptr_is_castable(
-    const node_ptr<t_start, t_compare_equality_by_value_2> &np) {
+    const node_ptr<t_node_from, t_compare_equality_by_value_2> &np) {
   auto p{dynamic_cast<
-      typename node_ptr<t_cast, t_compare_equality_by_value_1>::t_ptr>(
+      typename node_ptr<t_node_to, t_compare_equality_by_value_1>::t_ptr>(
       np.get())};
   if ((p == nullptr) && (np.get() != nullptr)) {
     return false;
@@ -372,148 +412,166 @@ bool node_ptr_is_castable(
   }
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          typename... t_args>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false, typename... t_args>
 node_ptr<t_node_1, t_compare_equality_by_value_1>
 make_node_ptr(t_args &&...args) {
   return node_ptr<t_node_1, t_compare_equality_by_value_1>{
       new t_node_1{std::forward<t_args>(args)...}};
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_addr_equal_to(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return ((static_cast<node *>(x.get())) == (static_cast<node *>(y.get())));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_equal_to(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     std::nullptr_t) {
   return ((x.get()) == (nullptr));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_equal_to(
     std::nullptr_t,
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x) {
   return ((nullptr) == (x.get()));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_addr_not_equal_to(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return ((static_cast<node *>(x.get())) != (static_cast<node *>(y.get())));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_not_equal_to(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     std::nullptr_t) {
   return ((x.get()) != (nullptr));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_not_equal_to(
     std::nullptr_t,
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x) {
   return ((nullptr) != (x.get()));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_addr_greater(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return ((static_cast<node *>(x.get())) > (static_cast<node *>(y.get())));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_greater(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     std::nullptr_t) {
   return ((x.get()) > (nullptr));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_greater(
     std::nullptr_t,
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x) {
   return ((nullptr) > (x.get()));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_addr_less(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return ((static_cast<node *>(x.get())) < (static_cast<node *>(y.get())));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_less(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     std::nullptr_t) {
   return ((x.get()) < (nullptr));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_less(
     std::nullptr_t,
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x) {
   return ((nullptr) < (x.get()));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_addr_greater_equal(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return ((static_cast<node *>(x.get())) >= (static_cast<node *>(y.get())));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_greater_equal(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     std::nullptr_t) {
   return ((x.get()) >= (nullptr));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_greater_equal(
     std::nullptr_t,
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x) {
   return ((nullptr) >= (x.get()));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_addr_less_equal(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return ((static_cast<node *>(x.get())) <= (static_cast<node *>(y.get())));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_less_equal(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     std::nullptr_t) {
   return ((x.get()) <= (nullptr));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false>
+template <concept_node_type t_node_1,
+          bool t_compare_equality_by_value_1 = false>
 bool node_ptr_addr_less_equal(
     std::nullptr_t,
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x) {
   return ((nullptr) <= (x.get()));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2>
+template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+          concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   requires std::three_way_comparable<node *>
 std::compare_three_way_result_t<node *> node_ptr_addr_compare_three_way(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
@@ -522,7 +580,7 @@ std::compare_three_way_result_t<node *> node_ptr_addr_compare_three_way(
                                    (static_cast<node *>(y.get()))));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   requires std::three_way_comparable<node *>
 std::compare_three_way_result_t<node *> node_ptr_addr_compare_three_way(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
@@ -531,7 +589,7 @@ std::compare_three_way_result_t<node *> node_ptr_addr_compare_three_way(
                                    (static_cast<node *>(nullptr))));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   requires std::three_way_comparable<node *>
 std::compare_three_way_result_t<node *> node_ptr_addr_compare_three_way(
     std::nullptr_t,
@@ -540,120 +598,122 @@ std::compare_three_way_result_t<node *> node_ptr_addr_compare_three_way(
                                    (static_cast<node *>(x.get()))));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_val_equal_to(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return (x.get()->polymorphic_value_compare(y.get()));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
+template <
+    concept_node_type t_node_1, bool t_compare_equality_by_value_1 = false,
+    concept_node_type t_node_2, bool t_compare_equality_by_value_2 = false>
 bool node_ptr_val_not_equal_to(
     const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
     const node_ptr<t_node_2, t_compare_equality_by_value_2> &y) {
   return (!(node_ptr_val_equal_to(x, y)));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator==(const node_ptr<t_node_1, false> &x,
                 const node_ptr<t_node_2, false> &y) {
   return (node_ptr_addr_equal_to(x, y));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator==(const node_ptr<t_node_1, false> &x, std::nullptr_t) {
   return (node_ptr_addr_equal_to(x, nullptr));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator==(std::nullptr_t, const node_ptr<t_node_1, false> &x) {
   return (node_ptr_addr_equal_to(nullptr, x));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator!=(const node_ptr<t_node_1, false> &x,
                 const node_ptr<t_node_2, false> &y) {
   return (node_ptr_addr_not_equal_to(x, y));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator!=(const node_ptr<t_node_1, false> &x, std::nullptr_t) {
   return (node_ptr_addr_not_equal_to(x, nullptr));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator!=(std::nullptr_t, const node_ptr<t_node_1, false> &x) {
   return (node_ptr_addr_not_equal_to(nullptr, x));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator>(const node_ptr<t_node_1, false> &x,
                const node_ptr<t_node_2, false> &y) {
   return (node_ptr_addr_greater(x, y));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator>(const node_ptr<t_node_1, false> &x, std::nullptr_t) {
   return (node_ptr_addr_greater(x, nullptr));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator>(std::nullptr_t, const node_ptr<t_node_1, false> &x) {
   return (node_ptr_addr_greater(nullptr, x));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator<(const node_ptr<t_node_1, false> &x,
                const node_ptr<t_node_2, false> &y) {
   return (node_ptr_addr_less(x, y));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator<(const node_ptr<t_node_1, false> &x, std::nullptr_t) {
   return (node_ptr_addr_less(x, nullptr));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator<(std::nullptr_t, const node_ptr<t_node_1, false> &x) {
   return (node_ptr_addr_less(nullptr, x));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator>=(const node_ptr<t_node_1, false> &x,
                 const node_ptr<t_node_2, false> &y) {
   return (node_ptr_addr_greater_equal(x, y));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator>=(const node_ptr<t_node_1, false> &x, std::nullptr_t) {
   return (node_ptr_addr_greater_equal(x, nullptr));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator>=(std::nullptr_t, const node_ptr<t_node_1, false> &x) {
   return (node_ptr_addr_greater_equal(nullptr, x));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator<=(const node_ptr<t_node_1, false> &x,
                 const node_ptr<t_node_2, false> &y) {
   return (node_ptr_addr_less_equal(x, y));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator<=(const node_ptr<t_node_1, false> &x, std::nullptr_t) {
   return (node_ptr_addr_less_equal(x, nullptr));
 }
 
-template <is_node_type t_node_1>
+template <concept_node_type t_node_1>
 bool operator<=(std::nullptr_t, const node_ptr<t_node_1, false> &x) {
   return (node_ptr_addr_less_equal(nullptr, x));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1,
-          is_node_type t_node_2, bool t_compare_equality_by_value_2>
+template <concept_node_type t_node_1, bool t_compare_equality_by_value_1,
+          concept_node_type t_node_2, bool t_compare_equality_by_value_2>
   requires std::three_way_comparable<node *>
 std::compare_three_way_result_t<node *>
 operator<=>(const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
@@ -662,7 +722,7 @@ operator<=>(const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
                                    (static_cast<node *>(y.get()))));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   requires std::three_way_comparable<node *>
 std::compare_three_way_result_t<node *>
 operator<=>(const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
@@ -671,7 +731,7 @@ operator<=>(const node_ptr<t_node_1, t_compare_equality_by_value_1> &x,
                                    (static_cast<node *>(nullptr))));
 }
 
-template <is_node_type t_node_1, bool t_compare_equality_by_value_1>
+template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
   requires std::three_way_comparable<node *>
 std::compare_three_way_result_t<node *>
 operator<=>(std::nullptr_t,
@@ -680,13 +740,13 @@ operator<=>(std::nullptr_t,
                                    (static_cast<node *>(x.get()))));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator==(const node_ptr<t_node_1, true> &x,
                 const node_ptr<t_node_2, true> &y) {
   return (node_ptr_val_equal_to(x, y));
 }
 
-template <is_node_type t_node_1, is_node_type t_node_2>
+template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator!=(const node_ptr<t_node_1, true> &x,
                 const node_ptr<t_node_2, true> &y) {
   return (node_ptr_val_not_equal_to(x, y));
