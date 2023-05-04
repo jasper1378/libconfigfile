@@ -69,9 +69,9 @@ private:
 
 public:
   file_pos(const file *file_in_which_to_move);
-  file_pos(const file *file_in_which_to_move, const file_pos &start_pos);
   file_pos(const file *file_in_which_to_move, const size_t start_pos_line,
            const size_t start_pos_char);
+  file_pos(const file *file_in_which_to_move, const file_pos &start_pos);
   file_pos(const file_pos &other);
   file_pos(file_pos &&other);
 

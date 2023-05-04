@@ -156,6 +156,7 @@ libconfigfile::file::read_file(const std::string &file_path,
     }
 
     file_contents.push_back(std::move(new_line));
+    new_line.clear();
   }
 
   return file_contents;
@@ -187,29 +188,27 @@ libconfigfile::file_pos::file_pos(const file *file_in_which_to_move)
 }
 
 libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
-                                  const file_pos &start_pos)
-    : m_file{file_in_which_to_move}, m_line{start_pos.m_line},
-      m_char{start_pos.m_char}, m_bof{start_pos.m_bof}, m_eof{start_pos.m_eof} {
-  if (file_in_which_to_move == nullptr) {
-    throw std::runtime_error{"file cannot be null"};
-  }
-}
-
-libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
                                   const size_t start_pos_line,
                                   const size_t start_pos_char)
     : m_file{file_in_which_to_move}, m_line{start_pos_line},
       m_char{start_pos_char}, m_bof{false}, m_eof{false} {
+  if (file_in_which_to_move == nullptr) {
+    throw std::runtime_error{"file cannot be null"};
+  }
 
   if (start_pos_line >= file_in_which_to_move->get_array().size()) {
-    throw std::runtime_error{"out-of-range starting line position argument "
-                             "provided to file_pos constructor"};
-  } else if (start_pos_char >=
-             file_in_which_to_move->get_array()[start_pos_line].size()) {
-    throw std::runtime_error{"out-of-range starting char position argument "
-                             "provided to file_pos constructor"};
+    m_eof = true;
+  } else {
+    if (start_pos_char >=
+        file_in_which_to_move->get_array()[start_pos_line].size()) {
+      throw std::runtime_error{"invalid starting character position"};
+    }
   }
 }
+
+libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
+                                  const file_pos &start_pos)
+    : file_pos{file_in_which_to_move, start_pos.m_line, start_pos.m_char} {}
 
 libconfigfile::file_pos::file_pos(const file_pos &other)
     : m_file{other.m_file}, m_line{other.m_line}, m_char{other.m_char},
@@ -235,8 +234,12 @@ libconfigfile::file_pos libconfigfile::file_pos::get_start_of_file_pos() const {
 };
 
 libconfigfile::file_pos libconfigfile::file_pos::get_end_of_file_pos() const {
-  return file_pos{m_file, (m_file->get_array().size() - 1),
-                  (m_file->get_array().back().size() - 1)};
+  return file_pos{
+      m_file,
+      ((m_file->get_array().empty()) ? (0) : (m_file->get_array().size() - 1)),
+      ((m_file->get_array().back().empty())
+           ? (0)
+           : (m_file->get_array().back().size() - 1))};
 };
 
 bool libconfigfile::file_pos::is_bof() const { return m_bof; }

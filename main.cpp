@@ -1,5 +1,6 @@
-#include "include/parser.hpp"
+#include "include/libconfigfile.hpp"
 
+#include <cassert>
 #include <iostream>
 
 int main() {
@@ -13,4 +14,6 @@ int main() {
           {"i1", make_node_ptr<integer_end_value_node>(1)},
           {"i2", make_node_ptr<integer_end_value_node>(2)},
           {"i3", make_node_ptr<integer_end_value_node>(3)}})};
+
+  assert(node_ptr_val_equal_to(r, a));
 }

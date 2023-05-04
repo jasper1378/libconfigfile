@@ -496,11 +496,12 @@ libconfigfile::parser::parse_key_value_value() {
     for (value_location last_state{value_location::equal_sign};
          last_state != value_location::done;
          ++m_cur_pos, first_loop = false, last_char = cur_char) {
-      switch (last_state) {
 
-        if (m_cur_pos.is_eof() == false) {
-          cur_char = m_file_contents.get_char(m_cur_pos);
-        }
+      if (m_cur_pos.is_eof() == false) {
+        cur_char = m_file_contents.get_char(m_cur_pos);
+      }
+
+      switch (last_state) {
 
       case value_location::equal_sign: {
         if (m_cur_pos.is_eof() == true) {
