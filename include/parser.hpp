@@ -17,7 +17,6 @@
 #include <cmath>
 #include <concepts>
 #include <string>
-#include <tuple>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -27,7 +26,7 @@ class parser {
 private:
   file m_file_contents;
   file_pos m_cur_pos;
-  section_node m_root_section;
+  node_ptr<section_node> m_root_section;
 
 private:
   // static constexpr std::string m_k_whitespace_chars{" \t"};
@@ -99,25 +98,24 @@ private:
           std::numeric_limits<float_end_value_node_data_t>::quiet_NaN(), "nan"};
 
 public:
-  parser();
+  parser() = delete;
   parser(const std::string &file_name);
-  parser(const parser &other);
-  parser(parser &&other) /*TODO: noexcept()*/;
+  parser(const parser &other) = delete;
+  parser(parser &&other) = delete;
 
   ~parser();
 
 public:
   // section_node parse() or section_node get_result() or etc.; // TODO
+  node_ptr<section_node> get_result() const;
 
 public:
-  parser &operator=(const parser &other);
-  parser &operator=(parser &&other) /*TODO: noexcept()*/;
+  parser &operator=(const parser &other) = delete;
+  parser &operator=(parser &&other) = delete;
 
 private:
-  void parse_file(); // TODO
-
-  std::tuple<node_ptr<section_node>, std::string>
-  parse_section(bool is_root_section = false); // TODO
+  std::pair<std::string, node_ptr<section_node>>
+  parse_section(bool is_root_section = false);
 
   std::pair<std::string, node_ptr<value_node>> parse_key_value();
   std::string parse_key_value_key();
@@ -184,10 +182,10 @@ private:
   static bool
   is_invalid_character_invalid_provided(const char ch,
                                         const std::string &invalid_chars);
-  static std::tuple<bool, std::string::size_type>
+  static std::pair<bool, std::string::size_type>
   contains_invalid_character_valid_provided(const std::string &str,
                                             const std::string &valid_chars);
-  static std::tuple<bool, std::string::size_type>
+  static std::pair<bool, std::string::size_type>
   contains_invalid_character_invalid_provided(const std::string &str,
                                               const std::string &invalid_chars);
 
