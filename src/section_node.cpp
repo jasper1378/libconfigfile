@@ -1,9 +1,11 @@
 #include "section_node.hpp"
 
+#include "character_constants.hpp"
 #include "node.hpp"
 #include "node_types.hpp"
 
 #include <initializer_list>
+#include <iostream>
 #include <memory>
 #include <type_traits>
 #include <unordered_map>
@@ -53,6 +55,29 @@ bool libconfigfile::section_node::polymorphic_value_compare(
     return ((*(dynamic_cast<const section_node *>(other))) == (*this));
   } else {
     return false;
+  }
+}
+
+void libconfigfile::section_node::print(std::ostream &out) const {
+  for (auto p{m_contents.begin()}; p != m_contents.end(); ++p) {
+
+    switch ((*p).second->get_absolute_node_type()) {
+
+    case absolute_node_type::SECTION: {
+      out << character_constants::g_k_section_name_opening_delimiter
+          << (*p).first
+          << character_constants::g_k_section_name_closing_delimiter << '\n';
+      out << character_constants::g_k_section_body_opening_delimiter << '\n';
+      out << (*p).second;
+      out << character_constants ::g_k_section_body_closing_delimiter << '\n';
+    } break;
+
+    default: {
+      out << (*p).first << character_constants::g_k_key_value_assign
+          << (*p).second << character_constants::g_k_key_value_terminate
+          << '\n';
+    } break;
+    }
   }
 }
 
@@ -335,4 +360,10 @@ bool libconfigfile::operator!=(const section_node &lhs,
 void libconfigfile::swap(section_node &lhs, section_node &rhs) {
   using std::swap;
   swap(lhs.m_contents, rhs.m_contents);
+}
+
+std::ostream &libconfigfile::operator<<(std::ostream &out,
+                                        const section_node &n) {
+  n.print(out);
+  return out;
 }

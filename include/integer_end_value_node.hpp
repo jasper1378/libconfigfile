@@ -5,6 +5,7 @@
 #include "node_types.hpp"
 
 #include <cstdint>
+#include <iostream>
 #include <type_traits>
 
 namespace libconfigfile {
@@ -34,7 +35,9 @@ public:
   virtual absolute_node_type get_absolute_node_type() const override;
   virtual end_value_node_type get_end_value_node_type() const override final;
   virtual bool polymorphic_value_compare(const node *other) const override;
+  virtual void print(std::ostream &out) const override;
 
+public:
   const value_t &get() const;
   value_t &get();
   void set(const value_t &value);
@@ -51,12 +54,17 @@ public:
                          const integer_end_value_node &y);
   friend bool operator!=(const integer_end_value_node &x,
                          const integer_end_value_node &y);
+
+  friend std::ostream &operator<<(std::ostream &out,
+                                  const integer_end_value_node &n);
 };
 
 bool operator==(const integer_end_value_node &x,
                 const integer_end_value_node &y);
 bool operator!=(const integer_end_value_node &x,
                 const integer_end_value_node &y);
+
+std::ostream &operator<<(std::ostream &out, const integer_end_value_node &n);
 } // namespace libconfigfile
 
 #endif

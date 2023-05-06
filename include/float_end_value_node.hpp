@@ -4,6 +4,8 @@
 #include "end_value_node.hpp"
 #include "node_types.hpp"
 
+#include <iostream>
+#include <limits>
 #include <type_traits>
 
 namespace libconfigfile {
@@ -13,6 +15,9 @@ using float_end_value_node_data_t = double;
 class float_end_value_node : public end_value_node {
 public:
   using value_t = float_end_value_node_data_t;
+  static_assert(std::numeric_limits<float_end_value_node_data_t>::has_infinity);
+  static_assert(
+      std::numeric_limits<float_end_value_node_data_t>::has_quiet_NaN);
 
 private:
   value_t m_value;
@@ -33,7 +38,9 @@ public:
   virtual absolute_node_type get_absolute_node_type() const override;
   virtual end_value_node_type get_end_value_node_type() const override final;
   virtual bool polymorphic_value_compare(const node *other) const override;
+  virtual void print(std::ostream &out) const override;
 
+public:
   const value_t &get() const;
   value_t &get();
   void set(const value_t &value);
@@ -50,11 +57,15 @@ public:
                          const float_end_value_node &y);
   friend bool operator!=(const float_end_value_node &x,
                          const float_end_value_node &y);
+
+  friend std::ostream &operator<<(std::ostream &out,
+                                  const float_end_value_node &n);
 };
 
 bool operator==(const float_end_value_node &x, const float_end_value_node &y);
 bool operator!=(const float_end_value_node &x, const float_end_value_node &y);
 
+std::ostream &operator<<(std::ostream &out, const float_end_value_node &n);
 } // namespace libconfigfile
 
 #endif

@@ -1,11 +1,13 @@
 #include "array_value_node.hpp"
 
+#include "character_constants.hpp"
 #include "node.hpp"
 #include "node_types.hpp"
 #include "value_node.hpp"
 
 #include <algorithm>
 #include <initializer_list>
+#include <iostream>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -59,6 +61,21 @@ bool libconfigfile::array_value_node::polymorphic_value_compare(
   } else {
     return false;
   }
+}
+
+void libconfigfile::array_value_node::print(std::ostream &out) const {
+  out << character_constants::g_k_array_opening_delimiter;
+
+  for (auto p{m_contents.begin()}; p != m_contents.end(); ++p) {
+    (*p)->print(out);
+    out << (*p);
+
+    if ((p + 1) != m_contents.end()) {
+      out << character_constants::g_k_array_element_separator;
+    }
+  }
+
+  out << character_constants::g_k_array_closing_delimiter;
 }
 
 void libconfigfile::array_value_node::assign(size_type count,
@@ -329,4 +346,10 @@ bool libconfigfile::operator!=(const array_value_node &lhs,
 void libconfigfile::swap(array_value_node &lhs, array_value_node &rhs) {
   using std::swap;
   swap(lhs.m_contents, rhs.m_contents);
+}
+
+std::ostream &libconfigfile::operator<<(std::ostream &out,
+                                        const array_value_node &n) {
+  n.print(out);
+  return out;
 }
