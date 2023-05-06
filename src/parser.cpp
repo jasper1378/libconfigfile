@@ -41,7 +41,7 @@ const libconfigfile::parser::numeral_system
 
 libconfigfile::parser::parser(const std::string &file_name)
     : m_file_contents{file_name}, m_cur_pos{m_file_contents.create_file_pos()},
-      m_root_section{parse_section(false).second} {}
+      m_root_section{parse_section(true).second} {}
 
 libconfigfile::parser::~parser() {}
 
@@ -353,6 +353,7 @@ std::string libconfigfile::parser::parse_key_value_key() {
 
   for (key_name_location last_state{key_name_location::leading_whitespace};
        last_state != key_name_location::equal_sign; ++m_cur_pos) {
+
     switch (last_state) {
 
     case key_name_location::leading_whitespace: {

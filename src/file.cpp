@@ -199,8 +199,9 @@ libconfigfile::file_pos::file_pos(const file *file_in_which_to_move,
   if (start_pos_line >= file_in_which_to_move->get_array().size()) {
     m_eof = true;
   } else {
-    if (start_pos_char >=
-        file_in_which_to_move->get_array()[start_pos_line].size()) {
+    if ((start_pos_char >=
+         file_in_which_to_move->get_array()[start_pos_line].size()) &&
+        (start_pos_char != 0)) {
       throw std::runtime_error{"invalid starting character position"};
     }
   }
@@ -734,15 +735,15 @@ libconfigfile::file_pos::operator-=(const size_t chars_to_move) {
 }
 
 void libconfigfile::file_pos::set_bof() {
-  m_bof = true;
   m_line = 0;
   m_char = 0;
+  m_bof = true;
 }
 
 void libconfigfile::file_pos::set_eof() {
-  m_eof = true;
   m_line = (m_file->get_array().size() - 1);
   m_char = (m_file->get_line(*this).size() - 1);
+  m_eof = true;
 }
 
 libconfigfile::file_pos libconfigfile::operator+(file_pos pos,
