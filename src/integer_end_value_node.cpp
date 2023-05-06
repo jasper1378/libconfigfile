@@ -4,6 +4,7 @@
 #include "node_types.hpp"
 
 #include <cstdint>
+#include <iostream>
 #include <type_traits>
 #include <utility>
 
@@ -55,6 +56,10 @@ bool libconfigfile::integer_end_value_node::polymorphic_value_compare(
   } else {
     return false;
   }
+}
+
+void libconfigfile::integer_end_value_node::print(std::ostream &out) const {
+  out << m_value;
 }
 
 const libconfigfile::integer_end_value_node::value_t &
@@ -110,4 +115,10 @@ bool libconfigfile::operator==(const integer_end_value_node &x,
 bool libconfigfile::operator!=(const integer_end_value_node &x,
                                const integer_end_value_node &y) {
   return (!(x == y));
+}
+
+std::ostream &libconfigfile::operator<<(std::ostream &out,
+                                        const integer_end_value_node &n) {
+  n.print(out);
+  return out;
 }

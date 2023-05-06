@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstddef>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -348,6 +349,11 @@ public:
   template <concept_node_type t_node_1, concept_node_type t_node_2>
   friend bool operator!=(const node_ptr<t_node_1, true> &x,
                          const node_ptr<t_node_2, true> &y);
+
+  template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
+  friend std::ostream &
+  operator<<(std::ostream &out,
+             const node_ptr<t_node_1, t_compare_equality_by_value_1> &p);
 };
 
 template <
@@ -750,6 +756,14 @@ template <concept_node_type t_node_1, concept_node_type t_node_2>
 bool operator!=(const node_ptr<t_node_1, true> &x,
                 const node_ptr<t_node_2, true> &y) {
   return (node_ptr_val_not_equal_to(x, y));
+}
+
+template <concept_node_type t_node_1, bool t_compare_equality_by_value_1>
+std::ostream &
+operator<<(std::ostream &out,
+           const node_ptr<t_node_1, t_compare_equality_by_value_1> &p) {
+  p.get()->print(out);
+  return out;
 }
 
 } // namespace libconfigfile

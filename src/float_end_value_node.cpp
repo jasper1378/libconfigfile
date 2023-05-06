@@ -3,6 +3,7 @@
 #include "end_value_node.hpp"
 #include "node_types.hpp"
 
+#include <iostream>
 #include <type_traits>
 #include <utility>
 
@@ -52,6 +53,10 @@ bool libconfigfile::float_end_value_node::polymorphic_value_compare(
   } else {
     return false;
   }
+}
+
+void libconfigfile::float_end_value_node::print(std::ostream &out) const {
+  out << m_value;
 }
 
 const libconfigfile::float_end_value_node::value_t &
@@ -107,4 +112,10 @@ bool libconfigfile::operator==(const float_end_value_node &x,
 bool libconfigfile::operator!=(const float_end_value_node &x,
                                const float_end_value_node &y) {
   return (!(x == y));
+}
+
+std::ostream &libconfigfile::operator<<(std::ostream &out,
+                                        const float_end_value_node &n) {
+  n.print(out);
+  return out;
 }

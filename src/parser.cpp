@@ -1,6 +1,7 @@
 #include "parser.hpp"
 
 #include "array_value_node.hpp"
+#include "character_constants.hpp"
 #include "end_value_node.hpp"
 #include "file.hpp"
 #include "float_end_value_node.hpp"
@@ -26,18 +27,6 @@
 #include <utility>
 #include <variant>
 #include <vector>
-
-const std::unordered_map<char, char>
-    libconfigfile::parser::m_k_basic_escape_chars{
-        {'a', 0x07}, {'b', 0x08}, {'f', 0x0C},  {'n', 0x0A},  {'r', 0x0D},
-        {'t', 0x09}, {'v', 0x0B}, {'\\', 0x5C}, {'\'', 0x27}, {'"', 0x22}};
-
-const std::string libconfigfile::parser::m_k_valid_name_chars{
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"};
-
-const libconfigfile::parser::numeral_system
-    libconfigfile::parser::m_k_hex_num_sys{16, 'x', 'X',
-                                           "0123456789abcdefABCDEF"};
 
 libconfigfile::parser::parser(const std::string &file_name)
     : m_file_contents{file_name}, m_cur_pos{m_file_contents.create_file_pos()},
@@ -89,10 +78,12 @@ libconfigfile::parser::parse_section(bool is_root_section) {
             last_state = name_location::leading_whitespace;
           } else {
             if ((first_loop == true) &&
-                (cur_char == m_k_section_name_opening_delimiter)) {
+                (cur_char ==
+                 character_constants::g_k_section_name_opening_delimiter)) {
               ;
             } else {
-              if (cur_char == m_k_section_name_closing_delimiter) {
+              if (cur_char ==
+                  character_constants::g_k_section_name_closing_delimiter) {
                 last_state = name_location::closing_delimiter;
 
                 std::string what_arg{"empty section names are not permitted"};
@@ -103,7 +94,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
                 start_of_name_proper_pos = m_cur_pos;
 
                 if (is_invalid_character_valid_provided(
-                        cur_char, m_k_valid_name_chars) == true) {
+                        cur_char, character_constants::g_k_valid_name_chars) ==
+                    true) {
                   std::string what_arg{"invalid character in section name"};
                   throw syntax_error::generate_formatted_error(
                       m_file_contents, m_cur_pos, what_arg);
@@ -127,7 +119,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
           if (is_whitespace(cur_char) == true) {
             ;
           } else {
-            if (cur_char == m_k_section_name_closing_delimiter) {
+            if (cur_char ==
+                character_constants::g_k_section_name_closing_delimiter) {
               last_state = name_location::closing_delimiter;
 
               std::string what_arg{"empty section names are not permitted"};
@@ -138,7 +131,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
               start_of_name_proper_pos = m_cur_pos;
 
               if (is_invalid_character_valid_provided(
-                      cur_char, m_k_valid_name_chars) == true) {
+                      cur_char, character_constants::g_k_valid_name_chars) ==
+                  true) {
                 std::string what_arg{"invalid character in section name"};
                 throw syntax_error::generate_formatted_error(
                     m_file_contents, m_cur_pos, what_arg);
@@ -161,7 +155,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
           if (is_whitespace(cur_char) == true) {
             last_state = name_location::trailing_whitespace;
           } else {
-            if (cur_char == m_k_section_name_closing_delimiter) {
+            if (cur_char ==
+                character_constants::g_k_section_name_closing_delimiter) {
               last_state = name_location::closing_delimiter;
             } else {
               if (m_cur_pos.get_line() != start_of_name_proper_pos.get_line()) {
@@ -171,7 +166,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
                     m_file_contents, m_cur_pos, what_arg);
               } else {
                 if (is_invalid_character_valid_provided(
-                        cur_char, m_k_valid_name_chars) == true) {
+                        cur_char, character_constants::g_k_valid_name_chars) ==
+                    true) {
                   std::string what_arg{"invalid character in section name"};
                   throw syntax_error::generate_formatted_error(
                       m_file_contents, m_cur_pos, what_arg);
@@ -195,7 +191,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
           if (is_whitespace(cur_char) == true) {
             ;
           } else {
-            if (cur_char == m_k_section_name_closing_delimiter) {
+            if (cur_char ==
+                character_constants::g_k_section_name_closing_delimiter) {
               last_state = name_location::closing_delimiter;
             } else {
               std::string what_arg{
@@ -245,7 +242,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
 
           if (is_whitespace(cur_char) == true) {
             ;
-          } else if (cur_char == m_k_section_body_opening_delimiter) {
+          } else if (cur_char ==
+                     character_constants::g_k_section_body_opening_delimiter) {
             last_state = name_body_gap_location::opening_body_delimiter;
           } else {
             std::string what_arg{"expected section body opening delimiter"};
@@ -278,11 +276,13 @@ libconfigfile::parser::parse_section(bool is_root_section) {
 
         if (is_whitespace(cur_char)) {
           ;
-        } else if (cur_char == m_k_section_body_closing_delimiter) {
+        } else if (cur_char ==
+                   character_constants::g_k_section_body_closing_delimiter) {
           ended_on_body_closing_delimiter = true;
           ++m_cur_pos;
           break;
-        } else if (cur_char == m_k_section_name_opening_delimiter) {
+        } else if (cur_char ==
+                   character_constants::g_k_section_name_opening_delimiter) {
           file_pos start_pos{m_cur_pos};
 
           std::pair<std::string, node_ptr<section_node>> new_section{
@@ -370,16 +370,17 @@ std::string libconfigfile::parser::parse_key_value_key() {
           last_state = key_name_location::name_proper;
 
           if (is_invalid_character_valid_provided(
-                  cur_char, m_k_valid_name_chars) == true) {
+                  cur_char, character_constants::g_k_valid_name_chars) ==
+              true) {
             switch (cur_char) {
 
-            case m_k_key_value_assign: {
+            case character_constants::g_k_key_value_assign: {
               std::string what_arg{"missing key-value name"};
               throw syntax_error::generate_formatted_error(m_file_contents,
                                                            m_cur_pos, what_arg);
             } break;
 
-            case m_k_key_value_terminate: {
+            case character_constants::g_k_key_value_terminate: {
               std::string what_arg{"empty key-value"};
               throw syntax_error::generate_formatted_error(m_file_contents,
                                                            m_cur_pos, what_arg);
@@ -410,13 +411,14 @@ std::string libconfigfile::parser::parse_key_value_key() {
         if (is_whitespace(cur_char) == true) {
           last_state = key_name_location::trailing_whitespace;
         } else {
-          if (cur_char == m_k_key_value_assign) {
+          if (cur_char == character_constants::g_k_key_value_assign) {
             last_state = key_name_location::equal_sign;
           } else if (is_invalid_character_valid_provided(
-                         cur_char, m_k_valid_name_chars) == true) {
+                         cur_char, character_constants::g_k_valid_name_chars) ==
+                     true) {
             switch (cur_char) {
 
-            case m_k_key_value_terminate: {
+            case character_constants::g_k_key_value_terminate: {
               std::string what_arg{"missing value part of key-value"};
               throw syntax_error::generate_formatted_error(m_file_contents,
                                                            m_cur_pos, what_arg);
@@ -446,10 +448,10 @@ std::string libconfigfile::parser::parse_key_value_key() {
         if (is_whitespace(cur_char) == true) {
           ;
         } else {
-          if (cur_char == m_k_key_value_assign) {
+          if (cur_char == character_constants::g_k_key_value_assign) {
             last_state = key_name_location::equal_sign;
           } else {
-            if (cur_char == m_k_key_value_terminate) {
+            if (cur_char == character_constants::g_k_key_value_terminate) {
               std::string what_arg{"missing value part of key-value"};
               throw syntax_error::generate_formatted_error(m_file_contents,
                                                            m_cur_pos, what_arg);
@@ -510,12 +512,14 @@ libconfigfile::parser::parse_key_value_value() {
           throw syntax_error::generate_formatted_error(m_file_contents,
                                                        m_cur_pos, what_arg);
         } else {
-          if ((first_loop == true) && (cur_char == m_k_key_value_assign)) {
+          if ((first_loop == true) &&
+              (cur_char == character_constants::g_k_key_value_assign)) {
             ;
           } else {
             if (is_whitespace(cur_char)) {
               last_state = value_location::leading_whitespace;
-            } else if (cur_char == m_k_key_value_terminate) {
+            } else if (cur_char ==
+                       character_constants::g_k_key_value_terminate) {
               last_state = value_location::semicolon;
               std::string what_arg{"empty value part of key-value"};
               throw syntax_error::generate_formatted_error(m_file_contents,
@@ -525,7 +529,7 @@ libconfigfile::parser::parse_key_value_value() {
               value_start_pos = m_cur_pos;
               value_contents.push_back(cur_char);
 
-              if (cur_char == m_k_string_delimiter) {
+              if (cur_char == character_constants::g_k_string_delimiter) {
                 in_string = !in_string;
               }
             }
@@ -543,7 +547,7 @@ libconfigfile::parser::parse_key_value_value() {
 
           if (is_whitespace(cur_char)) {
             ;
-          } else if (cur_char == m_k_key_value_terminate) {
+          } else if (cur_char == character_constants::g_k_key_value_terminate) {
             last_state = value_location::semicolon;
             std::string what_arg{"empty value part of key-value"};
             throw syntax_error::generate_formatted_error(m_file_contents,
@@ -553,7 +557,7 @@ libconfigfile::parser::parse_key_value_value() {
             value_start_pos = m_cur_pos;
             value_contents.push_back(cur_char);
 
-            if (cur_char == m_k_string_delimiter) {
+            if (cur_char == character_constants::g_k_string_delimiter) {
               in_string = !in_string;
             }
           }
@@ -568,16 +572,18 @@ libconfigfile::parser::parse_key_value_value() {
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-          if ((in_string == false) && (cur_char == m_k_key_value_terminate)) {
+          if ((in_string == false) &&
+              (cur_char == character_constants::g_k_key_value_terminate)) {
             last_state = value_location::semicolon;
           } else {
             value_contents.push_back(cur_char);
 
-            if (cur_char == m_k_string_delimiter) {
+            if (cur_char == character_constants::g_k_string_delimiter) {
               if (in_string == false) {
                 in_string = !in_string;
               } else if ((in_string == true) &&
-                         (last_char != m_k_escape_leader)) {
+                         (last_char !=
+                          character_constants::g_k_escape_leader)) {
                 in_string = !in_string;
               }
             }
@@ -596,8 +602,8 @@ libconfigfile::parser::parse_key_value_value() {
     }
   }
 
-  value_contents =
-      trim_whitespace(value_contents, m_k_whitespace_chars, false, true);
+  value_contents = trim_whitespace(
+      value_contents, character_constants::g_k_whitespace_chars, false, true);
 
   node_ptr<value_node> ret_val{node_ptr_cast<value_node>(
       call_appropriate_value_parse_func(value_contents, value_start_pos))};
@@ -643,7 +649,7 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     case char_type::leading_whitespace: {
       if (is_whitespace(cur_char) == true) {
         ;
-      } else if (cur_char == m_k_array_opening_delimiter) {
+      } else if (cur_char == character_constants::g_k_array_opening_delimiter) {
         last_char_type = char_type::opening_delimiter;
       } else {
         std::string what_arg{"expected array opening delimiter"};
@@ -656,9 +662,10 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
       if (is_whitespace(cur_char) == true) {
         last_char_type = char_type::element_leading_whitespace;
       } else {
-        if (cur_char == m_k_array_closing_delimiter) {
+        if (cur_char == character_constants::g_k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char == m_k_array_element_separator) {
+        } else if (cur_char ==
+                   character_constants::g_k_array_element_separator) {
           std::string what_arg{"expected array element before separator"};
           throw syntax_error::generate_formatted_error(
               m_file_contents, (start_pos + raw_value_idx), what_arg);
@@ -667,9 +674,10 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
           cur_raw_element.second = (start_pos + raw_value_idx);
           cur_raw_element.first.push_back(cur_char);
 
-          if (cur_char == m_k_string_delimiter) {
+          if (cur_char == character_constants::g_k_string_delimiter) {
             in_string = !in_string;
-          } else if (cur_char == m_k_array_opening_delimiter) {
+          } else if (cur_char ==
+                     character_constants::g_k_array_opening_delimiter) {
             ++in_n_levels_of_sub_arrays;
           }
         }
@@ -680,9 +688,10 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
       if (is_whitespace(cur_char) == true) {
         ;
       } else {
-        if (cur_char == m_k_array_closing_delimiter) {
+        if (cur_char == character_constants::g_k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char == m_k_array_element_separator) {
+        } else if (cur_char ==
+                   character_constants::g_k_array_element_separator) {
           std::string what_arg{"expected array element before separator"};
           throw syntax_error::generate_formatted_error(
               m_file_contents, (start_pos + raw_value_idx), what_arg);
@@ -691,9 +700,10 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
           cur_raw_element.second = (start_pos + raw_value_idx);
           cur_raw_element.first.push_back(cur_char);
 
-          if (cur_char == m_k_string_delimiter) {
+          if (cur_char == character_constants::g_k_string_delimiter) {
             in_string = !in_string;
-          } else if (cur_char == m_k_array_opening_delimiter) {
+          } else if (cur_char ==
+                     character_constants::g_k_array_opening_delimiter) {
             ++in_n_levels_of_sub_arrays;
           }
         }
@@ -701,12 +711,13 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
     } break;
 
     case char_type::element_proper: {
-      if ((cur_char == m_k_array_element_separator) && (in_string == false) &&
-          (in_n_levels_of_sub_arrays == 0)) {
+      if ((cur_char == character_constants::g_k_array_element_separator) &&
+          (in_string == false) && (in_n_levels_of_sub_arrays == 0)) {
         last_char_type = char_type::element_separator;
         raw_elements.push_back(std::move(cur_raw_element));
         cur_raw_element.first.clear();
-      } else if ((cur_char == m_k_array_closing_delimiter) &&
+      } else if ((cur_char ==
+                  character_constants::g_k_array_closing_delimiter) &&
                  (in_string == false) && (in_n_levels_of_sub_arrays == 0)) {
         last_char_type = char_type::closing_delimiter;
         raw_elements.push_back(std::move(cur_raw_element));
@@ -714,16 +725,19 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
       } else {
         cur_raw_element.first.push_back(cur_char);
 
-        if (cur_char == m_k_string_delimiter) {
+        if (cur_char == character_constants::g_k_string_delimiter) {
           if (in_string == false) {
             in_string = !in_string;
-          } else if ((in_string == true) && (last_char != m_k_escape_leader)) {
+          } else if ((in_string == true) &&
+                     (last_char != character_constants::g_k_escape_leader)) {
             in_string = !in_string;
           }
-        } else if ((cur_char == m_k_array_opening_delimiter) &&
+        } else if ((cur_char ==
+                    character_constants::g_k_array_opening_delimiter) &&
                    (in_string == false)) {
           ++in_n_levels_of_sub_arrays;
-        } else if ((cur_char == m_k_array_closing_delimiter) &&
+        } else if ((cur_char ==
+                    character_constants::g_k_array_closing_delimiter) &&
                    (in_string == false)) {
           --in_n_levels_of_sub_arrays;
         }
@@ -734,9 +748,10 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
       if (is_whitespace(cur_char) == true) {
         ;
       } else {
-        if (cur_char == m_k_array_closing_delimiter) {
+        if (cur_char == character_constants::g_k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char == m_k_array_element_separator) {
+        } else if (cur_char ==
+                   character_constants::g_k_array_element_separator) {
           last_char_type = char_type::element_separator;
         } else {
           std::string what_arg{
@@ -751,9 +766,10 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
       if (is_whitespace(cur_char) == true) {
         last_char_type = char_type::element_leading_whitespace;
       } else {
-        if (cur_char == m_k_array_closing_delimiter) {
+        if (cur_char == character_constants::g_k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char == m_k_array_element_separator) {
+        } else if (cur_char ==
+                   character_constants::g_k_array_element_separator) {
           std::string what_arg{"expected array element or closing delimiter"};
           throw syntax_error::generate_formatted_error(
               m_file_contents, (start_pos + raw_value_idx), what_arg);
@@ -762,9 +778,10 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
           cur_raw_element.second = (start_pos + raw_value_idx);
           cur_raw_element.first.push_back(cur_char);
 
-          if (cur_char == m_k_string_delimiter) {
+          if (cur_char == character_constants::g_k_string_delimiter) {
             in_string = !in_string;
-          } else if (cur_char == m_k_array_opening_delimiter) {
+          } else if (cur_char ==
+                     character_constants::g_k_array_opening_delimiter) {
             ++in_n_levels_of_sub_arrays;
           }
         }
@@ -808,8 +825,9 @@ libconfigfile::parser::parse_array_value(const std::string &raw_value,
   ret_val->reserve(raw_elements.size());
 
   for (size_t i{0}; i < raw_elements.size(); ++i) {
-    raw_elements[i].first = trim_whitespace(raw_elements[i].first,
-                                            m_k_whitespace_chars, false, true);
+    raw_elements[i].first =
+        trim_whitespace(raw_elements[i].first,
+                        character_constants::g_k_whitespace_chars, false, true);
   }
 
   for (size_t i{0}; i < raw_elements.size(); ++i) {
@@ -841,18 +859,19 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
     bool last_char_was_leading_zero{false};
     size_t num_of_leading_zeroes{0};
 
-    /* m_k_hex_num_sys can't be constexpr because the digits string is too
-     * long, this means that we can't use the prefix members as case labels in
-     * the switch statement below, resulting in this nasty workaround */
-    static constexpr char constexpr_workaround_m_k_hex_num_sys_prefix{'x'};
-    static constexpr char constexpr_workaround_m_k_hex_num_sys_prefix_alt{'X'};
-    assert(constexpr_workaround_m_k_hex_num_sys_prefix ==
-           m_k_hex_num_sys.prefix);
-    assert((constexpr_workaround_m_k_hex_num_sys_prefix_alt ==
-            m_k_hex_num_sys.prefix_alt));
+    /* character_constants::g_k_hex_num_sys can't be constexpr because the
+     * digits string is too long, this means that we can't use the prefix
+     * members as case labels in the switch statement below, resulting in this
+     * nasty workaround */
+    static constexpr char constexpr_workaround_hex_num_sys_prefix{'x'};
+    static constexpr char constexpr_workaround_hex_num_sys_prefix_alt{'X'};
+    assert(constexpr_workaround_hex_num_sys_prefix ==
+           character_constants::g_k_hex_num_sys.prefix);
+    assert((constexpr_workaround_hex_num_sys_prefix_alt ==
+            character_constants::g_k_hex_num_sys.prefix_alt));
 
-    assert(m_k_num_sys_prefix_leader == '0'); /* parsing logic breaks down if
-           the numeral system prefix leader is not zero*/
+    assert(character_constants::g_k_num_sys_prefix_leader == '0'); /* parsing
+           logic breaks down if the numeral system prefix leader is not zero*/
 
     for (std::string::size_type raw_value_idx{0};
          raw_value_idx < raw_value.size(); ++raw_value_idx) {
@@ -862,7 +881,9 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
           [&start_pos, &num_sys, &cur_char, &last_char_was_digit,
            &any_digits_so_far, &last_char_was_leading_zero, &actual_digits,
            &raw_value_idx, this]() {
-            num_sys = ((num_sys == nullptr) ? (&m_k_dec_num_sys) : (num_sys));
+            num_sys =
+                ((num_sys == nullptr) ? (&character_constants::g_k_dec_num_sys)
+                                      : (num_sys));
 
             if (is_digit(cur_char, *num_sys)) {
               last_char_was_digit = true;
@@ -880,7 +901,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
 
       switch (cur_char) {
 
-      case m_k_num_digit_separator: {
+      case character_constants::g_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
             (raw_value_idx == (raw_value.size() - 1))) {
           std::string what_arg{"integer digit separator must be durrounded by "
@@ -893,7 +914,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
         }
       } break;
 
-      case m_k_num_positive_sign: {
+      case character_constants::g_k_num_positive_sign: {
         if (raw_value_idx == 0) {
           is_negative = false;
           last_char_was_digit = false;
@@ -905,7 +926,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
         }
       } break;
 
-      case m_k_num_negative_sign: {
+      case character_constants::g_k_num_negative_sign: {
         if (raw_value_idx == 0) {
           is_negative = true;
           last_char_was_digit = false;
@@ -917,7 +938,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
         }
       } break;
 
-      case m_k_num_sys_prefix_leader: {
+      case character_constants::g_k_num_sys_prefix_leader: {
         if (any_digits_so_far == false) {
           last_char_was_digit = false;
           last_char_was_leading_zero = true;
@@ -930,8 +951,8 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
         }
       } break;
 
-      case m_k_bin_num_sys.prefix:
-      case m_k_bin_num_sys.prefix_alt: {
+      case character_constants::g_k_bin_num_sys.prefix:
+      case character_constants::g_k_bin_num_sys.prefix_alt: {
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
@@ -939,7 +960,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
                 last_char_was_digit = false;
                 last_char_was_leading_zero = false;
 
-                num_sys = &m_k_bin_num_sys;
+                num_sys = &character_constants::g_k_bin_num_sys;
               } else {
                 std::string what_arg{"numeral system prefix must appear "
                                      "before integer digits"};
@@ -962,8 +983,8 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
         }
       } break;
 
-      case m_k_oct_num_sys.prefix:
-      case m_k_oct_num_sys.prefix_alt: {
+      case character_constants::g_k_oct_num_sys.prefix:
+      case character_constants::g_k_oct_num_sys.prefix_alt: {
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
@@ -971,7 +992,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
                 last_char_was_digit = false;
                 last_char_was_leading_zero = false;
 
-                num_sys = &m_k_oct_num_sys;
+                num_sys = &character_constants::g_k_oct_num_sys;
               } else {
                 std::string what_arg{"numeral system prefix must appear "
                                      "before integer digits"};
@@ -994,8 +1015,8 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
         }
       } break;
 
-      case constexpr_workaround_m_k_hex_num_sys_prefix:
-      case constexpr_workaround_m_k_hex_num_sys_prefix_alt: {
+      case constexpr_workaround_hex_num_sys_prefix:
+      case constexpr_workaround_hex_num_sys_prefix_alt: {
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
@@ -1003,7 +1024,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
                 last_char_was_digit = false;
                 last_char_was_leading_zero = false;
 
-                num_sys = &m_k_hex_num_sys;
+                num_sys = &character_constants::g_k_hex_num_sys;
               } else {
                 std::string what_arg{"numeral system prefix must appear "
                                      "before integer digits"};
@@ -1037,7 +1058,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
     }
 
     if (num_sys == nullptr) {
-      num_sys = &m_k_dec_num_sys;
+      num_sys = &character_constants::g_k_dec_num_sys;
     }
 
     node_ptr<integer_end_value_node> ret_val{nullptr};
@@ -1089,17 +1110,22 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
     sanitized_string.reserve(raw_value.size());
 
     static const std::unordered_map<std::string, float_end_value_node_data_t>
-        special_floats{
-            {m_k_float_infinity.second, m_k_float_infinity.first},
-            {(m_k_num_positive_sign + m_k_float_infinity.second),
-             (m_k_float_infinity.first)},
-            {(m_k_num_negative_sign + m_k_float_infinity.second),
-             (-m_k_float_infinity.first)},
-            {(m_k_float_not_a_number.second), (m_k_float_not_a_number.first)},
-            {(m_k_num_positive_sign + m_k_float_not_a_number.second),
-             (m_k_float_not_a_number.first)},
-            {(m_k_num_negative_sign + m_k_float_not_a_number.second),
-             (-m_k_float_not_a_number.first)}};
+        special_floats{{character_constants::g_k_float_infinity.second,
+                        character_constants::g_k_float_infinity.first},
+                       {(character_constants::g_k_num_positive_sign +
+                         character_constants::g_k_float_infinity.second),
+                        (character_constants::g_k_float_infinity.first)},
+                       {(character_constants::g_k_num_negative_sign +
+                         character_constants::g_k_float_infinity.second),
+                        (-character_constants::g_k_float_infinity.first)},
+                       {(character_constants::g_k_float_not_a_number.second),
+                        (character_constants::g_k_float_not_a_number.first)},
+                       {(character_constants::g_k_num_positive_sign +
+                         character_constants::g_k_float_not_a_number.second),
+                        (character_constants::g_k_float_not_a_number.first)},
+                       {(character_constants::g_k_num_negative_sign +
+                         character_constants::g_k_float_not_a_number.second),
+                        (-character_constants::g_k_float_not_a_number.first)}};
 
     if (special_floats.contains(raw_value)) {
       return make_node_ptr<float_end_value_node>(special_floats.at(raw_value));
@@ -1136,7 +1162,7 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
         case num_location::integer: {
           switch (cur_char) {
 
-          case m_k_num_positive_sign: {
+          case character_constants::g_k_num_positive_sign: {
             if (last_char == char_type::start) {
               last_char = char_type::positive;
               sanitized_string.push_back(cur_char);
@@ -1148,7 +1174,7 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_num_negative_sign: {
+          case character_constants::g_k_num_negative_sign: {
             if (last_char == char_type::start) {
               last_char = char_type::positive;
               sanitized_string.push_back(cur_char);
@@ -1160,11 +1186,12 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_num_digit_separator: {
+          case character_constants::g_k_num_digit_separator: {
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, m_k_dec_num_sys) == true) {
+                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
+                    true) {
                   last_char = char_type::separator;
                 } else {
                   std::string what_arg{
@@ -1189,11 +1216,12 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_float_decimal_point: {
+          case character_constants::g_k_float_decimal_point: {
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, m_k_dec_num_sys) == true) {
+                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
+                    true) {
                   last_char = char_type::decimal;
                   cur_location = num_location::fractional;
                   sanitized_string.push_back(cur_char);
@@ -1220,14 +1248,15 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_float_exponent_sign_lower:
-          case m_k_float_exponent_sign_upper: {
+          case character_constants::g_k_float_exponent_sign_lower:
+          case character_constants::g_k_float_exponent_sign_upper: {
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if ((is_digit(next_char, m_k_dec_num_sys) == true) ||
-                    (next_char == m_k_num_positive_sign) ||
-                    (m_k_num_negative_sign)) {
+                if ((is_digit(next_char,
+                              character_constants::g_k_dec_num_sys) == true) ||
+                    (next_char == character_constants::g_k_num_positive_sign) ||
+                    (character_constants::g_k_num_negative_sign)) {
                   last_char = char_type::exponent;
                   cur_location = num_location::exponent;
                   sanitized_string.push_back(cur_char);
@@ -1255,7 +1284,8 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
           } break;
 
           default: {
-            if (is_digit(cur_char, m_k_dec_num_sys) == true) {
+            if (is_digit(cur_char, character_constants::g_k_dec_num_sys) ==
+                true) {
               last_char = char_type::digit;
               sanitized_string.push_back(cur_char);
             } else {
@@ -1270,25 +1300,26 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
         case num_location::fractional: {
           switch (cur_char) {
 
-          case m_k_num_positive_sign: {
+          case character_constants::g_k_num_positive_sign: {
             std::string what_arg{"positive sign may only appear at start of "
                                  "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
                 m_file_contents, (start_pos + raw_value_idx), what_arg);
           } break;
 
-          case m_k_num_negative_sign: {
+          case character_constants::g_k_num_negative_sign: {
             std::string what_arg{"negative sign may only appear at start of "
                                  "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
                 m_file_contents, (start_pos + raw_value_idx), what_arg);
           } break;
 
-          case m_k_num_digit_separator: {
+          case character_constants::g_k_num_digit_separator: {
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, m_k_dec_num_sys) == true) {
+                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
+                    true) {
                   last_char = char_type::separator;
                 } else {
                   std::string what_arg{
@@ -1313,20 +1344,21 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_float_decimal_point: {
+          case character_constants::g_k_float_decimal_point: {
             std::string what_arg{"floats can only contain one decimal point"};
             throw syntax_error::generate_formatted_error(
                 m_file_contents, (start_pos + raw_value_idx), what_arg);
           } break;
 
-          case m_k_float_exponent_sign_lower:
-          case m_k_float_exponent_sign_upper: {
+          case character_constants::g_k_float_exponent_sign_lower:
+          case character_constants::g_k_float_exponent_sign_upper: {
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if ((is_digit(next_char, m_k_dec_num_sys) == true) ||
-                    (next_char == m_k_num_positive_sign) ||
-                    (m_k_num_negative_sign)) {
+                if ((is_digit(next_char,
+                              character_constants::g_k_dec_num_sys) == true) ||
+                    (next_char == character_constants::g_k_num_positive_sign) ||
+                    (character_constants::g_k_num_negative_sign)) {
                   last_char = char_type::exponent;
                   cur_location = num_location::exponent;
                   sanitized_string.push_back(cur_char);
@@ -1354,7 +1386,8 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
           } break;
 
           default: {
-            if (is_digit(cur_char, m_k_dec_num_sys) == true) {
+            if (is_digit(cur_char, character_constants::g_k_dec_num_sys) ==
+                true) {
               last_char = char_type::digit;
               sanitized_string.push_back(cur_char);
             } else {
@@ -1369,7 +1402,7 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
         case num_location::exponent: {
           switch (cur_char) {
 
-          case m_k_num_positive_sign: {
+          case character_constants::g_k_num_positive_sign: {
             if (last_char == char_type::exponent) {
               last_char = char_type::positive;
               sanitized_string.push_back(cur_char);
@@ -1381,7 +1414,7 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_num_negative_sign: {
+          case character_constants::g_k_num_negative_sign: {
             if (last_char == char_type::exponent) {
               last_char = char_type::positive;
               sanitized_string.push_back(cur_char);
@@ -1393,11 +1426,12 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_num_digit_separator: {
+          case character_constants::g_k_num_digit_separator: {
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, m_k_dec_num_sys) == true) {
+                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
+                    true) {
                   last_char = char_type::separator;
                 } else {
                   std::string what_arg{
@@ -1422,22 +1456,23 @@ libconfigfile::parser::parse_float_value(const std::string &raw_value,
             }
           } break;
 
-          case m_k_float_decimal_point: {
+          case character_constants::g_k_float_decimal_point: {
             std::string what_arg{
                 "float decimal point can not appear after exponent sign"};
             throw syntax_error::generate_formatted_error(
                 m_file_contents, (start_pos + raw_value_idx), what_arg);
           } break;
 
-          case m_k_float_exponent_sign_lower:
-          case m_k_float_exponent_sign_upper: {
+          case character_constants::g_k_float_exponent_sign_lower:
+          case character_constants::g_k_float_exponent_sign_upper: {
             std::string what_arg{"float exponent sign can only appear once"};
             throw syntax_error::generate_formatted_error(
                 m_file_contents, (start_pos + raw_value_idx), what_arg);
           } break;
 
           default: {
-            if (is_digit(cur_char, m_k_dec_num_sys) == true) {
+            if (is_digit(cur_char, character_constants::g_k_dec_num_sys) ==
+                true) {
               last_char = char_type::digit;
               sanitized_string.push_back(cur_char);
             } else {
@@ -1520,15 +1555,15 @@ libconfigfile::parser::parse_string_value(const std::string &raw_value,
          raw_value_idx < raw_value.size(); ++raw_value_idx) {
       char cur_char{raw_value[raw_value_idx]};
       if (in_string == true) {
-        if (cur_char == m_k_string_delimiter) {
+        if (cur_char == character_constants::g_k_string_delimiter) {
           last_char = closing_delimiter;
           in_string = false;
-        } else if (cur_char == m_k_escape_leader) {
+        } else if (cur_char == character_constants::g_k_escape_leader) {
           std::string::size_type escape_char_pos{raw_value_idx + 1};
           if (escape_char_pos < raw_value.size()) {
             char escape_char{raw_value[escape_char_pos]};
 
-            if (escape_char == m_k_hex_escape_char) {
+            if (escape_char == character_constants::g_k_hex_escape_char) {
               std::string::size_type hex_digit_pos_1{escape_char_pos + 1};
               std::string::size_type hex_digit_pos_2{escape_char_pos + 2};
 
@@ -1537,12 +1572,15 @@ libconfigfile::parser::parse_string_value(const std::string &raw_value,
                 char hex_digit_1{raw_value[hex_digit_pos_1]};
                 char hex_digit_2{raw_value[hex_digit_pos_2]};
 
-                if ((is_digit(hex_digit_1, m_k_hex_num_sys)) &&
-                    (is_digit(hex_digit_2, m_k_hex_num_sys))) {
+                if ((is_digit(hex_digit_1,
+                              character_constants::g_k_hex_num_sys)) &&
+                    (is_digit(hex_digit_2,
+                              character_constants::g_k_hex_num_sys))) {
                   std::string hex_string{std::string{} + hex_digit_1 +
                                          hex_digit_2};
                   string_contents.push_back(static_cast<char>(
-                      std::stoi(hex_string, nullptr, m_k_hex_num_sys.base)));
+                      std::stoi(hex_string, nullptr,
+                                character_constants::g_k_hex_num_sys.base)));
                   last_char = char_type::in_string_escape_code;
                   raw_value_idx = hex_digit_2;
                 } else {
@@ -1557,9 +1595,11 @@ libconfigfile::parser::parse_string_value(const std::string &raw_value,
                     m_file_contents, (start_pos + raw_value_idx), what_arg);
               }
             } else {
-              if (m_k_basic_escape_chars.contains(escape_char)) {
+              if (character_constants::g_k_basic_escape_chars.contains(
+                      escape_char)) {
                 string_contents.push_back(
-                    m_k_basic_escape_chars.at(escape_char));
+                    character_constants::g_k_basic_escape_chars.at(
+                        escape_char));
                 last_char = char_type::in_string_escape_code;
                 raw_value_idx = escape_char_pos;
               }
@@ -1573,9 +1613,10 @@ libconfigfile::parser::parse_string_value(const std::string &raw_value,
           string_contents.push_back(cur_char);
         }
       } else {
-        if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char,
+                          character_constants::g_k_whitespace_chars) == true) {
           last_char = char_type::out_string_whitespace;
-        } else if (cur_char == m_k_string_delimiter) {
+        } else if (cur_char == character_constants::g_k_string_delimiter) {
           last_char = char_type::opening_delimiter;
           in_string = true;
         } else {
@@ -1660,7 +1701,7 @@ void libconfigfile::parser::parse_directive() {
   file_pos start_pos{m_cur_pos};
 
   std::string name{};
-  name.reserve(m_k_max_directive_name_length);
+  name.reserve(character_constants::g_k_max_directive_name_length);
 
   enum class name_location {
     directive_leader,
@@ -1680,9 +1721,11 @@ void libconfigfile::parser::parse_directive() {
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-        if (cur_char == m_k_directive_leader) {
+        if (cur_char == character_constants::g_k_directive_leader) {
           ;
-        } else if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+        } else if (is_whitespace(cur_char,
+                                 character_constants::g_k_whitespace_chars) ==
+                   true) {
           last_state = name_location::leading_whitespace;
           ;
         } else {
@@ -1706,7 +1749,8 @@ void libconfigfile::parser::parse_directive() {
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-        if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char,
+                          character_constants::g_k_whitespace_chars) == true) {
           ;
         } else {
           if (m_cur_pos.get_line() != start_pos.get_line()) {
@@ -1727,7 +1771,8 @@ void libconfigfile::parser::parse_directive() {
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-        if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char,
+                          character_constants::g_k_whitespace_chars) == true) {
           last_state = name_location::done;
         } else {
           if (m_cur_pos.get_line() != start_pos.get_line()) {
@@ -1749,9 +1794,9 @@ void libconfigfile::parser::parse_directive() {
 
   void (parser::*directive_function)(){nullptr};
 
-  if (name == m_k_version_directive_name) {
+  if (name == character_constants::g_k_version_directive_name) {
     directive_function = &parser::parse_version_directive;
-  } else if (name == m_k_include_directive_name) {
+  } else if (name == character_constants::g_k_include_directive_name) {
     directive_function = &parser::parse_include_directive;
   } else {
     std::string what_arg{"invalid directive"};
@@ -1765,7 +1810,8 @@ void libconfigfile::parser::parse_directive() {
     } else {
       char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-      if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+      if (is_whitespace(cur_char, character_constants::g_k_whitespace_chars) ==
+          true) {
         ;
       } else {
         break;
@@ -1814,9 +1860,10 @@ void libconfigfile::parser::parse_include_directive() {
       } else {
         char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-        if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char,
+                          character_constants::g_k_whitespace_chars) == true) {
           ;
-        } else if (cur_char == m_k_string_delimiter) {
+        } else if (cur_char == character_constants::g_k_string_delimiter) {
           if (m_cur_pos.get_line() != start_pos.get_line()) {
             std::string what_arg{"entire directive must appear on one line"};
             throw syntax_error::generate_formatted_error(m_file_contents,
@@ -1846,10 +1893,10 @@ void libconfigfile::parser::parse_include_directive() {
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-          if (cur_char == m_k_string_delimiter) {
+          if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
             start_of_file_path_pos = m_cur_pos;
-          } else if (cur_char == m_k_escape_leader) {
+          } else if (cur_char == character_constants::g_k_escape_leader) {
             last_char_was_escape_leader = true;
             file_path.push_back(cur_char);
             last_state = args_location::file_path;
@@ -1877,14 +1924,14 @@ void libconfigfile::parser::parse_include_directive() {
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-          if (cur_char == m_k_string_delimiter) {
+          if (cur_char == character_constants::g_k_string_delimiter) {
             if (last_char_was_escape_leader == true) {
               last_char_was_escape_leader = false;
               file_path.push_back(cur_char);
             } else {
               last_state = args_location::closing_delimiter;
             }
-          } else if (cur_char == m_k_escape_leader) {
+          } else if (cur_char == character_constants::g_k_escape_leader) {
             last_char_was_escape_leader = true;
             file_path.push_back(cur_char);
           } else {
@@ -1903,7 +1950,9 @@ void libconfigfile::parser::parse_include_directive() {
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-          if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+          if (is_whitespace(cur_char,
+                            character_constants::g_k_whitespace_chars) ==
+              true) {
             last_state = args_location::trailing_whitespace;
           } else {
             std::string what_arg{"excess arguments given to include directive"};
@@ -1923,7 +1972,9 @@ void libconfigfile::parser::parse_include_directive() {
         } else {
           char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-          if (is_whitespace(cur_char, m_k_whitespace_chars) == true) {
+          if (is_whitespace(cur_char,
+                            character_constants::g_k_whitespace_chars) ==
+              true) {
             ;
           } else {
             std::string what_arg{"excess arguments given to include directive"};
@@ -1991,11 +2042,11 @@ void libconfigfile::parser::handle_comments() {
   } else {
     char cur_char{m_file_contents.get_char(m_cur_pos)};
 
-    if (cur_char == m_k_comment_script) {
+    if (cur_char == character_constants::g_k_comment_script) {
       m_cur_pos.goto_next_line();
       return;
-    } else if ((cur_char == m_k_comment_cpp.front()) ||
-               (cur_char == m_k_comment_c_start.front())) {
+    } else if ((cur_char == character_constants::g_k_comment_cpp.front()) ||
+               (cur_char == character_constants::g_k_comment_c_start.front())) {
       file_pos next_pos{m_cur_pos + 1};
 
       if (next_pos.is_eof() == true) {
@@ -2003,11 +2054,12 @@ void libconfigfile::parser::handle_comments() {
       } else {
         char next_char{m_file_contents.get_char(next_pos)};
 
-        if (next_char == m_k_comment_cpp.back()) {
+        if (next_char == character_constants::g_k_comment_cpp.back()) {
           m_cur_pos.goto_next_line();
           return;
-        } else if (next_char == m_k_comment_c_start.back()) {
-          m_cur_pos.goto_find_end(m_k_comment_c_end);
+        } else if (next_char ==
+                   character_constants::g_k_comment_c_start.back()) {
+          m_cur_pos.goto_find_end(character_constants::g_k_comment_c_end);
           return;
         } else {
           return;
@@ -2023,16 +2075,17 @@ std::variant<libconfigfile::value_node_type, libconfigfile::end_value_node_type>
 libconfigfile::parser::identify_key_value_value_type(
     const std::string &value_contents) {
   std::string::size_type first_non_whitespace_char_pos{
-      value_contents.find_first_not_of(m_k_whitespace_chars)};
+      value_contents.find_first_not_of(
+          character_constants::g_k_whitespace_chars)};
   char first_non_whitespace_char{value_contents[first_non_whitespace_char_pos]};
 
   switch (first_non_whitespace_char) {
 
-  case m_k_array_opening_delimiter: {
+  case character_constants::g_k_array_opening_delimiter: {
     return value_node_type::ARRAY;
   } break;
 
-  case m_k_string_delimiter: {
+  case character_constants::g_k_string_delimiter: {
     return end_value_node_type::STRING;
   } break;
 
@@ -2046,22 +2099,29 @@ libconfigfile::end_value_node_type
 libconfigfile::parser::identify_key_value_numeric_value_type(
     const std::string &value_contents) {
   if ((case_insensitive_string_find(
-           value_contents, m_k_float_infinity.second) != (std::string::npos)) ||
-      (case_insensitive_string_find(value_contents,
-                                    m_k_float_not_a_number.second) !=
+           value_contents, character_constants::g_k_float_infinity.second) !=
+       (std::string::npos)) ||
+      (case_insensitive_string_find(
+           value_contents,
+           character_constants::g_k_float_not_a_number.second) !=
        (std::string::npos))) {
     return end_value_node_type::FLOAT;
   } else {
-    if ((value_contents.find(m_k_float_decimal_point)) != (std::string::npos)) {
+    if ((value_contents.find(character_constants::g_k_float_decimal_point)) !=
+        (std::string::npos)) {
       return end_value_node_type::FLOAT;
     } else {
-      if (((value_contents.find(m_k_float_exponent_sign_lower)) !=
+      if (((value_contents.find(
+               character_constants::g_k_float_exponent_sign_lower)) !=
            (std::string::npos)) ||
-          ((value_contents.find(m_k_float_exponent_sign_upper)) !=
+          ((value_contents.find(
+               character_constants::g_k_float_exponent_sign_upper)) !=
            (std::string::npos))) {
-        if (((value_contents.find(m_k_hex_num_sys.prefix)) !=
+        if (((value_contents.find(
+                 character_constants::g_k_hex_num_sys.prefix)) !=
              (std::string::npos)) ||
-            ((value_contents.find(m_k_hex_num_sys.prefix_alt)) !=
+            ((value_contents.find(
+                 character_constants::g_k_hex_num_sys.prefix_alt)) !=
              (std::string::npos))) {
           return end_value_node_type::INTEGER;
         } else {
@@ -2081,19 +2141,19 @@ libconfigfile::parser::replace_escape_sequences(const std::string &str) {
   result.reserve(str.size());
 
   for (std::string::size_type cur_char{0}; cur_char < str.size(); ++cur_char) {
-    if (str[cur_char] == m_k_escape_leader) {
+    if (str[cur_char] == character_constants::g_k_escape_leader) {
       std::string::size_type escape_char_pos{cur_char + 1};
       if (escape_char_pos < str.size()) {
         char escape_char{str[escape_char_pos]};
-        if (escape_char == m_k_hex_escape_char) {
+        if (escape_char == character_constants::g_k_hex_escape_char) {
           std::string::size_type hex_digit_pos_1{escape_char_pos + 1};
           std::string::size_type hex_digit_pos_2{escape_char_pos + 2};
           if ((hex_digit_pos_1 < str.size()) &&
               (hex_digit_pos_2 < str.size())) {
             char hex_digit_1{str[hex_digit_pos_1]};
             char hex_digit_2{str[hex_digit_pos_2]};
-            if ((is_digit(hex_digit_1, m_k_hex_num_sys)) &&
-                (is_digit(hex_digit_2, m_k_hex_num_sys))) {
+            if ((is_digit(hex_digit_1, character_constants::g_k_hex_num_sys)) &&
+                (is_digit(hex_digit_2, character_constants::g_k_hex_num_sys))) {
               std::string hex_string{std::string{} + hex_digit_1 + hex_digit_2};
               result.push_back(
                   static_cast<char>(std::stoi(hex_string, nullptr, 16)));
@@ -2105,8 +2165,10 @@ libconfigfile::parser::replace_escape_sequences(const std::string &str) {
             return cur_char;
           }
         } else {
-          if (m_k_basic_escape_chars.contains(escape_char)) {
-            result.push_back(m_k_basic_escape_chars.at(escape_char));
+          if (character_constants::g_k_basic_escape_chars.contains(
+                  escape_char)) {
+            result.push_back(
+                character_constants::g_k_basic_escape_chars.at(escape_char));
             cur_char = escape_char;
           } else {
             return cur_char;
@@ -2125,9 +2187,11 @@ libconfigfile::parser::replace_escape_sequences(const std::string &str) {
 std::variant<std::vector<std::vector<std::string>> /*result*/,
              std::string::size_type /*unterminated_string_pos*/>
 libconfigfile::parser::extract_strings(
-    const std::string &raw, const char delimiter /*= m_k_string_delimiter*/,
-    const char delimiter_escape /*= m_k_escape_leader*/,
-    const std::string &whitespace_chars /*= m_k_whitespace_chars*/) {
+    const std::string &raw,
+    const char delimiter /*= character_constants::g_k_string_delimiter*/,
+    const char delimiter_escape /*= character_constants::g_k_escape_leader*/,
+    const std::string
+        &whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
 
   bool in_string{false};
   bool strings_are_adjacent{true};
@@ -2208,13 +2272,15 @@ std::string libconfigfile::parser::get_substr_between_indices_exclusive(
 
 bool libconfigfile::parser::is_whitespace(
     const char ch,
-    const std::string &whitespace_chars /*= m_k_whitespace_chars*/) {
+    const std::string
+        &whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
   return ((whitespace_chars.find(ch)) != (std::string::npos));
 }
 
 std::string libconfigfile::parser::trim_whitespace(
     const std::string &str,
-    const std::string &whitespace_chars /*= m_k_whitespace_chars*/,
+    const std::string
+        &whitespace_chars /*= character_constants::g_k_whitespace_chars*/,
     bool trim_leading /*= true*/, bool trim_trailing /*= true*/) {
   if (str.empty() == true) {
     return "";
@@ -2243,7 +2309,8 @@ std::string libconfigfile::parser::trim_whitespace(
 bool libconfigfile::parser::is_actual_delimiter(
     const std::string::size_type pos, const std::string &str,
     const char delimiter,
-    const char delimiter_escape /*= m_k_delimiter_leader*/) {
+    const char
+        delimiter_escape /*= character_constants::g_k_delimiter_leader*/) {
   if (pos < str.size()) {
     if (str[pos] == delimiter) {
       if (pos == 0) {
@@ -2294,7 +2361,8 @@ libconfigfile::parser::contains_invalid_character_invalid_provided(
 }
 
 bool libconfigfile::parser::is_digit(
-    char ch, const numeral_system &num_sys /*= m_k_dec_num_sys*/) {
+    char ch,
+    const numeral_system &num_sys /*= character_constants::g_k_dec_num_sys*/) {
   return (num_sys.digits.find(ch) != std::string::npos);
 }
 

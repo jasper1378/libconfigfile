@@ -6,6 +6,7 @@
 #include "node_types.hpp"
 
 #include <initializer_list>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -59,7 +60,9 @@ public:
   virtual absolute_node_type get_absolute_node_type() const override;
   virtual libconfigfile::node_type get_node_type() const override final;
   virtual bool polymorphic_value_compare(const node *other) const override;
+  virtual void print(std::ostream &out) const override;
 
+public:
   allocator_type get_allocator() const;
 
   iterator begin();
@@ -211,17 +214,22 @@ public:
   friend void swap(section_node &lhs, section_node &rhs);
   template <typename Pred>
   friend size_type erase_if(section_node &c, Pred pred);
+
+  friend std::ostream &operator<<(std::ostream &out, const section_node &n);
 };
 
 bool operator==(const section_node &lhs, const section_node &rhs);
 bool operator!=(const section_node &lhs, const section_node &rhs);
 
 void swap(section_node &lhs, section_node &rhs);
+
 template <typename Pred>
 section_node::size_type erase_if(section_node &c, Pred pred) {
   using std::erase_if;
   return erase_if(c.m_contents, pred);
 }
+
+std::ostream &operator<<(std::ostream &out, const section_node &n);
 } // namespace libconfigfile
 
 #endif

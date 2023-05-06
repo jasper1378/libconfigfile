@@ -7,6 +7,7 @@
 #include "value_node.hpp"
 
 #include <initializer_list>
+#include <iostream>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -50,7 +51,9 @@ public:
   virtual absolute_node_type get_absolute_node_type() const override;
   virtual value_node_type get_value_node_type() const override final;
   virtual bool polymorphic_value_compare(const node *other) const override;
+  virtual void print(std::ostream &out) const override;
 
+public:
   void assign(size_type count, const value_type &value);
   template <typename InputIt> void assign(InputIt first, InputIt last) {
     m_contents.assign(first, last);
@@ -144,6 +147,8 @@ public:
   friend array_value_node::size_type erase(array_value_node &c, const U &value);
   template <typename Pred>
   friend array_value_node::size_type erase_if(array_value_node &c, Pred pred);
+
+  friend std::ostream &operator<<(std::ostream &out, const array_value_node &n);
 };
 
 bool operator==(const array_value_node &lhs, const array_value_node &rhs);
@@ -166,6 +171,8 @@ array_value_node::size_type erase_if(array_value_node &c, Pred pred) {
   using std::erase_if;
   return erase_if(c, pred);
 }
+
+std::ostream &operator<<(std::ostream &out, const array_value_node &n);
 } // namespace libconfigfile
 
 #endif

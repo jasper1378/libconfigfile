@@ -2,6 +2,7 @@
 #define LIBCONFIGFILE_PARSER_HPP
 
 #include "array_value_node.hpp"
+#include "character_constants.hpp"
 #include "end_value_node.hpp"
 #include "file.hpp"
 #include "float_end_value_node.hpp"
@@ -27,75 +28,6 @@ private:
   file m_file_contents;
   file_pos m_cur_pos;
   node_ptr<section_node> m_root_section;
-
-private:
-  // static constexpr std::string m_k_whitespace_chars{" \t"};
-  static constexpr std::string m_k_whitespace_chars{' ', '\t'};
-  static_assert(true);
-  static constexpr char m_k_newline{'\n'};
-
-  static constexpr char m_k_comment_script{'#'};
-  static constexpr std::string m_k_comment_cpp{"//"};
-  static constexpr std::string m_k_comment_c_start{"/*"};
-  static constexpr std::string m_k_comment_c_end{"*/"};
-
-  static constexpr char m_k_directive_leader{'@'};
-  static constexpr std::string m_k_version_directive_name{"version"};
-  static constexpr std::string m_k_include_directive_name{"include"};
-  static constexpr int m_k_max_directive_name_length{std::max(
-      m_k_version_directive_name.size(), m_k_include_directive_name.size())};
-
-  static constexpr char m_k_array_opening_delimiter{'['};
-  static constexpr char m_k_array_closing_delimiter{']'};
-  static constexpr char m_k_array_element_separator{','};
-
-  static constexpr char m_k_string_delimiter{'"'};
-
-  static constexpr char m_k_escape_leader{'\\'};
-  static const std::unordered_map<char, char> m_k_basic_escape_chars;
-  static constexpr char m_k_hex_escape_char{'x'};
-  static constexpr int m_k_ascii_start{0x00};
-  static constexpr int m_k_ascii_end{0x7F};
-
-  static const std::string m_k_valid_name_chars;
-
-  static constexpr char m_k_section_name_opening_delimiter{'('};
-  static constexpr char m_k_section_name_closing_delimiter{')'};
-  static constexpr char m_k_section_body_opening_delimiter{'{'};
-  static constexpr char m_k_section_body_closing_delimiter{'}'};
-
-  static constexpr char m_k_key_value_assign{'='};
-  static constexpr char m_k_key_value_terminate{';'};
-
-  static constexpr char m_k_num_digit_separator{'_'};
-  static constexpr char m_k_num_positive_sign{'+'};
-  static constexpr char m_k_num_negative_sign{'-'};
-
-  struct numeral_system {
-    int base;
-    char prefix;
-    char prefix_alt;
-    std::string digits;
-  };
-
-  static constexpr char m_k_num_sys_prefix_leader{'0'};
-  static constexpr numeral_system m_k_dec_num_sys{10, '\0', '\0', "0123456789"};
-  static constexpr numeral_system m_k_bin_num_sys{2, 'b', 'B', "01"};
-  static constexpr numeral_system m_k_oct_num_sys{8, 'o', 'O', "01234567"};
-  static const numeral_system m_k_hex_num_sys;
-
-  static constexpr char m_k_float_decimal_point{'.'};
-  static constexpr char m_k_float_exponent_sign_lower{'e'};
-  static constexpr char m_k_float_exponent_sign_upper{'E'};
-  static_assert(std::numeric_limits<float_end_value_node_data_t>::has_infinity);
-  static constexpr std::pair<float_end_value_node_data_t, std::string>
-      m_k_float_infinity{
-          std::numeric_limits<float_end_value_node_data_t>::infinity(), "inf"};
-  static_assert(
-      std::numeric_limits<float_end_value_node_data_t>::has_quiet_NaN);
-  static constexpr std::pair<float_end_value_node_data_t, std::string>
-      m_k_float_not_a_number{
-          std::numeric_limits<float_end_value_node_data_t>::quiet_NaN(), "nan"};
 
 public:
   parser() = delete;
@@ -152,10 +84,12 @@ private:
 
   static std::variant<std::vector<std::vector<std::string>> /*result*/,
                       std::string::size_type /*unterminated_string_pos*/>
-  extract_strings(const std::string &raw,
-                  const char delimiter = m_k_string_delimiter,
-                  const char delimiter_escape = m_k_escape_leader,
-                  const std::string &whitespace_chars = m_k_whitespace_chars);
+  extract_strings(
+      const std::string &raw,
+      const char delimiter = character_constants::g_k_string_delimiter,
+      const char delimiter_escape = character_constants::g_k_escape_leader,
+      const std::string &whitespace_chars =
+          character_constants::g_k_whitespace_chars);
 
   static std::string
   get_substr_between_indices_inclusive(const std::string &str,
@@ -165,17 +99,18 @@ private:
   get_substr_between_indices_exclusive(const std ::string &str,
                                        const std::string::size_type start,
                                        const std::string::size_type end);
-  static bool
-  is_whitespace(const char ch,
-                const std::string &whitespace_chars = m_k_whitespace_chars);
+  static bool is_whitespace(const char ch,
+                            const std::string &whitespace_chars =
+                                character_constants::g_k_whitespace_chars);
   static std::string
   trim_whitespace(const std::string &str,
-                  const std::string &whitespace_chars = m_k_whitespace_chars,
+                  const std::string &whitespace_chars =
+                      character_constants::g_k_whitespace_chars,
                   bool trim_leading = true, bool trim_trailing = true);
-  static bool
-  is_actual_delimiter(const std::string::size_type pos, const std::string &str,
-                      const char delimiter,
-                      const char delimiter_escape = m_k_escape_leader);
+  static bool is_actual_delimiter(
+      const std::string::size_type pos, const std::string &str,
+      const char delimiter,
+      const char delimiter_escape = character_constants::g_k_escape_leader);
   static bool
   is_invalid_character_valid_provided(const char ch,
                                       const std::string &valid_chars);
@@ -189,8 +124,8 @@ private:
   contains_invalid_character_invalid_provided(const std::string &str,
                                               const std::string &invalid_chars);
 
-  static bool is_digit(char ch,
-                       const numeral_system &num_sys = m_k_dec_num_sys);
+  static bool is_digit(char ch, const numeral_system &num_sys =
+                                    character_constants::g_k_dec_num_sys);
 
   static bool case_insensitive_string_compare(const std::string &str1,
                                               const std::string &str2);
