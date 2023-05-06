@@ -48,16 +48,26 @@ libconfigfile::syntax_error::generate_formatted_error(
 libconfigfile::syntax_error
 libconfigfile::syntax_error::generate_formatted_error(
     const file &f, const file_pos &pos, const std::string &what_arg) {
-  return generate_formatted_error(f.get_file_path(), pos.get_line(),
-                                  pos.get_char(), what_arg);
+  if (pos.is_eof() == true) {
+    return generate_formatted_error(f.get_file_path(),
+                                    pos.get_end_of_file_pos(), what_arg);
+  } else {
+    return generate_formatted_error(f.get_file_path(), pos.get_line(),
+                                    pos.get_char(), what_arg);
+  }
 }
 
 libconfigfile::syntax_error
 libconfigfile::syntax_error::generate_formatted_error(
     const std::string &file_name, const file_pos &pos,
     const std::string &what_arg) {
-  return generate_formatted_error(file_name, pos.get_line(), pos.get_char(),
-                                  what_arg);
+  if (pos.is_eof() == true) {
+    return generate_formatted_error(file_name, pos.get_end_of_file_pos(),
+                                    what_arg);
+  } else {
+    return generate_formatted_error(file_name, pos.get_line(), pos.get_char(),
+                                    what_arg);
+  }
 }
 
 libconfigfile::syntax_error
