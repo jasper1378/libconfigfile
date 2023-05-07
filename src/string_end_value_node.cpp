@@ -1,5 +1,6 @@
 #include "string_end_value_node.hpp"
 
+#include "character_constants.hpp"
 #include "end_value_node.hpp"
 #include "node_types.hpp"
 
@@ -58,7 +59,8 @@ bool libconfigfile::string_end_value_node::polymorphic_value_compare(
 }
 
 void libconfigfile::string_end_value_node::print(std::ostream &out) const {
-  out << m_value;
+  out << character_constants::g_k_string_delimiter << m_value
+      << character_constants::g_k_string_delimiter;
 }
 
 const libconfigfile::string_end_value_node::value_t &

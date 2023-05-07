@@ -67,7 +67,6 @@ void libconfigfile::array_value_node::print(std::ostream &out) const {
   out << character_constants::g_k_array_opening_delimiter;
 
   for (auto p{m_contents.begin()}; p != m_contents.end(); ++p) {
-    (*p)->print(out);
     out << (*p);
 
     if ((p + 1) != m_contents.end()) {

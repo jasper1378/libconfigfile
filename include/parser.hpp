@@ -38,7 +38,6 @@ public:
   ~parser();
 
 public:
-  // section_node parse() or section_node get_result() or etc.; // TODO
   node_ptr<section_node> get_result() const;
 
 public:
