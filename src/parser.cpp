@@ -55,7 +55,6 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       name_proper,
       trailing_whitespace,
       closing_delimiter,
-      done,
     };
 
     file_pos start_of_name_proper_pos{m_cur_pos.get_end_of_file_pos()};
@@ -63,7 +62,8 @@ libconfigfile::parser::parse_section(bool is_root_section) {
     bool first_loop{true};
 
     for (name_location last_state{name_location::opening_delimiter};
-         last_state != name_location::done; ++m_cur_pos, first_loop = false) {
+         last_state != name_location::closing_delimiter;
+         ++m_cur_pos, first_loop = false) {
 
       switch (last_state) {
       case name_location::opening_delimiter: {
@@ -205,10 +205,6 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       } break;
 
       case name_location::closing_delimiter: {
-        last_state = name_location::done;
-      } break;
-
-      case name_location::done: {
         throw std::runtime_error{"impossible!"};
       } break;
       }
@@ -224,12 +220,12 @@ libconfigfile::parser::parse_section(bool is_root_section) {
     enum class name_body_gap_location {
       separating_whitespace,
       opening_body_delimiter,
-      done,
     };
 
     for (name_body_gap_location last_state{
              name_body_gap_location::separating_whitespace};
-         last_state != name_body_gap_location::done; ++m_cur_pos) {
+         last_state != name_body_gap_location::opening_body_delimiter;
+         ++m_cur_pos) {
       switch (last_state) {
 
       case name_body_gap_location::separating_whitespace: {
@@ -254,10 +250,6 @@ libconfigfile::parser::parse_section(bool is_root_section) {
       } break;
 
       case name_body_gap_location::opening_body_delimiter: {
-        last_state = name_body_gap_location::done;
-      } break;
-
-      case name_body_gap_location::done: {
         throw std::runtime_error{"impossible!"};
       } break;
       }
@@ -349,7 +341,7 @@ std::string libconfigfile::parser::parse_key_value_key() {
     leading_whitespace,
     name_proper,
     trailing_whitespace,
-    equal_sign /*i.e. done*/,
+    equal_sign,
   };
 
   for (key_name_location last_state{key_name_location::leading_whitespace};
