@@ -268,7 +268,7 @@ libconfigfile::parser::parse_section(bool is_root_section) {
 
   {
     bool ended_on_body_closing_delimiter{false};
-    for (;; ++m_cur_pos) {
+    for (;;) {
       if (m_cur_pos.is_eof() == true) {
         break;
       } else {
@@ -276,6 +276,7 @@ libconfigfile::parser::parse_section(bool is_root_section) {
 
         if (is_whitespace(cur_char)) {
           ;
+          ++m_cur_pos;
         } else if (cur_char ==
                    character_constants::g_k_section_body_closing_delimiter) {
           ended_on_body_closing_delimiter = true;
@@ -488,8 +489,7 @@ libconfigfile::parser::parse_key_value_value() {
       equal_sign,
       leading_whitespace,
       value_proper,
-      semicolon,
-      done,
+      semicolon
     };
 
     bool first_loop{true};
@@ -497,7 +497,7 @@ libconfigfile::parser::parse_key_value_value() {
     char cur_char{'\0'};
     char last_char{'\0'};
     for (value_location last_state{value_location::equal_sign};
-         last_state != value_location::done;
+         last_state != value_location::semicolon;
          ++m_cur_pos, first_loop = false, last_char = cur_char) {
 
       if (m_cur_pos.is_eof() == false) {
@@ -592,10 +592,6 @@ libconfigfile::parser::parse_key_value_value() {
       } break;
 
       case value_location::semicolon: {
-        last_state = value_location::done;
-      } break;
-
-      case value_location::done: {
         throw std::runtime_error{"impossible!"};
       } break;
       }
@@ -904,7 +900,7 @@ libconfigfile::parser::parse_integer_value(const std::string &raw_value,
       case character_constants::g_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
             (raw_value_idx == (raw_value.size() - 1))) {
-          std::string what_arg{"integer digit separator must be durrounded by "
+          std::string what_arg{"integer digit separator must be surrounded by "
                                "at least one digit on each side"};
           throw syntax_error::generate_formatted_error(
               m_file_contents, (start_pos + raw_value_idx), what_arg);
