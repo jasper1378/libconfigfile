@@ -4,7 +4,6 @@
 #include "array_value_node.hpp"
 #include "character_constants.hpp"
 #include "end_value_node.hpp"
-#include "file.hpp"
 #include "float_end_value_node.hpp"
 #include "integer_end_value_node.hpp"
 #include "node.hpp"
@@ -17,6 +16,9 @@
 #include <algorithm>
 #include <cmath>
 #include <concepts>
+#include <filesystem>
+#include <fstream>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -25,13 +27,20 @@
 namespace libconfigfile {
 class parser {
 private:
-  file m_file_contents;
-  file_pos m_cur_pos;
+  enum class directive {
+    null,
+    version,
+    include,
+  };
+
+private:
+  std::filesystem::path m_file_path;
+  std::ifstream m_file;
   node_ptr<section_node> m_root_section;
 
 public:
   parser() = delete;
-  parser(const std::string &file_name);
+  parser(const std::filesystem::path &file_path);
   parser(const parser &other) = delete;
   parser(parser &&other) = delete;
 
@@ -52,22 +61,26 @@ private:
   std::string parse_key_value_key();
   node_ptr<value_node> parse_key_value_value();
 
-  node_ptr<array_value_node> parse_array_value(const std::string &raw_value,
-                                               const file_pos &start_pos);
+  node_ptr<array_value_node>
+  parse_array_value(const std::string &raw_value,
+                    const std::ifstream::pos_type &start_pos);
   node_ptr<integer_end_value_node>
-  parse_integer_value(const std::string &raw_value, const file_pos &start_pos);
-  node_ptr<float_end_value_node> parse_float_value(const std::string &raw_value,
-                                                   const file_pos &start_pos);
+  parse_integer_value(const std::string &raw_value,
+                      const std::ifstream::pos_type &start_pos);
+  node_ptr<float_end_value_node>
+  parse_float_value(const std::string &raw_value,
+                    const std::ifstream::pos_type &start_pos);
   node_ptr<string_end_value_node>
-  parse_string_value(const std::string &raw_value, const file_pos &start_pos);
+  parse_string_value(const std::string &raw_value,
+                     const std::ifstream::pos_type &start_pos);
 
   node_ptr<value_node>
   call_appropriate_value_parse_func(const std::string &raw_value,
-                                    const file_pos &start_pos);
+                                    const std::ifstream::pos_type &start_pos);
 
-  void parse_directive();
+  std::pair<directive, std::optional<node_ptr<section_node>>> parse_directive();
   void parse_version_directive();
-  void parse_include_directive();
+  node_ptr<section_node> parse_include_directive();
 
   void handle_comments();
 
