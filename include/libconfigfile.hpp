@@ -2,6 +2,7 @@
 #define LIBCONFIGFILE_LIBCONFIGFILE_HPP
 
 #include "array_value_node.hpp"
+#include "character_constants.hpp"
 #include "end_value_node.hpp"
 #include "file.hpp"
 #include "float_end_value_node.hpp"
