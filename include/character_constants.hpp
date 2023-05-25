@@ -16,8 +16,8 @@ struct numeral_system {
 };
 
 namespace character_constants {
-static constexpr std::string g_k_whitespace_chars{' ', '\t'};
 static constexpr char g_k_newline{'\n'};
+static constexpr std::string g_k_whitespace_chars{' ', '\t'};
 
 static constexpr char g_k_comment_script{'#'};
 static constexpr std::string g_k_comment_cpp{"//"};

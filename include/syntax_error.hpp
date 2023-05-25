@@ -4,6 +4,8 @@
 #include "file.hpp"
 
 #include <exception>
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 
@@ -25,20 +27,22 @@ public:
   syntax_error &operator=(syntax_error &&other) noexcept;
 
 public:
-  static syntax_error generate_formatted_error(const std::string &file_name,
+  static syntax_error
+  generate_formatted_error(const std::string &what_arg,
+                           const std::filesystem::path &file_path,
+                           const std::ifstream::pos_type &pos);
+  static syntax_error
+  generate_formatted_error(const std::string &what_arg,
+                           const std::filesystem::path &file_path,
+                           const size_t pos_line, const size_t pos_char);
+  static syntax_error
+  generate_formatted_error(const std::string &what_arg,
+                           const std::string &file_path,
+                           const std::ifstream::pos_type &pos);
+  static syntax_error generate_formatted_error(const std::string &what_arg,
+                                               const std::string &file_path,
                                                const size_t pos_line,
-                                               const size_t pos_char,
-                                               const std::string &what_arg);
-  static syntax_error generate_formatted_error(const file &f,
-                                               const file_pos &pos,
-                                               const std::string &what_arg);
-  static syntax_error generate_formatted_error(const std::string &file_name,
-                                               const file_pos &pos,
-                                               const std::string &what_arg);
-  static syntax_error generate_formatted_error(const file &f,
-                                               const size_t pos_line,
-                                               const size_t pos_char,
-                                               const std::string &what_arg);
+                                               const size_t pos_char);
 };
 } // namespace libconfigfile
 
