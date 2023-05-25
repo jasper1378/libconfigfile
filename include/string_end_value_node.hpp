@@ -10,22 +10,19 @@
 
 namespace libconfigfile {
 
-using string_end_value_node_data_t = std::string;
-
-class string_end_value_node : public end_value_node {
-public:
-  using value_t = string_end_value_node_data_t;
-
+class string_end_value_node : public end_value_node, std::string {
 private:
-  value_t m_value;
+  using base_t = std::string;
 
 public:
+  using base_t::base_t;
   string_end_value_node();
-  string_end_value_node(const value_t &value);
-  string_end_value_node(value_t &&value);
   string_end_value_node(const string_end_value_node &other);
   string_end_value_node(string_end_value_node &&other) noexcept(
-      std::is_nothrow_move_constructible_v<value_t>);
+      std::is_nothrow_move_constructible_v<base_t>);
+  string_end_value_node(const base_t &other);
+  string_end_value_node(base_t &&other) noexcept(
+      std::is_nothrow_move_constructible_v<base_t>);
 
   virtual ~string_end_value_node() override;
 
@@ -38,29 +35,17 @@ public:
   virtual void print(std::ostream &out) const override;
 
 public:
-  const value_t &get() const;
-  value_t &get();
-  void set(const value_t &value);
-  void set(value_t &&value);
-
   string_end_value_node &operator=(const string_end_value_node &other);
   string_end_value_node &operator=(string_end_value_node &&other) noexcept(
-      std::is_nothrow_move_assignable_v<value_t>);
-  string_end_value_node &operator=(const value_t &value);
-  string_end_value_node &operator=(value_t &&value);
+      std::is_nothrow_move_assignable_v<base_t>);
+  string_end_value_node &operator=(const base_t &other);
+  string_end_value_node &
+  operator=(base_t &&other) noexcept(std::is_nothrow_move_assignable_v<base_t>);
 
 public:
-  friend bool operator==(const string_end_value_node &x,
-                         const string_end_value_node &y);
-  friend bool operator!=(const string_end_value_node &x,
-                         const string_end_value_node &y);
-
   friend std::ostream &operator<<(std::ostream &out,
                                   const string_end_value_node &n);
 };
-
-bool operator==(const string_end_value_node &x, const string_end_value_node &y);
-bool operator!=(const string_end_value_node &x, const string_end_value_node &y);
 
 std::ostream &operator<<(std::ostream &out, const string_end_value_node &n);
 } // namespace libconfigfile
