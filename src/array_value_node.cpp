@@ -58,7 +58,7 @@ bool libconfigfile::array_value_node::polymorphic_value_compare(
   }
 }
 
-void libconfigfile::array_value_node::print(std::ostream &out) const {
+std::ostream &libconfigfile::array_value_node::print(std::ostream &out) const {
   out << character_constants::g_k_array_opening_delimiter;
 
   for (auto p{this->begin()}; p != this->end(); ++p) {
@@ -70,6 +70,8 @@ void libconfigfile::array_value_node::print(std::ostream &out) const {
   }
 
   out << character_constants::g_k_array_closing_delimiter;
+
+  return out;
 }
 
 libconfigfile::array_value_node &
@@ -99,6 +101,5 @@ libconfigfile::array_value_node &libconfigfile::array_value_node::operator=(
 
 std::ostream &libconfigfile::operator<<(std::ostream &out,
                                         const array_value_node &n) {
-  n.print(out);
-  return out;
+  return n.print(out);
 }

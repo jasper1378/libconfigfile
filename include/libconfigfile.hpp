@@ -10,6 +10,7 @@
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
+#include "numeral_system.hpp"
 #include "parser.hpp"
 #include "section_node.hpp"
 #include "semantic_error.hpp"

@@ -9,6 +9,7 @@
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
+#include "numeral_system.hpp"
 #include "section_node.hpp"
 #include "string_end_value_node.hpp"
 #include "value_node.hpp"
@@ -123,8 +124,7 @@ std::pair<bool, std::string::size_type>
 contains_invalid_character_invalid_provided(const std::string &str,
                                             const std::string &invalid_chars);
 
-bool is_digit(char ch, const numeral_system &num_sys =
-                           character_constants::g_k_dec_num_sys);
+bool is_digit(char ch, const numeral_system &num_sys = numeral_system_decimal);
 
 bool case_insensitive_string_compare(const std::string &str1,
                                      const std::string &str2);

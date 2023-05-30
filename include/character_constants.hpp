@@ -2,19 +2,12 @@
 #define LIBCONFIGFILE_CHARACTER_CONSTANTS_HPP
 
 #include "float_end_value_node.hpp"
+#include "numeral_system.hpp"
 
 #include <string>
 #include <unordered_map>
 
 namespace libconfigfile {
-
-struct numeral_system {
-  int base;
-  char prefix;
-  char prefix_alt;
-  std::string digits;
-};
-
 namespace character_constants {
 static constexpr char g_k_newline{'\n'};
 static constexpr std::string g_k_whitespace_chars{' ', '\t'};
@@ -60,11 +53,6 @@ static constexpr char g_k_num_positive_sign{'+'};
 static constexpr char g_k_num_negative_sign{'-'};
 
 static constexpr char g_k_num_sys_prefix_leader{'0'};
-static constexpr numeral_system g_k_dec_num_sys{10, '\0', '\0', "0123456789"};
-static constexpr numeral_system g_k_bin_num_sys{2, 'b', 'B', "01"};
-static constexpr numeral_system g_k_oct_num_sys{8, 'o', 'O', "01234567"};
-static const numeral_system g_k_hex_num_sys{16, 'x', 'X',
-                                            "0123456789abcdefABCDEF"};
 
 static constexpr char g_k_float_decimal_point{'.'};
 static constexpr char g_k_float_exponent_sign_lower{'e'};

@@ -57,9 +57,11 @@ bool libconfigfile::string_end_value_node::polymorphic_value_compare(
   }
 }
 
-void libconfigfile::string_end_value_node::print(std::ostream &out) const {
+std::ostream &
+libconfigfile::string_end_value_node::print(std::ostream &out) const {
   out << character_constants::g_k_string_delimiter << *this
       << character_constants::g_k_string_delimiter;
+  return out;
 }
 
 libconfigfile::string_end_value_node &
@@ -92,6 +94,5 @@ libconfigfile::string_end_value_node::operator=(base_t &&other) noexcept(
 
 std::ostream &libconfigfile::operator<<(std::ostream &out,
                                         const string_end_value_node &n) {
-  n.print(out);
-  return out;
+  return n.print(out);
 }

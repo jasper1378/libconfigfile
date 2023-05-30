@@ -9,11 +9,8 @@
 
 libconfigfile::float_end_value_node::float_end_value_node() : m_value{} {}
 
-libconfigfile::float_end_value_node::float_end_value_node(const value_t &value)
+libconfigfile::float_end_value_node::float_end_value_node(value_t value)
     : m_value{value} {}
-
-libconfigfile::float_end_value_node::float_end_value_node(value_t &&value)
-    : m_value{std::move(value)} {}
 
 libconfigfile::float_end_value_node::float_end_value_node(
     const float_end_value_node &other)
@@ -22,7 +19,7 @@ libconfigfile::float_end_value_node::float_end_value_node(
 libconfigfile::float_end_value_node::float_end_value_node(
     float_end_value_node
         &&other) noexcept(std::is_nothrow_move_constructible_v<value_t>)
-    : m_value{std::move(other.m_value)} {}
+    : m_value{other.m_value} {}
 
 libconfigfile::float_end_value_node::~float_end_value_node() {}
 
@@ -55,26 +52,19 @@ bool libconfigfile::float_end_value_node::polymorphic_value_compare(
   }
 }
 
-void libconfigfile::float_end_value_node::print(std::ostream &out) const {
+std::ostream &
+libconfigfile::float_end_value_node::print(std::ostream &out) const {
   out << m_value;
+  return out;
 }
 
-const libconfigfile::float_end_value_node::value_t &
+libconfigfile::float_end_value_node::value_t
 libconfigfile::float_end_value_node::get() const {
   return m_value;
 }
 
-libconfigfile::float_end_value_node::value_t &
-libconfigfile::float_end_value_node::get() {
-  return m_value;
-}
-
-void libconfigfile::float_end_value_node::set(const value_t &value) {
+void libconfigfile::float_end_value_node::set(value_t value) {
   m_value = value;
-}
-
-void libconfigfile::float_end_value_node::set(value_t &&value) {
-  m_value = std::move(value);
 }
 
 libconfigfile::float_end_value_node &
@@ -88,19 +78,13 @@ libconfigfile::float_end_value_node &
 libconfigfile::float_end_value_node::operator=(
     float_end_value_node
         &&other) noexcept(std::is_nothrow_move_assignable_v<value_t>) {
-  m_value = std::move(other.m_value);
+  m_value = other.m_value;
   return *this;
 }
 
 libconfigfile::float_end_value_node &
-libconfigfile::float_end_value_node::operator=(const value_t &value) {
+libconfigfile::float_end_value_node::operator=(value_t value) {
   m_value = value;
-  return *this;
-}
-
-libconfigfile::float_end_value_node &
-libconfigfile::float_end_value_node::operator=(value_t &&value) {
-  m_value = std::move(value);
   return *this;
 }
 
@@ -116,6 +100,5 @@ bool libconfigfile::operator!=(const float_end_value_node &x,
 
 std::ostream &libconfigfile::operator<<(std::ostream &out,
                                         const float_end_value_node &n) {
-  n.print(out);
-  return out;
+  return n.print(out);
 }
