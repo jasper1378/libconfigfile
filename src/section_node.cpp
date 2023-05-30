@@ -55,7 +55,7 @@ bool libconfigfile::section_node::polymorphic_value_compare(
   }
 }
 
-void libconfigfile::section_node::print(std::ostream &out) const {
+std::ostream &libconfigfile::section_node::print(std::ostream &out) const {
   for (auto p{this->begin()}; p != this->end(); ++p) {
 
     switch ((*p).second->get_absolute_node_type()) {
@@ -76,6 +76,7 @@ void libconfigfile::section_node::print(std::ostream &out) const {
     } break;
     }
   }
+  return out;
 }
 
 libconfigfile::section_node &
@@ -104,6 +105,5 @@ libconfigfile::section_node &libconfigfile::section_node::operator=(
 
 std::ostream &libconfigfile::operator<<(std::ostream &out,
                                         const section_node &n) {
-  n.print(out);
-  return out;
+  return n.print(out);
 }

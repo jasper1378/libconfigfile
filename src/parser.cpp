@@ -8,6 +8,7 @@
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
+#include "numeral_system.hpp"
 #include "section_node.hpp"
 #include "semantic_error.hpp"
 #include "string_end_value_node.hpp"
@@ -51,9 +52,6 @@ libconfigfile::parser::impl::parse(const std::filesystem::path &file_path) {
 
 std::pair<std::string, libconfigfile::node_ptr<libconfigfile::section_node>>
 libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
-  // cur_pos = opening name delimiter
-  //  or beginning of file if is_root_section is true
-
   std::pair<std::string, node_ptr<section_node>> ret_val{
       "", make_node_ptr<section_node>()};
 
@@ -240,8 +238,6 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
     ret_val.first = "";
   }
 
-  // cur_pos = one past name closing delimiter
-
   if (is_root_section == false) {
 
     enum class name_body_gap_location {
@@ -292,8 +288,6 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       }
     }
   }
-
-  // cur_pos = one past body opening delimiter
 
   {
     bool ended_on_body_closing_delimiter{false};
@@ -364,14 +358,10 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
   }
 
   return ret_val;
-
-  // cur_pos = one past closing body delimiter
 }
 
 std::pair<std::string, libconfigfile::node_ptr<libconfigfile::value_node>>
 libconfigfile::parser::impl::parse_key_value(context &ctx) {
-  // cur_pos = first char of key name or leading whitespace before key name
-
   std::pair<std::string, node_ptr<value_node>> ret_val{};
 
   ret_val.first = parse_key_value_key(ctx);
@@ -381,8 +371,6 @@ libconfigfile::parser::impl::parse_key_value(context &ctx) {
 }
 
 std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
-  // cur_pos = first char of key name or leading whitespace before key name
-
   std::string key_name{};
 
   enum class key_name_location {
@@ -519,15 +507,11 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     }
   }
 
-  // cur_pos = equal sign
-
   return key_name;
 }
 
 libconfigfile::node_ptr<libconfigfile::value_node>
 libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
-  // cur_pos = equal sign
-
   std::string value_contents{};
   std::ifstream::pos_type value_start_pos{};
 
@@ -663,8 +647,6 @@ libconfigfile::node_ptr<libconfigfile::array_value_node>
 libconfigfile::parser::impl::parse_array_value(
     context &ctx, const std::string &raw_value,
     const std::ifstream::pos_type &start_pos) {
-  // start_pos = first char of raw value
-
   enum class char_type {
     leading_whitespace,
     opening_delimiter,
@@ -908,8 +890,6 @@ libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
 libconfigfile::parser::impl::parse_integer_value(
     context &ctx, const std::string &raw_value,
     const std::ifstream::pos_type &start_pos) {
-  // start_pos = first char of raw value
-
   if (raw_value.empty()) {
     std::string what_arg{"empty value"};
     throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
@@ -926,19 +906,7 @@ libconfigfile::parser::impl::parse_integer_value(
     bool last_char_was_leading_zero{false};
     size_t num_of_leading_zeroes{0};
 
-    /* character_constants::g_k_hex_num_sys can't be constexpr because the
-     * digits string is too long, this means that we can't use the prefix
-     * members as case labels in the switch statement below, resulting in this
-     * nasty workaround */
-    static constexpr char constexpr_workaround_hex_num_sys_prefix{'x'};
-    static constexpr char constexpr_workaround_hex_num_sys_prefix_alt{'X'};
-    assert(constexpr_workaround_hex_num_sys_prefix ==
-           character_constants::g_k_hex_num_sys.prefix);
-    assert((constexpr_workaround_hex_num_sys_prefix_alt ==
-            character_constants::g_k_hex_num_sys.prefix_alt));
-
-    assert(character_constants::g_k_num_sys_prefix_leader == '0'); /* parsing
-           logic breaks down if the numeral system prefix leader is not zero*/
+    static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
 
     for (std::string::size_type raw_value_idx{0};
          raw_value_idx < raw_value.size(); ++raw_value_idx) {
@@ -949,8 +917,7 @@ libconfigfile::parser::impl::parse_integer_value(
            &any_digits_so_far, &last_char_was_leading_zero, &actual_digits,
            &raw_value_idx]() {
             num_sys =
-                ((num_sys == nullptr) ? (&character_constants::g_k_dec_num_sys)
-                                      : (num_sys));
+                ((num_sys == nullptr) ? (&numeral_system_decimal) : (num_sys));
 
             if (is_digit(cur_char, *num_sys)) {
               last_char_was_digit = true;
@@ -1026,8 +993,8 @@ libconfigfile::parser::impl::parse_integer_value(
         }
       } break;
 
-      case character_constants::g_k_bin_num_sys.prefix:
-      case character_constants::g_k_bin_num_sys.prefix_alt: {
+      case numeral_system_binary.prefix:
+      case numeral_system_binary.prefix_alt: {
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
@@ -1035,7 +1002,7 @@ libconfigfile::parser::impl::parse_integer_value(
                 last_char_was_digit = false;
                 last_char_was_leading_zero = false;
 
-                num_sys = &character_constants::g_k_bin_num_sys;
+                num_sys = &numeral_system_binary;
               } else {
                 std::string what_arg{"numeral system prefix must appear "
                                      "before integer digits"};
@@ -1064,8 +1031,8 @@ libconfigfile::parser::impl::parse_integer_value(
         }
       } break;
 
-      case character_constants::g_k_oct_num_sys.prefix:
-      case character_constants::g_k_oct_num_sys.prefix_alt: {
+      case numeral_system_octal.prefix:
+      case numeral_system_octal.prefix_alt: {
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
@@ -1073,7 +1040,7 @@ libconfigfile::parser::impl::parse_integer_value(
                 last_char_was_digit = false;
                 last_char_was_leading_zero = false;
 
-                num_sys = &character_constants::g_k_oct_num_sys;
+                num_sys = &numeral_system_octal;
               } else {
                 std::string what_arg{"numeral system prefix must appear "
                                      "before integer digits"};
@@ -1102,8 +1069,8 @@ libconfigfile::parser::impl::parse_integer_value(
         }
       } break;
 
-      case constexpr_workaround_hex_num_sys_prefix:
-      case constexpr_workaround_hex_num_sys_prefix_alt: {
+      case numeral_system_hexadecimal.prefix:
+      case numeral_system_hexadecimal.prefix_alt: {
         if (num_sys == nullptr) {
           if (any_digits_so_far == false) {
             if (last_char_was_leading_zero == true) {
@@ -1111,7 +1078,7 @@ libconfigfile::parser::impl::parse_integer_value(
                 last_char_was_digit = false;
                 last_char_was_leading_zero = false;
 
-                num_sys = &character_constants::g_k_hex_num_sys;
+                num_sys = &numeral_system_hexadecimal;
               } else {
                 std::string what_arg{"numeral system prefix must appear "
                                      "before integer digits"};
@@ -1151,7 +1118,7 @@ libconfigfile::parser::impl::parse_integer_value(
     }
 
     if (num_sys == nullptr) {
-      num_sys = &character_constants::g_k_dec_num_sys;
+      num_sys = &numeral_system_decimal;
     }
 
     node_ptr<integer_end_value_node> ret_val{nullptr};
@@ -1166,14 +1133,14 @@ libconfigfile::parser::impl::parse_integer_value(
       if constexpr ((sizeof(decltype(std::stoi("")))) >=
                     (sizeof(integer_end_value_node_data_t))) {
         ret_val = make_node_ptr<integer_end_value_node>(
-            std::stoi(actual_digits, nullptr, num_sys->base));
+            std::stoi(actual_digits, nullptr, num_sys->base), num_sys);
       } else if constexpr ((sizeof(decltype(std::stol("")))) >=
                            (sizeof(integer_end_value_node_data_t))) {
         ret_val = make_node_ptr<integer_end_value_node>(
-            std::stol(actual_digits, nullptr, num_sys->base));
+            std::stol(actual_digits, nullptr, num_sys->base), num_sys);
       } else {
         ret_val = make_node_ptr<integer_end_value_node>(
-            std::stoll(actual_digits, nullptr, num_sys->base));
+            std::stoll(actual_digits, nullptr, num_sys->base), num_sys);
       }
     } catch (const std::out_of_range &ex) {
       std::string what_arg{"integer value is too large"};
@@ -1193,8 +1160,6 @@ libconfigfile::node_ptr<libconfigfile::float_end_value_node>
 libconfigfile::parser::impl::parse_float_value(
     context &ctx, const std::string &raw_value,
     const std::ifstream::pos_type &start_pos) {
-  // start_pos = first char of raw value
-
   if (raw_value.empty()) {
     std::string what_arg{"empty value"};
     throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
@@ -1289,8 +1254,7 @@ libconfigfile::parser::impl::parse_float_value(
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
-                    true) {
+                if (is_digit(next_char, numeral_system_decimal) == true) {
                   last_char = char_type::separator;
                 } else {
                   std::string what_arg{
@@ -1325,8 +1289,7 @@ libconfigfile::parser::impl::parse_float_value(
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
-                    true) {
+                if (is_digit(next_char, numeral_system_decimal) == true) {
                   last_char = char_type::decimal;
                   cur_location = num_location::fractional;
                   sanitized_string.push_back(cur_char);
@@ -1364,8 +1327,7 @@ libconfigfile::parser::impl::parse_float_value(
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if ((is_digit(next_char,
-                              character_constants::g_k_dec_num_sys) == true) ||
+                if ((is_digit(next_char, numeral_system_decimal) == true) ||
                     (next_char == character_constants::g_k_num_positive_sign) ||
                     (character_constants::g_k_num_negative_sign)) {
                   last_char = char_type::exponent;
@@ -1401,8 +1363,7 @@ libconfigfile::parser::impl::parse_float_value(
           } break;
 
           default: {
-            if (is_digit(cur_char, character_constants::g_k_dec_num_sys) ==
-                true) {
+            if (is_digit(cur_char, numeral_system_decimal) == true) {
               last_char = char_type::digit;
               sanitized_string.push_back(cur_char);
             } else {
@@ -1441,8 +1402,7 @@ libconfigfile::parser::impl::parse_float_value(
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
-                    true) {
+                if (is_digit(next_char, numeral_system_decimal) == true) {
                   last_char = char_type::separator;
                 } else {
                   std::string what_arg{
@@ -1486,8 +1446,7 @@ libconfigfile::parser::impl::parse_float_value(
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if ((is_digit(next_char,
-                              character_constants::g_k_dec_num_sys) == true) ||
+                if ((is_digit(next_char, numeral_system_decimal) == true) ||
                     (next_char == character_constants::g_k_num_positive_sign) ||
                     (character_constants::g_k_num_negative_sign)) {
                   last_char = char_type::exponent;
@@ -1523,8 +1482,7 @@ libconfigfile::parser::impl::parse_float_value(
           } break;
 
           default: {
-            if (is_digit(cur_char, character_constants::g_k_dec_num_sys) ==
-                true) {
+            if (is_digit(cur_char, numeral_system_decimal) == true) {
               last_char = char_type::digit;
               sanitized_string.push_back(cur_char);
             } else {
@@ -1573,8 +1531,7 @@ libconfigfile::parser::impl::parse_float_value(
             if (last_char == char_type::digit) {
               if (raw_value_idx != last_raw_value_idx) {
                 char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, character_constants::g_k_dec_num_sys) ==
-                    true) {
+                if (is_digit(next_char, numeral_system_decimal) == true) {
                   last_char = char_type::separator;
                 } else {
                   std::string what_arg{
@@ -1624,8 +1581,7 @@ libconfigfile::parser::impl::parse_float_value(
           } break;
 
           default: {
-            if (is_digit(cur_char, character_constants::g_k_dec_num_sys) ==
-                true) {
+            if (is_digit(cur_char, numeral_system_decimal) == true) {
               last_char = char_type::digit;
               sanitized_string.push_back(cur_char);
             } else {
@@ -1683,26 +1639,12 @@ libconfigfile::node_ptr<libconfigfile::string_end_value_node>
 libconfigfile::parser::impl::parse_string_value(
     context &ctx, const std::string &raw_value,
     const std::ifstream::pos_type &start_pos) {
-  // start_pos = first char of raw value
-
   if (raw_value.empty()) {
     std::string what_arg{"empty value"};
     throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
                                                  start_pos);
   } else {
     bool in_string{false};
-
-    // enum char_type {
-    //   start,
-    //   in_string_regular_char,
-    //   in_string_escape_leader,
-    //   in_string_escape_code,
-    //   opening_delimiter,
-    //   closing_delimiter,
-    //   out_string_whitespace,
-    // };
-
-    // char_type last_char{char_type::start};
 
     std::string string_contents{};
     string_contents.reserve(raw_value.size());
@@ -1712,7 +1654,6 @@ libconfigfile::parser::impl::parse_string_value(
       char cur_char{raw_value[raw_value_idx]};
       if (in_string == true) {
         if (cur_char == character_constants::g_k_string_delimiter) {
-          // last_char = closing_delimiter;
           in_string = false;
         } else if (cur_char == character_constants::g_k_escape_leader) {
           std::string::size_type escape_char_pos{raw_value_idx + 1};
@@ -1728,16 +1669,12 @@ libconfigfile::parser::impl::parse_string_value(
                 char hex_digit_1{raw_value[hex_digit_pos_1]};
                 char hex_digit_2{raw_value[hex_digit_pos_2]};
 
-                if ((is_digit(hex_digit_1,
-                              character_constants::g_k_hex_num_sys)) &&
-                    (is_digit(hex_digit_2,
-                              character_constants::g_k_hex_num_sys))) {
+                if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
+                    (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
                   std::string hex_string{std::string{} + hex_digit_1 +
                                          hex_digit_2};
-                  string_contents.push_back(static_cast<char>(
-                      std::stoi(hex_string, nullptr,
-                                character_constants::g_k_hex_num_sys.base)));
-                  // last_char = char_type::in_string_escape_code;
+                  string_contents.push_back(static_cast<char>(std::stoi(
+                      hex_string, nullptr, numeral_system_hexadecimal.base)));
                   raw_value_idx = hex_digit_2;
                 } else {
                   std::string what_arg{
@@ -1760,7 +1697,6 @@ libconfigfile::parser::impl::parse_string_value(
                 string_contents.push_back(
                     character_constants::g_k_basic_escape_chars.at(
                         escape_char));
-                // last_char = char_type::in_string_escape_code;
                 raw_value_idx = escape_char_pos;
               }
             }
@@ -1777,9 +1713,7 @@ libconfigfile::parser::impl::parse_string_value(
       } else {
         if (is_whitespace(cur_char,
                           character_constants::g_k_whitespace_chars) == true) {
-          // last_char = char_type::out_string_whitespace;
         } else if (cur_char == character_constants::g_k_string_delimiter) {
-          // last_char = char_type::opening_delimiter;
           in_string = true;
         } else {
           std::string what_arg{"invalid character outside of string"};
@@ -1867,9 +1801,6 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
 std::pair<libconfigfile::parser::impl::directive,
           std::optional<libconfigfile::node_ptr<libconfigfile::section_node>>>
 libconfigfile::parser::impl::parse_directive(context &ctx) {
-  // cur_pos = directive leader
-  // caller must check that directive is the only text on its line
-
   std::ifstream::pos_type start_pos{ctx.file.tellg()};
 
   std::string name{};
@@ -2038,9 +1969,6 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
 
 libconfigfile::node_ptr<libconfigfile::section_node>
 libconfigfile::parser::impl::parse_include_directive(context &ctx) {
-  // cur_pos = start of directive arguments
-  // or eof if arguments don't exist
-
   std::ifstream::pos_type start_pos{ctx.file.tellg()};
 
   std::string file_path{};
@@ -2362,11 +2290,9 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
           ((value_contents.find(
                character_constants::g_k_float_exponent_sign_upper)) !=
            (std::string::npos))) {
-        if (((value_contents.find(
-                 character_constants::g_k_hex_num_sys.prefix)) !=
+        if (((value_contents.find(numeral_system_hexadecimal.prefix)) !=
              (std::string::npos)) ||
-            ((value_contents.find(
-                 character_constants::g_k_hex_num_sys.prefix_alt)) !=
+            ((value_contents.find(numeral_system_hexadecimal.prefix_alt)) !=
              (std::string::npos))) {
           return end_value_node_type::INTEGER;
         } else {
@@ -2397,8 +2323,8 @@ libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
               (hex_digit_pos_2 < str.size())) {
             char hex_digit_1{str[hex_digit_pos_1]};
             char hex_digit_2{str[hex_digit_pos_2]};
-            if ((is_digit(hex_digit_1, character_constants::g_k_hex_num_sys)) &&
-                (is_digit(hex_digit_2, character_constants::g_k_hex_num_sys))) {
+            if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
+                (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
               std::string hex_string{std::string{} + hex_digit_1 + hex_digit_2};
               result.push_back(
                   static_cast<char>(std::stoi(hex_string, nullptr, 16)));

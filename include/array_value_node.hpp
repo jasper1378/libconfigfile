@@ -34,7 +34,7 @@ public:
   virtual absolute_node_type get_absolute_node_type() const override;
   virtual value_node_type get_value_node_type() const override final;
   virtual bool polymorphic_value_compare(const node *other) const override;
-  virtual void print(std::ostream &out) const override;
+  virtual std::ostream &print(std::ostream &out) const override;
 
 public:
   array_value_node &operator=(const array_value_node &other);

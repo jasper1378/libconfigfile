@@ -18,7 +18,7 @@ public:
   virtual value_node_type get_value_node_type() const override final;
   virtual end_value_node_type get_end_value_node_type() const = 0;
   virtual bool polymorphic_value_compare(const node *other) const override = 0;
-  virtual void print(std::ostream &out) const override = 0;
+  virtual std::ostream &print(std::ostream &out) const override = 0;
 };
 } // namespace libconfigfile
 
