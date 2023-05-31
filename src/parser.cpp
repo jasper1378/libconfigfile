@@ -14,6 +14,7 @@
 #include "string_end_value_node.hpp"
 #include "syntax_error.hpp"
 #include "value_node.hpp"
+#include "version.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -1962,9 +1963,175 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 }
 
 void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
-  std::string what_arg{"alpha version does not support version directive"};
-  throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                               ctx.file.tellg());
+  std::ifstream::pos_type start_pos{ctx.file.tellg()};
+
+  std::string version_str{};
+
+  enum class args_location {
+    leading_whitespace,
+    opening_delimiter,
+    version_str,
+    closing_delimiter,
+    trailing_whitespace,
+    done,
+  };
+
+  std::ifstream::pos_type cur_pos{};
+  std::ifstream::pos_type start_of_version_str_pos{};
+
+  for (args_location last_state{args_location::leading_whitespace};
+       last_state != args_location::done;) {
+    char cur_char{};
+    bool eof{false};
+    std::ifstream::pos_type last_newline_pos{};
+    while (true) {
+      cur_pos = ctx.file.tellg();
+      if (ctx.file.eof() == true) {
+        eof = true;
+        break;
+      } else {
+        ctx.file.get(cur_char);
+        if (cur_char == character_constants::g_k_newline) {
+          last_newline_pos = cur_pos;
+          continue;
+        } else {
+          break;
+        }
+      }
+    }
+
+    switch (last_state) {
+
+    case args_location::leading_whitespace: {
+      if (eof == true) {
+        std::string what_arg{"version directive requires version argument"};
+        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                     cur_pos);
+      } else {
+        if (is_whitespace(cur_char,
+                          character_constants::g_k_whitespace_chars) == true) {
+          ;
+        } else if (cur_char == character_constants::g_k_string_delimiter) {
+          if (last_newline_pos > start_pos) {
+            std::string what_arg{"entire directive must appear on one line"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, cur_pos);
+          } else {
+            last_state = args_location::opening_delimiter;
+          }
+        } else {
+          std::string what_arg{"version directive requires version argument"};
+          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                       cur_pos);
+        }
+      }
+    } break;
+
+    case args_location::opening_delimiter: {
+      if (eof == true) {
+        std::string what_arg{
+            "unterminated string in version directive argument"};
+        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                     cur_pos);
+      } else {
+        if (last_newline_pos > start_pos) {
+          std::string what_arg{"entire directive must appear on one line"};
+          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                       cur_pos);
+        } else {
+          if (cur_char == character_constants::g_k_string_delimiter) {
+            last_state = args_location::closing_delimiter;
+            start_of_version_str_pos = cur_pos;
+          } else {
+            version_str.push_back(cur_char);
+            last_state = args_location::version_str;
+            start_of_version_str_pos = cur_pos;
+          }
+        }
+      }
+    } break;
+
+    case args_location::version_str: {
+      if (eof == true) {
+        std::string what_arg{
+            "unterminated string in version directive argument"};
+        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                     cur_pos);
+      } else {
+        if (last_newline_pos > start_pos) {
+          std::string what_arg{"entire directive must appear on one line"};
+          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                       cur_pos);
+        } else {
+          if (cur_char == character_constants::g_k_string_delimiter) {
+            last_state = args_location::closing_delimiter;
+          } else {
+            version_str.push_back(cur_char);
+          }
+        }
+      }
+    } break;
+
+    case args_location::closing_delimiter: {
+      if (eof == true) {
+        last_state = args_location::done;
+      } else {
+        if (last_newline_pos > start_pos) {
+          last_state = args_location::done;
+        } else {
+          if (is_whitespace(cur_char,
+                            character_constants::g_k_whitespace_chars) ==
+              true) {
+            last_state = args_location::trailing_whitespace;
+          } else {
+            std::string what_arg{"excess arguments given to version directive"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, cur_pos);
+          }
+        }
+      }
+    } break;
+
+    case args_location::trailing_whitespace: {
+      if (eof == true) {
+        last_state = args_location::done;
+      } else {
+        if (last_newline_pos > start_pos) {
+          last_state = args_location::done;
+        } else {
+          if (is_whitespace(cur_char,
+                            character_constants::g_k_whitespace_chars) ==
+              true) {
+            ;
+          } else {
+            std::string what_arg{"excess arguments given to version directive"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, cur_pos);
+          }
+        }
+      }
+    } break;
+
+    case args_location::done: {
+      throw std::runtime_error{"impossible!"};
+    } break;
+    }
+  }
+
+  if (version_str.empty() == true) {
+    std::string what_arg{"empty version argument given to version directive"};
+    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                 cur_pos);
+  } else {
+    if (version_str == g_k_version) {
+      return;
+    } else {
+      std::string what_arg{
+          "incompatible parser and configuration file versions"};
+      throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                   start_of_version_str_pos);
+    }
+  }
 }
 
 libconfigfile::node_ptr<libconfigfile::section_node>
