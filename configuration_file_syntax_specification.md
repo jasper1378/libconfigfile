@@ -268,7 +268,7 @@ key = "value"; @directive "argument1" // invalid
 
 ### Version Directive
 - This directive ensures that the parser and the config file are using the same version of the syntax specification.
-- This directive takes one required argument: a release version number or git version corresponding to the syntax specification being used.
+- This directive takes one required argument: a release version number or git version corresponding to the syntax specification being used, enclosed by double quotes.
 - If the parser detects a syntax specification version that it does not know how to parse, an error will be thrown.
 - There should only be one version directive per file. If there happens to be multiple (ex. when using the include directive), the values should be identical.
 - At the top of this document can be found the syntax specification version that it is describing.
@@ -276,10 +276,10 @@ key = "value"; @directive "argument1" // invalid
     - `printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"`
 ```
 // release version
-@version 1.0.0
+@version "1.0.0"
 
 // git version
-@version r82.1fd9244
+@version "r82.1fd9244"
 ```
 
 ### Include Directive
