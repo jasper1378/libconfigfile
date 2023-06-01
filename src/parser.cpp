@@ -330,8 +330,36 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           } else {
             ret_val.second->insert({std::move(new_section)});
           }
-        } else if (false) {
-          // TODO directives
+        } else if (cur_char == character_constants::g_k_directive_leader) {
+          std::ifstream::pos_type start_pos{cur_pos};
+          std::pair<directive, std::optional<node_ptr<section_node>>> dir_res{
+              parse_directive(ctx)};
+
+          switch (dir_res.first) {
+          case directive::null: {
+            throw std::runtime_error{"impossible!"};
+          } break;
+
+          case directive::version: {
+            ;
+          } break;
+
+          case directive::include: {
+            assert(dir_res.second);
+            for (auto i{dir_res.second.value()->begin()};
+                 i != dir_res.second.value()->end(); ++i) {
+              if (ret_val.second->contains(i->first)) {
+                std::string what_arg{"duplicate name in scope"};
+                throw syntax_error::generate_formatted_error(
+                    what_arg, ctx.file_path, start_pos);
+              }
+            }
+
+            ret_val.second->insert(
+                std::make_move_iterator(dir_res.second.value()->begin()),
+                std::make_move_iterator(dir_res.second.value()->end()));
+          } break;
+          }
         } else {
           ctx.file.unget();
           std::ifstream::pos_type start_pos{ctx.file.tellg()};
@@ -1924,33 +1952,9 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
                                                  cur_pos);
   }
 
-  for (;;) {
-    char cur_char{};
-    bool eof{false};
-    do {
-      cur_pos = ctx.file.tellg();
-      if (ctx.file.eof() == true) {
-        eof = true;
-        break;
-      } else {
-        ctx.file.get(cur_char);
-      }
-    } while (cur_char == character_constants::g_k_newline);
-
-    if (eof == true) {
-      break;
-    } else {
-      if (is_whitespace(cur_char, character_constants::g_k_whitespace_chars) ==
-          true) {
-        ;
-      } else {
-        break;
-      }
-    }
-  }
-
   switch (directive_func_to_call) {
   case directive::version: {
+    parse_version_directive(ctx);
     return {directive::version, std::nullopt};
   } break;
   case directive::include: {
@@ -2078,6 +2082,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
+          ctx.file.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
@@ -2098,6 +2103,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
+          ctx.file.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
@@ -2138,7 +2144,7 @@ libconfigfile::node_ptr<libconfigfile::section_node>
 libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   std::ifstream::pos_type start_pos{ctx.file.tellg()};
 
-  std::string file_path{};
+  std::string file_path_str{};
 
   enum class args_location {
     leading_whitespace,
@@ -2150,7 +2156,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   };
 
   std::ifstream::pos_type cur_pos{};
-  std::ifstream::pos_type start_of_file_path_pos{};
+  std::ifstream::pos_type start_of_file_path_str_pos{};
 
   bool last_char_was_escape_leader{false};
 
@@ -2217,16 +2223,16 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
-            start_of_file_path_pos = cur_pos;
+            start_of_file_path_str_pos = cur_pos;
           } else if (cur_char == character_constants::g_k_escape_leader) {
             last_char_was_escape_leader = true;
-            file_path.push_back(cur_char);
+            file_path_str.push_back(cur_char);
             last_state = args_location::file_path;
-            start_of_file_path_pos = cur_pos;
+            start_of_file_path_str_pos = cur_pos;
           } else {
-            file_path.push_back(cur_char);
+            file_path_str.push_back(cur_char);
             last_state = args_location::file_path;
-            start_of_file_path_pos = cur_pos;
+            start_of_file_path_str_pos = cur_pos;
           }
         }
       }
@@ -2247,15 +2253,15 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           if (cur_char == character_constants::g_k_string_delimiter) {
             if (last_char_was_escape_leader == true) {
               last_char_was_escape_leader = false;
-              file_path.push_back(cur_char);
+              file_path_str.push_back(cur_char);
             } else {
               last_state = args_location::closing_delimiter;
             }
           } else if (cur_char == character_constants::g_k_escape_leader) {
             last_char_was_escape_leader = true;
-            file_path.push_back(cur_char);
+            file_path_str.push_back(cur_char);
           } else {
-            file_path.push_back(cur_char);
+            file_path_str.push_back(cur_char);
           }
         }
       }
@@ -2267,6 +2273,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
+          ctx.file.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
@@ -2287,6 +2294,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
+          ctx.file.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
@@ -2307,23 +2315,29 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     }
   }
 
-  if (file_path.empty() == true) {
+  if (file_path_str.empty() == true) {
     std::string what_arg{"empty file path argument given to include directive"};
     throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
                                                  cur_pos);
   } else {
     std::variant<std::string, std::string::size_type> file_path_escaped{
-        replace_escape_sequences(file_path)};
+        replace_escape_sequences(file_path_str)};
 
     switch (file_path_escaped.index()) {
     case 0: {
-      file_path = std::get<std::string>(std::move(file_path_escaped));
-      return parser::parse(file_path);
+      std::filesystem::path file_path{
+          std::get<std::string>(std::move(file_path_escaped))};
+      if (file_path.is_absolute()) {
+        return parser::parse(file_path);
+      } else {
+        return parser::parse(
+            std::filesystem::path{ctx.file_path.parent_path() / file_path});
+      }
     } break;
 
     case 1: {
       std::ifstream::pos_type invalid_escape_sequence_pos{
-          start_of_file_path_pos};
+          start_of_file_path_str_pos};
       invalid_escape_sequence_pos +=
           std::ifstream::off_type{static_cast<std::ifstream::off_type>(
               std::get<std::string::size_type>(file_path_escaped))};
