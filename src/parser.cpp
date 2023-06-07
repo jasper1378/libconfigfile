@@ -79,23 +79,24 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
 
     for (name_location last_state{name_location::opening_delimiter};
          last_state != name_location::closing_delimiter; first_loop = false) {
+
       char cur_char{};
       bool eof{false};
       std::ifstream::pos_type cur_pos{};
       std::ifstream::pos_type last_newline_pos{};
       while (true) {
+        handle_comments(ctx);
         cur_pos = ctx.file.tellg();
+        ctx.file.get(cur_char);
         if (ctx.file.eof() == true) {
           eof = true;
           break;
+        }
+        if (cur_char == character_constants::g_k_newline) {
+          last_newline_pos = cur_pos;
+          continue;
         } else {
-          ctx.file.get(cur_char);
-          if (cur_char == character_constants::g_k_newline) {
-            last_newline_pos = cur_pos;
-            continue;
-          } else {
-            break;
-          }
+          break;
         }
       }
 
@@ -249,16 +250,17 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
     for (name_body_gap_location last_state{
              name_body_gap_location::separating_whitespace};
          last_state != name_body_gap_location::opening_body_delimiter;) {
+
       char cur_char{};
       bool eof{false};
       std::ifstream::pos_type cur_pos{};
       do {
+        handle_comments(ctx);
         cur_pos = ctx.file.tellg();
+        ctx.file.get(cur_char);
         if (ctx.file.eof() == true) {
           eof = true;
           break;
-        } else {
-          ctx.file.get(cur_char);
         }
       } while (cur_char == character_constants::g_k_newline);
 
@@ -294,15 +296,16 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
     bool ended_on_body_closing_delimiter{false};
     std::ifstream::pos_type cur_pos{};
     for (;;) {
+
       char cur_char{};
       bool eof{false};
       do {
+        handle_comments(ctx);
         cur_pos = ctx.file.tellg();
+        ctx.file.get(cur_char);
         if (ctx.file.eof() == true) {
           eof = true;
           break;
-        } else {
-          ctx.file.get(cur_char);
         }
       } while (cur_char == character_constants::g_k_newline);
 
@@ -416,12 +419,12 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     bool eof{false};
     std::ifstream::pos_type cur_pos{};
     do {
+      handle_comments(ctx);
       cur_pos = ctx.file.tellg();
+      ctx.file.get(cur_char);
       if (ctx.file.eof() == true) {
         eof = true;
         break;
-      } else {
-        ctx.file.get(cur_char);
       }
     } while (cur_char == character_constants::g_k_newline);
 
@@ -564,12 +567,14 @@ libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
       bool eof{false};
       std::ifstream::pos_type cur_pos{};
       do {
+        if (in_string == false) {
+          handle_comments(ctx);
+        }
         cur_pos = ctx.file.tellg();
+        ctx.file.get(cur_char);
         if (ctx.file.eof() == true) {
           eof = true;
           break;
-        } else {
-          ctx.file.get(cur_char);
         }
       } while (cur_char == character_constants::g_k_newline);
 
@@ -1846,22 +1851,23 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 
   for (name_location last_state{name_location::directive_leader};
        last_state != name_location::done;) {
+
     char cur_char{};
     bool eof{false};
     std::ifstream::pos_type last_newline_pos{};
     while (true) {
+      handle_comments(ctx);
       cur_pos = ctx.file.tellg();
+      ctx.file.get(cur_char);
       if (ctx.file.eof() == true) {
         eof = true;
         break;
+      }
+      if (cur_char == character_constants::g_k_newline) {
+        last_newline_pos = cur_pos;
+        continue;
       } else {
-        ctx.file.get(cur_char);
-        if (cur_char == character_constants::g_k_newline) {
-          last_newline_pos = cur_pos;
-          continue;
-        } else {
-          break;
-        }
+        break;
       }
     }
 
@@ -1985,22 +1991,26 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
 
   for (args_location last_state{args_location::leading_whitespace};
        last_state != args_location::done;) {
+
     char cur_char{};
     bool eof{false};
     std::ifstream::pos_type last_newline_pos{};
     while (true) {
+      if ((last_state != args_location::opening_delimiter) &&
+          (last_state != args_location::version_str)) {
+        handle_comments(ctx);
+      }
       cur_pos = ctx.file.tellg();
+      ctx.file.get(cur_char);
       if (ctx.file.eof() == true) {
         eof = true;
         break;
+      }
+      if (cur_char == character_constants::g_k_newline) {
+        last_newline_pos = cur_pos;
+        continue;
       } else {
-        ctx.file.get(cur_char);
-        if (cur_char == character_constants::g_k_newline) {
-          last_newline_pos = cur_pos;
-          continue;
-        } else {
-          break;
-        }
+        break;
       }
     }
 
@@ -2167,18 +2177,21 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     bool eof{false};
     std::ifstream::pos_type last_newline_pos{};
     while (true) {
+      if ((last_state != args_location::opening_delimiter) &&
+          (last_state != args_location::file_path)) {
+        handle_comments(ctx);
+      }
       cur_pos = ctx.file.tellg();
+      ctx.file.get(cur_char);
       if (ctx.file.eof() == true) {
         eof = true;
         break;
+      }
+      if (cur_char == character_constants::g_k_newline) {
+        last_newline_pos = cur_pos;
+        continue;
       } else {
-        ctx.file.get(cur_char);
-        if (cur_char == character_constants::g_k_newline) {
-          last_newline_pos = cur_pos;
-          continue;
-        } else {
-          break;
-        }
+        break;
       }
     }
 
@@ -2355,73 +2368,82 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   }
 }
 
-void libconfigfile::parser::impl::handle_comments(context &ctx) {
+bool libconfigfile::parser::impl::handle_comments(context &ctx) {
   static_assert(character_constants::g_k_comment_cpp.front() ==
                 character_constants::g_k_comment_c_start.front());
   static_assert(character_constants::g_k_comment_cpp.size() == 2);
   static_assert(character_constants::g_k_comment_c_start.size() == 2);
   static_assert(character_constants::g_k_comment_c_end.size() == 2);
-
   static constexpr char c_or_cpp_comment_leader{
       character_constants::g_k_comment_cpp.front()};
 
-  if (ctx.file.eof() == true) {
-    return;
-  } else {
-    char cur_char{};
+  char cur_char{};
+  char peek_char{static_cast<char>(ctx.file.peek())};
+
+  switch (peek_char) {
+
+  case character_constants::g_k_comment_script: {
     ctx.file.get(cur_char);
 
-    if (cur_char == character_constants::g_k_comment_script) {
-      while (true) {
-        if (ctx.file.eof() == true) {
-          return;
-        } else if (cur_char == character_constants::g_k_newline) {
-          return;
-        } else {
-          ctx.file.get(cur_char);
-        }
+    while (true) {
+      ctx.file.get(cur_char);
+      if (ctx.file.eof() == true) {
+        return true;
+      } else if (cur_char == character_constants::g_k_newline) {
+        ctx.file.unget();
+        return true;
       }
-    } else if (cur_char == c_or_cpp_comment_leader) {
-      char next_char{};
-      ctx.file.get(next_char);
-
-      if (next_char == character_constants::g_k_comment_cpp.back()) {
-        while (true) {
-          if (ctx.file.eof() == true) {
-            return;
-          } else if (next_char == character_constants::g_k_newline) {
-            return;
-          } else {
-            ctx.file.get(next_char);
-          }
-        }
-      } else if (next_char == character_constants::g_k_comment_c_start.back()) {
-        while (true) {
-          if (ctx.file.eof() == true) {
-            return;
-          } else if (next_char ==
-                     character_constants::g_k_comment_c_end.front()) {
-            char next_next_char{};
-            ctx.file.get(next_next_char);
-            if (next_next_char ==
-                character_constants::g_k_comment_c_end.back()) {
-              return;
-            } else {
-              next_char = next_next_char;
-            }
-          } else {
-            ctx.file.get(next_char);
-          }
-        }
-      } else {
-        ctx.file.putback(next_char);
-        ctx.file.putback(cur_char);
-        return;
-      }
-    } else {
-      ctx.file.putback(cur_char);
-      return;
     }
+  } break;
+
+  case c_or_cpp_comment_leader: {
+    ctx.file.get(cur_char);
+    peek_char = ctx.file.peek();
+
+    switch (peek_char) {
+    case character_constants::g_k_comment_cpp.back(): {
+      ctx.file.get(cur_char);
+
+      while (true) {
+        ctx.file.get(cur_char);
+        if (ctx.file.eof() == true) {
+          return true;
+        } else if (cur_char == character_constants::g_k_newline) {
+          ctx.file.unget();
+          return true;
+        }
+      }
+
+    } break;
+
+    case character_constants::g_k_comment_c_start.back(): {
+      ctx.file.get(cur_char);
+      while (true) {
+        ctx.file.get(cur_char);
+        if (ctx.file.eof() == true) {
+          std::string what_arg{"unterminated C-style comment"};
+          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                       ctx.file.tellg());
+        } else if (cur_char == character_constants::g_k_comment_c_end.front()) {
+          if (static_cast<char>(ctx.file.peek()) ==
+              character_constants::g_k_comment_c_end.back()) {
+            ctx.file.get();
+            return true;
+          }
+        }
+      }
+    } break;
+
+    default: {
+      ctx.file.unget();
+      return false;
+    } break;
+    }
+  } break;
+
+  default: {
+    return false;
+  } break;
   }
 }
 

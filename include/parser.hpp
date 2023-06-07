@@ -73,7 +73,7 @@ parse_directive(context &ctx);
 void parse_version_directive(context &ctx);
 node_ptr<section_node> parse_include_directive(context &ctx);
 
-void handle_comments(context &ctx);
+bool handle_comments(context &ctx);
 
 std::variant<value_node_type, end_value_node_type>
 identify_key_value_value_type(const std::string &value_contents);
