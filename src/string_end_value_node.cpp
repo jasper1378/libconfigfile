@@ -59,7 +59,7 @@ bool libconfigfile::string_end_value_node::polymorphic_value_compare(
 
 std::ostream &
 libconfigfile::string_end_value_node::print(std::ostream &out) const {
-  out << character_constants::g_k_string_delimiter << *this
+  out << character_constants::g_k_string_delimiter << static_cast<base_t>(*this)
       << character_constants::g_k_string_delimiter;
   return out;
 }
