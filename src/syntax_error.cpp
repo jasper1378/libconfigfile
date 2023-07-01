@@ -40,19 +40,7 @@ libconfigfile::syntax_error::operator=(syntax_error &&other) noexcept {
 libconfigfile::syntax_error
 libconfigfile::syntax_error::generate_formatted_error(
     const std::string &what_arg, const std::filesystem::path &file_path,
-    const std::ifstream::pos_type &pos) {
-  // TODO
-  //  file_path:pos_line:pos_char: what_arg
-  return syntax_error{file_path.string() + ':' + std::to_string(pos) + ": " +
-                      what_arg};
-}
-
-libconfigfile::syntax_error
-libconfigfile::syntax_error::generate_formatted_error(
-    const std::string &what_arg, const std::filesystem::path &file_path,
     const size_t pos_line, const size_t pos_char) {
-  // TODO
-  //  file_path:pos_line:pos_char: what_arg
   return syntax_error{file_path.string() + ':' + std::to_string(pos_line) +
                       ':' + std::to_string(pos_char) + ": " + what_arg};
 }
@@ -60,17 +48,7 @@ libconfigfile::syntax_error::generate_formatted_error(
 libconfigfile::syntax_error
 libconfigfile::syntax_error::generate_formatted_error(
     const std::string &what_arg, const std::string &file_path,
-    const std::ifstream::pos_type &pos) {
-  // TODO
-  //  file_path:pos_line:pos_char: what_arg
-  return syntax_error{file_path + ':' + std::to_string(pos) + ": " + what_arg};
-}
-
-libconfigfile::syntax_error
-libconfigfile::syntax_error::generate_formatted_error(
-    const std::string &what_arg, const std::string &file_path,
     const size_t pos_line, const size_t pos_char) {
-  // TODO
   return syntax_error{file_path + ':' + std::to_string(pos_line) + ':' +
                       std::to_string(pos_char) + ": " + what_arg};
 }

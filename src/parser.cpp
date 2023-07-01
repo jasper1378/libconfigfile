@@ -2,6 +2,7 @@
 
 #include "array_value_node.hpp"
 #include "character_constants.hpp"
+#include "constexpr_tolower_toupper.hpp"
 #include "end_value_node.hpp"
 #include "float_end_value_node.hpp"
 #include "integer_end_value_node.hpp"
@@ -39,10 +40,11 @@ libconfigfile::parser::parse(const std::filesystem::path &file_path) {
 
 libconfigfile::node_ptr<libconfigfile::section_node>
 libconfigfile::parser::impl::parse(const std::filesystem::path &file_path) {
-  context ctx{file_path, std::ifstream{file_path},
+  context ctx{file_path, std::ifstream{file_path}, 0, 1,
               make_node_ptr<section_node>()};
 
-  if ((ctx.file.is_open() == false) || (ctx.file.good() == false)) {
+  if ((ctx.file_stream.is_open() == false) ||
+      (ctx.file_stream.good() == false)) {
     throw std::runtime_error{"file \"" + ctx.file_path.string() +
                              "\" could not be opened for "
                              "reading"};
@@ -57,7 +59,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       "", make_node_ptr<section_node>()};
 
   if (is_root_section == true) {
-    std::ifstream::int_type first_char{ctx.file.peek()};
+    std::ifstream::int_type first_char{ctx.file_stream.peek()};
     if (first_char == std::ifstream::traits_type::eof()) {
       return ret_val;
     }
@@ -86,16 +88,18 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       std::ifstream::pos_type last_newline_pos{};
       while (true) {
         handle_comments(ctx);
-        cur_pos = ctx.file.tellg();
-        ctx.file.get(cur_char);
-        if (ctx.file.eof() == true) {
+        cur_pos = ctx.file_stream.tellg();
+        ctx.file_stream.get(cur_char);
+        if (ctx.file_stream.eof() == true) {
           eof = true;
           break;
-        }
-        if (cur_char == character_constants::g_k_newline) {
+        } else if (cur_char == character_constants::g_k_newline) {
           last_newline_pos = cur_pos;
+          ++ctx.line_count;
+          ctx.char_count = 0;
           continue;
         } else {
+          ++ctx.char_count;
           break;
         }
       }
@@ -104,8 +108,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       case name_location::opening_delimiter: {
         if (eof == true) {
           std::string what_arg{"expected section name"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (is_whitespace(cur_char) == true) {
             last_state = name_location::leading_whitespace;
@@ -121,7 +125,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
 
                 std::string what_arg{"empty section names are not permitted"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path, cur_pos);
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
               } else {
                 last_state = name_location::name_proper;
                 start_of_name_proper_pos = cur_pos;
@@ -131,7 +135,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
                     true) {
                   std::string what_arg{"invalid character in section name"};
                   throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path, cur_pos);
+                      what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
                 } else {
                   ret_val.first.push_back(cur_char);
                 }
@@ -144,8 +148,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       case name_location::leading_whitespace: {
         if (eof == true) {
           std::string what_arg{"expected section name"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (is_whitespace(cur_char) == true) {
             ;
@@ -156,7 +160,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
 
               std::string what_arg{"empty section names are not permitted"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } else {
               last_state = name_location::name_proper;
               start_of_name_proper_pos = cur_pos;
@@ -166,7 +170,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
                   true) {
                 std::string what_arg{"invalid character in section name"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path, cur_pos);
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
               } else {
                 ret_val.first.push_back(cur_char);
               }
@@ -178,8 +182,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       case name_location::name_proper: {
         if (eof == true) {
           std::string what_arg{"unterminated section name"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (is_whitespace(cur_char) == true) {
             last_state = name_location::trailing_whitespace;
@@ -192,14 +196,14 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
                 std::string what_arg{
                     "section name must appear completely on one line"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path, cur_pos);
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
               } else {
                 if (is_invalid_character_valid_provided(
                         cur_char, character_constants::g_k_valid_name_chars) ==
                     true) {
                   std::string what_arg{"invalid character in section name"};
                   throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path, cur_pos);
+                      what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
                 } else {
                   ret_val.first.push_back(cur_char);
                 }
@@ -212,8 +216,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       case name_location::trailing_whitespace: {
         if (eof == true) {
           std::string what_arg{"unterminated section name"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (is_whitespace(cur_char) == true) {
             ;
@@ -225,7 +229,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
               std::string what_arg{
                   "character after trailing whitespace in section name"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
           }
         }
@@ -254,23 +258,30 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       char cur_char{};
       bool eof{false};
       std::ifstream::pos_type cur_pos{};
-      do {
+      while (true) {
         handle_comments(ctx);
-        cur_pos = ctx.file.tellg();
-        ctx.file.get(cur_char);
-        if (ctx.file.eof() == true) {
+        cur_pos = ctx.file_stream.tellg();
+        ctx.file_stream.get(cur_char);
+        if (ctx.file_stream.eof() == true) {
           eof = true;
           break;
+        } else if (cur_char == character_constants::g_k_newline) {
+          ++ctx.line_count;
+          ctx.char_count = 0;
+          continue;
+        } else {
+          ++ctx.char_count;
+          break;
         }
-      } while (cur_char == character_constants::g_k_newline);
+      }
 
       switch (last_state) {
 
       case name_body_gap_location::separating_whitespace: {
         if (eof == true) {
           std::string what_arg{"expected section body"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (is_whitespace(cur_char) == true) {
             ;
@@ -280,7 +291,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           } else {
             std::string what_arg{"expected section body opening delimiter"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         }
       } break;
@@ -299,15 +310,22 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
 
       char cur_char{};
       bool eof{false};
-      do {
+      while (true) {
         handle_comments(ctx);
-        cur_pos = ctx.file.tellg();
-        ctx.file.get(cur_char);
-        if (ctx.file.eof() == true) {
+        cur_pos = ctx.file_stream.tellg();
+        ctx.file_stream.get(cur_char);
+        if (ctx.file_stream.eof() == true) {
           eof = true;
           break;
+        } else if (cur_char == character_constants::g_k_newline) {
+          ++ctx.line_count;
+          ctx.char_count = 0;
+          continue;
+        } else {
+          ++ctx.char_count;
+          break;
         }
-      } while (cur_char == character_constants::g_k_newline);
+      }
 
       if (eof == true) {
         break;
@@ -320,8 +338,9 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           break;
         } else if (cur_char ==
                    character_constants::g_k_section_name_opening_delimiter) {
-          ctx.file.unget();
-          std::ifstream::pos_type start_pos{cur_pos};
+          ctx.file_stream.unget();
+          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos{ctx.line_count, ctx.char_count};
 
           std::pair<std::string, node_ptr<section_node>> new_section{
               parse_section(ctx, false)};
@@ -329,12 +348,13 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           if (ret_val.second->contains(new_section.first) == true) {
             std::string what_arg{"duplicate name in scope"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, start_pos);
+                what_arg, ctx.file_path, start_pos.first, start_pos.second);
           } else {
             ret_val.second->insert({std::move(new_section)});
           }
         } else if (cur_char == character_constants::g_k_directive_leader) {
-          std::ifstream::pos_type start_pos{cur_pos};
+          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos{ctx.line_count, ctx.char_count};
           std::pair<directive, std::optional<node_ptr<section_node>>> dir_res{
               parse_directive(ctx)};
 
@@ -354,7 +374,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
               if (ret_val.second->contains(i->first)) {
                 std::string what_arg{"duplicate name in scope"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path, start_pos);
+                    what_arg, ctx.file_path, start_pos.first, start_pos.second);
               }
             }
 
@@ -364,8 +384,9 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           } break;
           }
         } else {
-          ctx.file.unget();
-          std::ifstream::pos_type start_pos{ctx.file.tellg()};
+          ctx.file_stream.unget();
+          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos{ctx.line_count, ctx.char_count};
 
           std::pair<std::string, node_ptr<value_node>> new_key_value{
               parse_key_value(ctx)};
@@ -373,7 +394,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           if (ret_val.second->contains(new_key_value.first) == true) {
             std::string what_arg{"duplicate name in scope"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, start_pos);
+                what_arg, ctx.file_path, start_pos.first, start_pos.second);
           } else {
             ret_val.second->insert({std::move(new_key_value)});
           }
@@ -384,8 +405,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
     if ((ended_on_body_closing_delimiter == false) &&
         (is_root_section == false)) {
       std::string what_arg{"expected section body closing delimiter"};
-      throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                   cur_pos);
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
     }
   }
 
@@ -418,23 +439,30 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     char cur_char{};
     bool eof{false};
     std::ifstream::pos_type cur_pos{};
-    do {
+    while (true) {
       handle_comments(ctx);
-      cur_pos = ctx.file.tellg();
-      ctx.file.get(cur_char);
-      if (ctx.file.eof() == true) {
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        break;
       }
-    } while (cur_char == character_constants::g_k_newline);
+    }
 
     switch (last_state) {
 
     case key_name_location::leading_whitespace: {
       if (eof == true) {
         std::string what_arg{"expected key name"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (is_whitespace(cur_char)) {
           ;
@@ -449,19 +477,19 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
             case character_constants::g_k_key_value_assign: {
               std::string what_arg{"missing key-value name"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } break;
 
             case character_constants::g_k_key_value_terminate: {
               std::string what_arg{"empty key-value"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } break;
 
             default: {
               std::string what_arg{"invalid character in key name"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } break;
             }
 
@@ -475,8 +503,8 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     case key_name_location::name_proper: {
       if (eof == true) {
         std::string what_arg{"missing value part of key-value"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (is_whitespace(cur_char) == true) {
           last_state = key_name_location::trailing_whitespace;
@@ -491,13 +519,13 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
             case character_constants::g_k_key_value_terminate: {
               std::string what_arg{"missing value part of key-value"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } break;
 
             default: {
               std::string what_arg{"invalid character in key name"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } break;
             }
           } else {
@@ -510,8 +538,8 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     case key_name_location::trailing_whitespace: {
       if (eof == true) {
         std::string what_arg{"missing value part of key-value"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (is_whitespace(cur_char) == true) {
           ;
@@ -522,11 +550,11 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
             if (cur_char == character_constants::g_k_key_value_terminate) {
               std::string what_arg{"missing value part of key-value"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } else {
               std::string what_arg{"expected value assigment after key name"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
           }
         }
@@ -544,442 +572,270 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
 
 libconfigfile::node_ptr<libconfigfile::value_node>
 libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
-  std::string value_contents{};
-  std::ifstream::pos_type value_start_pos{};
+  bool first_loop{true};
+  char cur_char{};
 
-  {
-    enum class value_location {
-      equal_sign,
-      leading_whitespace,
-      value_proper,
-      semicolon
-    };
+  for (; true; first_loop = false) {
 
-    bool first_loop{true};
-    bool in_string{false};
-    char last_char{};
-    char cur_char{};
-
-    for (value_location last_state{value_location::equal_sign};
-         last_state != value_location::semicolon;
-         first_loop = false, last_char = cur_char) {
-
-      bool eof{false};
-      std::ifstream::pos_type cur_pos{};
-      do {
-        if (in_string == false) {
-          handle_comments(ctx);
-        }
-        cur_pos = ctx.file.tellg();
-        ctx.file.get(cur_char);
-        if (ctx.file.eof() == true) {
-          eof = true;
-          break;
-        }
-      } while (cur_char == character_constants::g_k_newline);
-
-      switch (last_state) {
-
-      case value_location::equal_sign: {
-        if (eof == true) {
-          std::string what_arg{"missing value part of key-value"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
-        } else {
-          if ((first_loop == true) &&
-              (cur_char == character_constants::g_k_key_value_assign)) {
-            ;
-          } else {
-            if (is_whitespace(cur_char)) {
-              last_state = value_location::leading_whitespace;
-            } else if (cur_char ==
-                       character_constants::g_k_key_value_terminate) {
-              last_state = value_location::semicolon;
-              std::string what_arg{"empty value part of key-value"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, cur_pos);
-            } else {
-              last_state = value_location::value_proper;
-              value_start_pos = cur_pos;
-              value_contents.push_back(cur_char);
-
-              if (cur_char == character_constants::g_k_string_delimiter) {
-                in_string = !in_string;
-              }
-            }
-          }
-        }
-      } break;
-
-      case value_location::leading_whitespace: {
-        if (eof == true) {
-          std::string what_arg{"missing value part of key-value"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
-        } else {
-          if (is_whitespace(cur_char)) {
-            ;
-          } else if (cur_char == character_constants::g_k_key_value_terminate) {
-            last_state = value_location::semicolon;
-            std::string what_arg{"empty value part of key-value"};
-            throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
-          } else {
-            last_state = value_location::value_proper;
-            value_start_pos = cur_pos;
-            value_contents.push_back(cur_char);
-
-            if (cur_char == character_constants::g_k_string_delimiter) {
-              in_string = !in_string;
-            }
-          }
-        }
-      } break;
-
-      case value_location::value_proper: {
-        if (eof == true) {
-          std::string what_arg{"unterminated key-value"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
-        } else {
-          if ((in_string == false) &&
-              (cur_char == character_constants::g_k_key_value_terminate)) {
-            last_state = value_location::semicolon;
-          } else {
-            value_contents.push_back(cur_char);
-
-            if (cur_char == character_constants::g_k_string_delimiter) {
-              if (in_string == false) {
-                in_string = !in_string;
-              } else if ((in_string == true) &&
-                         (last_char !=
-                          character_constants::g_k_escape_leader)) {
-                in_string = !in_string;
-              }
-            }
-          }
-        }
-      } break;
-
-      case value_location::semicolon: {
-        throw std::runtime_error{"impossible!"};
-      } break;
+    bool eof{false};
+    std::ifstream::pos_type cur_pos{};
+    while (true) {
+      handle_comments(ctx);
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
+        eof = true;
+        break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        break;
       }
     }
+
+    if (eof == true) {
+      std::string what_arg{"expected value part of key-value"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else if (is_whitespace(cur_char) == true) {
+      continue;
+    } else if ((cur_char == character_constants::g_k_key_value_assign) &&
+               (first_loop == true)) {
+      continue;
+    } else if (cur_char == character_constants::g_k_key_value_terminate) {
+      std::string what_arg{"expected value part of key-value"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else {
+      ctx.file_stream.unget();
+      --ctx.char_count;
+      return call_appropriate_value_parse_func(
+          ctx, std::string{std::string{} +
+                           character_constants::g_k_key_value_terminate});
+    }
   }
-
-  value_contents = trim_whitespace(
-      value_contents, character_constants::g_k_whitespace_chars, false, true);
-
-  node_ptr<value_node> ret_val{node_ptr_cast<value_node>(
-      call_appropriate_value_parse_func(ctx, value_contents, value_start_pos))};
-
-  return ret_val;
 }
 
 libconfigfile::node_ptr<libconfigfile::array_value_node>
 libconfigfile::parser::impl::parse_array_value(
-    context &ctx, const std::string &raw_value,
-    const std::ifstream::pos_type &start_pos) {
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
+  node_ptr<libconfigfile::array_value_node> ret_val{
+      make_node_ptr<array_value_node>()};
+
+  static const std::string possible_terminating_chars_for_elements{
+      std::string{} + character_constants::g_k_array_element_separator +
+      character_constants::g_k_array_closing_delimiter};
+
   enum class char_type {
     leading_whitespace,
     opening_delimiter,
-    element_leading_whitespace,
-    element_proper,
-    element_trailing_whitespace,
     element_separator,
     closing_delimiter,
-    trailing_whitespace,
-    done,
   };
 
   char_type last_char_type{char_type::leading_whitespace};
 
-  bool in_string{false};
-  int in_n_levels_of_sub_arrays{0};
   char cur_char{};
-  char last_char{};
 
-  std::pair<std::string, std::ifstream::pos_type> cur_raw_element{{},
-                                                                  start_pos};
-  std::vector<std::pair<std::string, std::ifstream::pos_type>> raw_elements{};
-
-  for (std::string::size_type raw_value_idx{0};
-       (raw_value_idx < raw_value.size()) &&
-       (last_char_type != char_type::done);
-       ++raw_value_idx, last_char = cur_char) {
-
-    cur_char = raw_value[raw_value_idx];
-
-    switch (last_char_type) {
-    case char_type::leading_whitespace: {
-      if (is_whitespace(cur_char) == true) {
-        ;
-      } else if (cur_char == character_constants::g_k_array_opening_delimiter) {
-        last_char_type = char_type::opening_delimiter;
+  for (;;) {
+    bool eof{false};
+    std::ifstream::pos_type cur_pos{};
+    std::ifstream::pos_type last_newline_pos{};
+    while (true) {
+      handle_comments(ctx);
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
+        eof = true;
+        break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        last_newline_pos = cur_pos;
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
       } else {
-        std::string what_arg{"expected array opening delimiter"};
-        throw syntax_error::generate_formatted_error(
-            what_arg, ctx.file_path,
-            (start_pos + static_cast<std::ifstream::off_type>(raw_value_idx)));
+        ++ctx.char_count;
+        break;
       }
-    } break;
+    }
 
-    case char_type::opening_delimiter: {
-      if (is_whitespace(cur_char) == true) {
-        last_char_type = char_type::element_leading_whitespace;
-      } else {
+    if (eof == true) {
+      std::string what_arg{"unterminated array key-value"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else if ((possible_terminating_chars.find(cur_char) !=
+                std::string::npos) &&
+               (last_char_type == char_type::closing_delimiter)) {
+      if (actual_terminating_char != nullptr) {
+        *actual_terminating_char = cur_char;
+      };
+      break;
+    } else if (is_whitespace(cur_char)) {
+      continue;
+    } else {
+      switch (last_char_type) {
+
+      case char_type::leading_whitespace: {
+        if (cur_char == character_constants::g_k_array_opening_delimiter) {
+          last_char_type = char_type::opening_delimiter;
+        } else {
+          std::string what_arg{"expected array opening delimiter"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        }
+      } break;
+
+      case char_type::opening_delimiter: {
         if (cur_char == character_constants::g_k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char ==
                    character_constants::g_k_array_element_separator) {
           std::string what_arg{"expected array element before separator"};
           throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
-          last_char_type = char_type::element_proper;
-          cur_raw_element.second =
-              (start_pos + static_cast<std::ifstream::off_type>(raw_value_idx));
-          cur_raw_element.first.push_back(cur_char);
-
-          if (cur_char == character_constants::g_k_string_delimiter) {
-            in_string = !in_string;
-          } else if (cur_char ==
-                     character_constants::g_k_array_opening_delimiter) {
-            ++in_n_levels_of_sub_arrays;
+          --ctx.char_count;
+          ctx.file_stream.unget();
+          char actual_terminating_char{};
+          ret_val->push_back(call_appropriate_value_parse_func(
+              ctx, possible_terminating_chars_for_elements,
+              &actual_terminating_char));
+          switch (actual_terminating_char) {
+          case character_constants::g_k_array_element_separator: {
+            last_char_type = char_type::element_separator;
+          } break;
+          case character_constants::g_k_array_closing_delimiter: {
+            last_char_type = char_type::closing_delimiter;
+          } break;
           }
         }
-      }
-    } break;
+      } break;
 
-    case char_type::element_leading_whitespace: {
-      if (is_whitespace(cur_char) == true) {
-        ;
-      } else {
-        if (cur_char == character_constants::g_k_array_closing_delimiter) {
-          last_char_type = char_type::closing_delimiter;
-        } else if (cur_char ==
-                   character_constants::g_k_array_element_separator) {
-          std::string what_arg{"expected array element before separator"};
-          throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
-        } else {
-          last_char_type = char_type::element_proper;
-          cur_raw_element.second =
-              (start_pos + static_cast<std::ifstream::off_type>(raw_value_idx));
-          cur_raw_element.first.push_back(cur_char);
-
-          if (cur_char == character_constants::g_k_string_delimiter) {
-            in_string = !in_string;
-          } else if (cur_char ==
-                     character_constants::g_k_array_opening_delimiter) {
-            ++in_n_levels_of_sub_arrays;
-          }
-        }
-      }
-    } break;
-
-    case char_type::element_proper: {
-      if ((cur_char == character_constants::g_k_array_element_separator) &&
-          (in_string == false) && (in_n_levels_of_sub_arrays == 0)) {
-        last_char_type = char_type::element_separator;
-        raw_elements.push_back(std::move(cur_raw_element));
-        cur_raw_element.first.clear();
-      } else if ((cur_char ==
-                  character_constants::g_k_array_closing_delimiter) &&
-                 (in_string == false) && (in_n_levels_of_sub_arrays == 0)) {
-        last_char_type = char_type::closing_delimiter;
-        raw_elements.push_back(std::move(cur_raw_element));
-        cur_raw_element.first.clear();
-      } else {
-        cur_raw_element.first.push_back(cur_char);
-
-        if (cur_char == character_constants::g_k_string_delimiter) {
-          if (in_string == false) {
-            in_string = !in_string;
-          } else if ((in_string == true) &&
-                     (last_char != character_constants::g_k_escape_leader)) {
-            in_string = !in_string;
-          }
-        } else if ((cur_char ==
-                    character_constants::g_k_array_opening_delimiter) &&
-                   (in_string == false)) {
-          ++in_n_levels_of_sub_arrays;
-        } else if ((cur_char ==
-                    character_constants::g_k_array_closing_delimiter) &&
-                   (in_string == false)) {
-          --in_n_levels_of_sub_arrays;
-        }
-      }
-    } break;
-
-    case char_type::element_trailing_whitespace: {
-      if (is_whitespace(cur_char) == true) {
-        ;
-      } else {
-        if (cur_char == character_constants::g_k_array_closing_delimiter) {
-          last_char_type = char_type::closing_delimiter;
-        } else if (cur_char ==
-                   character_constants::g_k_array_element_separator) {
-          last_char_type = char_type::element_separator;
-        } else {
-          std::string what_arg{
-              "expected array closing delimiter or element separator"};
-          throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
-        }
-      }
-    } break;
-
-    case char_type::element_separator: {
-      if (is_whitespace(cur_char) == true) {
-        last_char_type = char_type::element_leading_whitespace;
-      } else {
+      case char_type::element_separator: {
         if (cur_char == character_constants::g_k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char ==
                    character_constants::g_k_array_element_separator) {
           std::string what_arg{"expected array element or closing delimiter"};
           throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
-          last_char_type = char_type::element_proper;
-          cur_raw_element.second =
-              (start_pos + static_cast<std::ifstream::off_type>(raw_value_idx));
-          cur_raw_element.first.push_back(cur_char);
-
-          if (cur_char == character_constants::g_k_string_delimiter) {
-            in_string = !in_string;
-          } else if (cur_char ==
-                     character_constants::g_k_array_opening_delimiter) {
-            ++in_n_levels_of_sub_arrays;
+          --ctx.char_count;
+          ctx.file_stream.unget();
+          char actual_terminating_char{};
+          ret_val->push_back(call_appropriate_value_parse_func(
+              ctx, possible_terminating_chars_for_elements,
+              &actual_terminating_char));
+          switch (actual_terminating_char) {
+          case character_constants::g_k_array_element_separator: {
+            last_char_type = char_type::element_separator;
+          } break;
+          case character_constants::g_k_array_closing_delimiter: {
+            last_char_type = char_type::closing_delimiter;
+          } break;
           }
         }
-      }
-    } break;
+      } break;
 
-    case char_type::closing_delimiter: {
-      if (is_whitespace(cur_char) == true) {
-        last_char_type = char_type::trailing_whitespace;
-      } else {
+      case char_type::closing_delimiter: {
         std::string what_arg{"extraneous character(s) after array"};
         throw syntax_error::generate_formatted_error(
-            what_arg, ctx.file_path,
-            (start_pos + static_cast<std::ifstream::off_type>(raw_value_idx)));
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+      } break;
       }
-    } break;
-
-    case char_type::trailing_whitespace: {
-      if (is_whitespace(cur_char) == true) {
-        ;
-      } else {
-        std::string what_arg{"extraneous character(s) after array"};
-        throw syntax_error::generate_formatted_error(
-            what_arg, ctx.file_path,
-            (start_pos + static_cast<std::ifstream::off_type>(raw_value_idx)));
-      }
-    } break;
-
-    case char_type::done: {
-      throw std::runtime_error{"impossible!"};
-    } break;
     }
   }
-
-  if (!((last_char_type == char_type::done) ||
-        (last_char_type == char_type::closing_delimiter))) {
-    std::string what_arg{"unterminated array"};
-    throw syntax_error::generate_formatted_error(
-        what_arg, ctx.file_path,
-        (start_pos + static_cast<std::ifstream::off_type>((
-                         (raw_value.empty()) ? (0) : (raw_value.size() - 1)))));
-  }
-
-  node_ptr<array_value_node> ret_val{make_node_ptr<array_value_node>()};
-  ret_val->reserve(raw_elements.size());
-
-  for (size_t i{0}; i < raw_elements.size(); ++i) {
-    raw_elements[i].first =
-        trim_whitespace(raw_elements[i].first,
-                        character_constants::g_k_whitespace_chars, false, true);
-  }
-
-  for (size_t i{0}; i < raw_elements.size(); ++i) {
-    ret_val->push_back(call_appropriate_value_parse_func(
-        ctx, raw_elements[i].first, raw_elements[i].second));
-  }
-
   return ret_val;
 }
 
 libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
 libconfigfile::parser::impl::parse_integer_value(
-    context &ctx, const std::string &raw_value,
-    const std::ifstream::pos_type &start_pos) {
-  if (raw_value.empty()) {
-    std::string what_arg{"empty value"};
-    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                 start_pos);
-  } else {
-    std::string actual_digits{};
-    actual_digits.reserve(raw_value.size());
-    bool is_negative{false};
-    const numeral_system *num_sys{nullptr};
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      pos_count_at_start{ctx.line_count, ctx.char_count};
 
-    bool last_char_was_digit{false};
-    bool any_digits_so_far{false};
+  static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
 
-    bool last_char_was_leading_zero{false};
-    size_t num_of_leading_zeroes{0};
+  std::string actual_digits{};
+  bool is_negative{false};
+  const numeral_system *num_sys{nullptr};
 
-    static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
+  bool last_char_was_digit{false};
+  bool any_digits_so_far{false};
 
-    for (std::string::size_type raw_value_idx{0};
-         raw_value_idx < raw_value.size(); ++raw_value_idx) {
-      char cur_char{raw_value[raw_value_idx]};
+  bool last_char_was_leading_zero{false};
+  size_t num_of_leading_zeroes{0};
 
-      const auto default_char_behaviour{
-          [&ctx, &start_pos, &num_sys, &cur_char, &last_char_was_digit,
-           &any_digits_so_far, &last_char_was_leading_zero, &actual_digits,
-           &raw_value_idx]() {
-            num_sys =
-                ((num_sys == nullptr) ? (&numeral_system_decimal) : (num_sys));
+  char cur_char{};
 
-            if (is_digit(cur_char, *num_sys)) {
-              last_char_was_digit = true;
-              any_digits_so_far = true;
-              last_char_was_leading_zero = false;
-              actual_digits.push_back(cur_char);
-            } else {
-              last_char_was_digit = false;
-              last_char_was_leading_zero = false;
-              std::string what_arg{"invalid character in integer"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          }};
+  const auto default_char_behavior{
+      [&ctx, &num_sys, &cur_char, &last_char_was_digit, &any_digits_so_far,
+       &last_char_was_leading_zero, &actual_digits]() {
+        if (num_sys == nullptr) {
+          num_sys = &numeral_system_decimal;
+        }
+
+        if (is_digit(cur_char, *num_sys)) {
+          last_char_was_digit = true;
+          any_digits_so_far = true;
+          last_char_was_leading_zero = false;
+          actual_digits.push_back(cur_char);
+        } else {
+          last_char_was_digit = false;
+          last_char_was_leading_zero = false;
+          std::string what_arg{"invalid character in integer"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        }
+      }};
+
+  bool first_loop{true};
+  for (;; first_loop = false) {
+    bool eof{false};
+    std::ifstream::pos_type cur_pos{};
+    std::ifstream::pos_type last_newline_pos{};
+    while (true) {
+      handle_comments(ctx);
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
+        eof = true;
+        break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        last_newline_pos = cur_pos;
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        break;
+      }
+    }
+
+    if (eof == true) {
+      std::string what_arg{"unterminated integer key-value"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
+      if (actual_terminating_char != nullptr) {
+        *actual_terminating_char = cur_char;
+      };
+      break;
+    } else {
 
       switch (cur_char) {
-
       case character_constants::g_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
-            (raw_value_idx == (raw_value.size() - 1))) {
+            (ctx.file_stream.peek() == std::ifstream::traits_type::eof())) {
           std::string what_arg{"integer digit separator must be surrounded by "
                                "at least one digit on each side"};
           throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
@@ -987,30 +843,26 @@ libconfigfile::parser::impl::parse_integer_value(
       } break;
 
       case character_constants::g_k_num_positive_sign: {
-        if (raw_value_idx == 0) {
+        if (first_loop == true) {
           is_negative = false;
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
         } else {
           std::string what_arg{"positive sign must appear at start of integer"};
           throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         }
       } break;
 
       case character_constants::g_k_num_negative_sign: {
-        if (raw_value_idx == 0) {
+        if (first_loop == true) {
           is_negative = true;
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
         } else {
           std::string what_arg{"negative sign must appear at start of integer"};
           throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         }
       } break;
 
@@ -1038,30 +890,24 @@ libconfigfile::parser::impl::parse_integer_value(
 
                 num_sys = &numeral_system_binary;
               } else {
-                std::string what_arg{"numeral system prefix must appear "
-                                     "before integer digits"};
+                std::string what_arg{
+                    "numeral system prefix must appear before integer digits"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
               }
             } else {
               std::string what_arg{"invalid character in integer"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
           } else {
             std::string what_arg{
                 "numeral system prefix must appear before integer digits"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         } else {
-          default_char_behaviour();
+          default_char_behavior();
         }
       } break;
 
@@ -1076,30 +922,24 @@ libconfigfile::parser::impl::parse_integer_value(
 
                 num_sys = &numeral_system_octal;
               } else {
-                std::string what_arg{"numeral system prefix must appear "
-                                     "before integer digits"};
+                std::string what_arg{
+                    "numeral system prefix must appear before integer digits"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
               }
             } else {
               std::string what_arg{"invalid character in integer"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
           } else {
             std::string what_arg{
                 "numeral system prefix must appear before integer digits"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         } else {
-          default_char_behaviour();
+          default_char_behavior();
         }
       } break;
 
@@ -1114,671 +954,694 @@ libconfigfile::parser::impl::parse_integer_value(
 
                 num_sys = &numeral_system_hexadecimal;
               } else {
-                std::string what_arg{"numeral system prefix must appear "
-                                     "before integer digits"};
+                std::string what_arg{
+                    "numeral system prefix must appear before integer digits"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
               }
             } else {
               std::string what_arg{"invalid character in integer"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
           } else {
             std::string what_arg{
                 "numeral system prefix must appear before integer digits"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         } else {
-          default_char_behaviour();
+          default_char_behavior();
         }
       } break;
 
       default: {
-        default_char_behaviour();
+        default_char_behavior();
       } break;
       }
     }
-
-    if (actual_digits.empty()) {
-      actual_digits = "0";
-    }
-
-    if (num_sys == nullptr) {
-      num_sys = &numeral_system_decimal;
-    }
-
-    node_ptr<integer_end_value_node> ret_val{nullptr};
-
-    static_assert((sizeof(decltype(std::stoll(""))) >=
-                   sizeof(integer_end_value_node_data_t)),
-                  "no string-to-int conversion function (std::stoi(), "
-                  "std::stol(), std::stoll()) with return type large "
-                  "enough for integer_end_value_node_t");
-
-    try {
-      if constexpr ((sizeof(decltype(std::stoi("")))) >=
-                    (sizeof(integer_end_value_node_data_t))) {
-        ret_val = make_node_ptr<integer_end_value_node>(
-            std::stoi(actual_digits, nullptr, num_sys->base), num_sys);
-      } else if constexpr ((sizeof(decltype(std::stol("")))) >=
-                           (sizeof(integer_end_value_node_data_t))) {
-        ret_val = make_node_ptr<integer_end_value_node>(
-            std::stol(actual_digits, nullptr, num_sys->base), num_sys);
-      } else {
-        ret_val = make_node_ptr<integer_end_value_node>(
-            std::stoll(actual_digits, nullptr, num_sys->base), num_sys);
-      }
-    } catch (const std::out_of_range &ex) {
-      std::string what_arg{"integer value is too large"};
-      throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                   start_pos);
-    }
-
-    if (is_negative == true) {
-      ret_val->set(-(ret_val->get()));
-    }
-
-    return ret_val;
   }
+
+  if (actual_digits.empty()) {
+    actual_digits = "0";
+  }
+
+  if (num_sys == nullptr) {
+    num_sys = &numeral_system_decimal;
+  }
+
+  node_ptr<integer_end_value_node> ret_val{nullptr};
+
+  static_assert((sizeof(decltype(std::stoll(""))) >=
+                 sizeof(integer_end_value_node_data_t)),
+                "no string-to-int conversion function (std::stoi(), "
+                "std::stol(), std::stoll()) with return type large enough for "
+                "integer_end_value_node_t");
+
+  try {
+    if constexpr ((sizeof(decltype(std::stoi("")))) >=
+                  (sizeof(integer_end_value_node_data_t))) {
+      ret_val = make_node_ptr<integer_end_value_node>(
+          std::stoi(actual_digits, nullptr, num_sys->base), num_sys);
+    } else if constexpr ((sizeof(decltype(std::stol("")))) >=
+                         (sizeof(integer_end_value_node_data_t))) {
+      ret_val = make_node_ptr<integer_end_value_node>(
+          std::stol(actual_digits, nullptr, num_sys->base), num_sys);
+    } else {
+      ret_val = make_node_ptr<integer_end_value_node>(
+          std::stoll(actual_digits, nullptr, num_sys->base), num_sys);
+    }
+  } catch (const std::out_of_range &ex) {
+    std::string what_arg{"integer value is too large"};
+    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                 pos_count_at_start.first,
+                                                 pos_count_at_start.second);
+  }
+
+  if (is_negative == true) {
+    ret_val->set(-(ret_val->get()));
+  }
+
+  return ret_val;
 }
 
 libconfigfile::node_ptr<libconfigfile::float_end_value_node>
 libconfigfile::parser::impl::parse_float_value(
-    context &ctx, const std::string &raw_value,
-    const std::ifstream::pos_type &start_pos) {
-  if (raw_value.empty()) {
-    std::string what_arg{"empty value"};
-    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                 start_pos);
-  } else {
-    std::string sanitized_string{};
-    sanitized_string.reserve(raw_value.size());
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
+  std::string sanitized_string{};
 
-    static const std::unordered_map<std::string, float_end_value_node_data_t>
-        special_floats{{character_constants::g_k_float_infinity.second,
-                        character_constants::g_k_float_infinity.first},
-                       {(character_constants::g_k_num_positive_sign +
-                         character_constants::g_k_float_infinity.second),
-                        (character_constants::g_k_float_infinity.first)},
-                       {(character_constants::g_k_num_negative_sign +
-                         character_constants::g_k_float_infinity.second),
-                        (-character_constants::g_k_float_infinity.first)},
-                       {(character_constants::g_k_float_not_a_number.second),
-                        (character_constants::g_k_float_not_a_number.first)},
-                       {(character_constants::g_k_num_positive_sign +
-                         character_constants::g_k_float_not_a_number.second),
-                        (character_constants::g_k_float_not_a_number.first)},
-                       {(character_constants::g_k_num_negative_sign +
-                         character_constants::g_k_float_not_a_number.second),
-                        (-character_constants::g_k_float_not_a_number.first)}};
+  static const std::unordered_map<std::string, float_end_value_node_data_t>
+      special_floats{{character_constants::g_k_float_infinity.second,
+                      character_constants::g_k_float_infinity.first},
+                     {(character_constants::g_k_num_positive_sign +
+                       character_constants::g_k_float_infinity.second),
+                      (character_constants::g_k_float_infinity.first)},
+                     {(character_constants::g_k_num_negative_sign +
+                       character_constants::g_k_float_infinity.second),
+                      (-character_constants::g_k_float_infinity.first)},
+                     {(character_constants::g_k_float_not_a_number.second),
+                      (character_constants::g_k_float_not_a_number.first)},
+                     {(character_constants::g_k_num_positive_sign +
+                       character_constants::g_k_float_not_a_number.second),
+                      (character_constants::g_k_float_not_a_number.first)},
+                     {(character_constants::g_k_num_negative_sign +
+                       character_constants::g_k_float_not_a_number.second),
+                      (-character_constants::g_k_float_not_a_number.first)}};
 
-    if (special_floats.contains(raw_value)) {
-      return make_node_ptr<float_end_value_node>(special_floats.at(raw_value));
+  enum class char_type {
+    start,
+    digit,
+    positive,
+    negative,
+    decimal,
+    exponent,
+    separator,
+  };
+
+  char_type last_char{char_type::start};
+
+  enum class num_location {
+    integer,
+    fractional,
+    exponent,
+  };
+
+  num_location cur_location{num_location::integer};
+
+  for (;;) {
+    char cur_char{};
+    bool eof{false};
+    std::ifstream::pos_type cur_pos{};
+    std::ifstream::pos_type last_newline_pos{};
+    while (true) {
+      handle_comments(ctx);
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
+        eof = true;
+        break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        last_newline_pos = cur_pos;
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        break;
+      }
+    }
+
+    if (eof == true) {
+      std::string what_arg{"unterminated integer key-value"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
+      if (actual_terminating_char != nullptr) {
+        *actual_terminating_char = cur_char;
+      };
+      break;
     } else {
 
-      enum class char_type {
-        start,
-        digit,
-        positive,
-        negative,
-        decimal,
-        exponent,
-        separator,
-      };
+      switch (cur_location) {
 
-      char_type last_char{char_type::start};
+      case num_location::integer: {
+        switch (cur_char) {
 
-      enum class num_location {
-        integer,
-        fractional,
-        exponent,
-      };
+        case libconfigfile::tolower<
+            character_constants::g_k_float_infinity.second.front()>():
+        case libconfigfile::toupper<
+            character_constants::g_k_float_infinity.second.front()>(): {
+          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              pos_count_at_start{ctx.line_count, ctx.char_count};
 
-      num_location cur_location{num_location::integer};
+          if ((last_char == char_type::start) ||
+              (last_char == char_type::positive) ||
+              (last_char == char_type::negative)) {
+            std::string special_float_string{};
+            special_float_string.reserve(
+                character_constants::g_k_float_infinity.second.size());
+            special_float_string.push_back(cur_char);
 
-      const std::string::size_type last_raw_value_idx{
-          ((raw_value.empty()) ? (0) : (raw_value.size() - 1))};
-
-      for (std::string::size_type raw_value_idx{0};
-           raw_value_idx < raw_value.size(); ++raw_value_idx) {
-        char cur_char{raw_value[raw_value_idx]};
-
-        switch (cur_location) {
-
-        case num_location::integer: {
-          switch (cur_char) {
-
-          case character_constants::g_k_num_positive_sign: {
-            if (last_char == char_type::start) {
-              last_char = char_type::positive;
-              sanitized_string.push_back(cur_char);
-            } else {
-              std::string what_arg{"positive sign may only appear at start of "
-                                   "integer part or exponent part of float"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
-
-          case character_constants::g_k_num_negative_sign: {
-            if (last_char == char_type::start) {
-              last_char = char_type::positive;
-              sanitized_string.push_back(cur_char);
-            } else {
-              std::string what_arg{"negative sign may only appear at start of "
-                                   "integer part or exponent part of float"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
-
-          case character_constants::g_k_num_digit_separator: {
-            if (last_char == char_type::digit) {
-              if (raw_value_idx != last_raw_value_idx) {
-                char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, numeral_system_decimal) == true) {
-                  last_char = char_type::separator;
+            while (true) {
+              while (true) {
+                handle_comments(ctx);
+                cur_pos = ctx.file_stream.tellg();
+                ctx.file_stream.get(cur_char);
+                if (ctx.file_stream.eof() == true) {
+                  eof = true;
+                  break;
+                } else if (cur_char == character_constants::g_k_newline) {
+                  last_newline_pos = cur_pos;
+                  ++ctx.line_count;
+                  ctx.char_count = 0;
+                  continue;
                 } else {
-                  std::string what_arg{
-                      "float digit separator must be surrounded by "
-                      "at least one digit on each side"};
-                  throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path,
-                      (start_pos +
-                       static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  ++ctx.char_count;
+                  break;
                 }
-              } else {
-                std::string what_arg{
-                    "float digit separator must be surrounded by "
-                    "at least one digit on each side"};
-                throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
               }
+              if (eof == true) {
+                std::string what_arg{"unterminated integer key-value"};
+                throw syntax_error::generate_formatted_error(
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+              } else if (possible_terminating_chars.find(cur_char) !=
+                         std::string::npos) {
+                if (actual_terminating_char != nullptr) {
+                  *actual_terminating_char = cur_char;
+                };
+                break;
+              } else {
+                special_float_string.push_back(cur_char);
+              }
+            }
+
+            if (case_insensitive_string_compare(
+                    special_float_string,
+                    character_constants::g_k_float_infinity.second) == true) {
+              node_ptr<float_end_value_node> ret_val{nullptr};
+
+              if (last_char == char_type::negative) {
+                ret_val = make_node_ptr<float_end_value_node>(
+                    -(character_constants::g_k_float_infinity.first));
+              } else {
+                ret_val = make_node_ptr<float_end_value_node>(
+                    character_constants::g_k_float_infinity.first);
+              }
+
+              return ret_val;
+            } else {
+              std::string what_arg{"invalid character in float"};
+              throw syntax_error::generate_formatted_error(
+                  what_arg, ctx.file_path, pos_count_at_start.first,
+                  pos_count_at_start.second);
+            }
+          } else {
+            std::string what_arg{"invalid character in float"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, pos_count_at_start.first,
+                pos_count_at_start.second);
+          }
+        } break;
+
+        case libconfigfile::tolower<
+            character_constants::g_k_float_not_a_number.second.front()>():
+        case libconfigfile::toupper<
+            character_constants::g_k_float_not_a_number.second.front()>(): {
+          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              pos_count_at_start{ctx.line_count, ctx.char_count};
+
+          if ((last_char == char_type::start) ||
+              (last_char == char_type::positive) ||
+              (last_char == char_type::negative)) {
+            std::string special_float_string{};
+            special_float_string.reserve(
+                character_constants::g_k_float_not_a_number.second.size());
+            special_float_string.push_back(cur_char);
+
+            while (true) {
+              while (true) {
+                handle_comments(ctx);
+                cur_pos = ctx.file_stream.tellg();
+                ctx.file_stream.get(cur_char);
+                if (ctx.file_stream.eof() == true) {
+                  eof = true;
+                  break;
+                } else if (cur_char == character_constants::g_k_newline) {
+                  last_newline_pos = cur_pos;
+                  ++ctx.line_count;
+                  ctx.char_count = 0;
+                  continue;
+                } else {
+                  ++ctx.char_count;
+                  break;
+                }
+              }
+              if (eof == true) {
+                std::string what_arg{"unterminated float key-value"};
+                throw syntax_error::generate_formatted_error(
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+              } else if (possible_terminating_chars.find(cur_char) !=
+                         std::string::npos) {
+                if (actual_terminating_char != nullptr) {
+                  *actual_terminating_char = cur_char;
+                };
+                break;
+              } else {
+                special_float_string.push_back(cur_char);
+              }
+            }
+
+            if (case_insensitive_string_compare(
+                    special_float_string,
+                    character_constants::g_k_float_not_a_number.second) ==
+                true) {
+              node_ptr<float_end_value_node> ret_val{nullptr};
+
+              if (last_char == char_type::negative) {
+                ret_val = make_node_ptr<float_end_value_node>(
+                    -(character_constants::g_k_float_not_a_number.first));
+              } else {
+                ret_val = make_node_ptr<float_end_value_node>(
+                    character_constants::g_k_float_not_a_number.first);
+              }
+
+              return ret_val;
+            } else {
+              std::string what_arg{"invalid character in float"};
+              throw syntax_error::generate_formatted_error(
+                  what_arg, ctx.file_path, pos_count_at_start.first,
+                  pos_count_at_start.second);
+            }
+          } else {
+            std::string what_arg{"invalid character in float"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, pos_count_at_start.first,
+                pos_count_at_start.second);
+          }
+        } break;
+
+        case character_constants::g_k_num_positive_sign: {
+          if (last_char == char_type::start) {
+            last_char = char_type::positive;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"positive sign may only appear at start of "
+                                 "integer part or exponent part of float"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
+
+        case character_constants::g_k_num_negative_sign: {
+          if (last_char == char_type::start) {
+            last_char = char_type::negative;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"negative sign may only appear at start of "
+                                 "integer part or exponent part of float"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
+
+        case character_constants::g_k_num_digit_separator: {
+          if (last_char == char_type::digit) {
+            if (is_digit(static_cast<char>(ctx.file_stream.peek()),
+                         numeral_system_decimal) == true) {
+              last_char = char_type::separator;
             } else {
               std::string what_arg{
                   "float digit separator must be surrounded by "
                   "at least one digit on each side"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
-          } break;
+          } else {
+            std::string what_arg{"float digit separator must be surrounded by "
+                                 "at least one digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
 
-          case character_constants::g_k_float_decimal_point: {
-            if (last_char == char_type::digit) {
-              if (raw_value_idx != last_raw_value_idx) {
-                char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, numeral_system_decimal) == true) {
-                  last_char = char_type::decimal;
-                  cur_location = num_location::fractional;
-                  sanitized_string.push_back(cur_char);
-                } else {
-                  std::string what_arg{
-                      "float decimal point must be surrounded by at "
-                      "least one digit on each side"};
-                  throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path,
-                      (start_pos +
-                       static_cast<std::ifstream::off_type>(raw_value_idx)));
-                }
-              } else {
-                std::string what_arg{
-                    "float decimal point must be surrounded by at "
-                    "least one digit on each side"};
-                throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
-              }
+        case character_constants::g_k_float_decimal_point: {
+          if (last_char == char_type::digit) {
+            if (is_digit(static_cast<char>(ctx.file_stream.peek()),
+                         numeral_system_decimal) == true) {
+              last_char = char_type::decimal;
+              cur_location = num_location::fractional;
+              sanitized_string.push_back(cur_char);
             } else {
               std::string what_arg{
                   "float decimal point must be surrounded by at "
                   "least one digit on each side"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
-          } break;
+          } else {
+            std::string what_arg{"float decimal point must be surrounded by at "
+                                 "least one digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
 
-          case character_constants::g_k_float_exponent_sign_lower:
-          case character_constants::g_k_float_exponent_sign_upper: {
-            if (last_char == char_type::digit) {
-              if (raw_value_idx != last_raw_value_idx) {
-                char next_char{raw_value[raw_value_idx + 1]};
-                if ((is_digit(next_char, numeral_system_decimal) == true) ||
-                    (next_char == character_constants::g_k_num_positive_sign) ||
-                    (character_constants::g_k_num_negative_sign)) {
-                  last_char = char_type::exponent;
-                  cur_location = num_location::exponent;
-                  sanitized_string.push_back(cur_char);
-                } else {
-                  std::string what_arg{
-                      "float exponent sign must be surrounded by at "
-                      "least on digit on each side"};
-                  throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path,
-                      (start_pos +
-                       static_cast<std::ifstream::off_type>(raw_value_idx)));
-                }
-              } else {
-                std::string what_arg{
-                    "float exponent sign must be surrounded by at "
-                    "least on digit on each side"};
-                throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
-              }
+        case character_constants::g_k_float_exponent_sign_lower:
+        case character_constants::g_k_float_exponent_sign_upper: {
+          if (last_char == char_type::digit) {
+            char next_char{static_cast<char>(ctx.file_stream.peek())};
+            if ((is_digit(next_char, numeral_system_decimal) == true) ||
+                (next_char == character_constants::g_k_num_positive_sign) ||
+                (character_constants::g_k_num_negative_sign)) {
+              last_char = char_type::exponent;
+              cur_location = num_location::exponent;
+              sanitized_string.push_back(cur_char);
             } else {
               std::string what_arg{
                   "float exponent sign must be surrounded by at "
                   "least on digit on each side"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
-          } break;
-
-          default: {
-            if (is_digit(cur_char, numeral_system_decimal) == true) {
-              last_char = char_type::digit;
-              sanitized_string.push_back(cur_char);
-            } else {
-              std::string what_arg{"invalid character in float"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
+          } else {
+            std::string what_arg{"float exponent sign must be surrounded by at "
+                                 "least on digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         } break;
 
-        case num_location::fractional: {
-          switch (cur_char) {
+        default: {
+          if (is_digit(cur_char, numeral_system_decimal) == true) {
+            last_char = char_type::digit;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"invalid character in float"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
+        }
+      } break;
 
-          case character_constants::g_k_num_positive_sign: {
+      case num_location::fractional: {
+        switch (cur_char) {
+
+        case character_constants::g_k_num_positive_sign: {
+          std::string what_arg{"positive sign may only appear at start of "
+                               "integer part or exponent part of float"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } break;
+
+        case character_constants::g_k_num_negative_sign: {
+          std::string what_arg{"negative sign may only appear at start of "
+                               "integer part or exponent part of float"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } break;
+
+        case character_constants::g_k_num_digit_separator: {
+          if (last_char == char_type::digit) {
+            if (is_digit(static_cast<char>(ctx.file_stream.peek()),
+                         numeral_system_decimal) == true) {
+              last_char = char_type::separator;
+            } else {
+              std::string what_arg{
+                  "float digit separator must be surrounded by "
+                  "at least one digit on each side"};
+              throw syntax_error::generate_formatted_error(
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+            }
+          } else {
+            std::string what_arg{"float digit separator must be surrounded by "
+                                 "at least one digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
+
+        case character_constants::g_k_float_decimal_point: {
+          std::string what_arg{"floats can only contain one decimal point"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } break;
+
+        case character_constants::g_k_float_exponent_sign_lower:
+        case character_constants::g_k_float_exponent_sign_upper: {
+          if (last_char == char_type::digit) {
+            char next_char{static_cast<char>(ctx.file_stream.peek())};
+            if ((is_digit(next_char, numeral_system_decimal) == true) ||
+                (next_char == character_constants::g_k_num_positive_sign) ||
+                (character_constants::g_k_num_negative_sign)) {
+              last_char = char_type::exponent;
+              cur_location = num_location::exponent;
+              sanitized_string.push_back(cur_char);
+            } else {
+              std::string what_arg{
+                  "float exponent sign must be surrounded by at "
+                  "least on digit on each side"};
+              throw syntax_error::generate_formatted_error(
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+            }
+          } else {
+            std::string what_arg{"float exponent sign must be surrounded by at "
+                                 "least on digit on each side"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
+
+        default: {
+          if (is_digit(cur_char, numeral_system_decimal) == true) {
+            last_char = char_type::digit;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"invalid character in float"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
+        }
+      } break;
+
+      case num_location::exponent: {
+        switch (cur_char) {
+
+        case character_constants::g_k_num_positive_sign: {
+          if (last_char == char_type::exponent) {
+            last_char = char_type::positive;
+            sanitized_string.push_back(cur_char);
+          } else {
             std::string what_arg{"positive sign may only appear at start of "
                                  "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
-          } break;
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
 
-          case character_constants::g_k_num_negative_sign: {
+        case character_constants::g_k_num_negative_sign: {
+          if (last_char == char_type::exponent) {
+            last_char = char_type::positive;
+            sanitized_string.push_back(cur_char);
+          } else {
             std::string what_arg{"negative sign may only appear at start of "
                                  "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
-          } break;
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          }
+        } break;
 
-          case character_constants::g_k_num_digit_separator: {
-            if (last_char == char_type::digit) {
-              if (raw_value_idx != last_raw_value_idx) {
-                char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, numeral_system_decimal) == true) {
-                  last_char = char_type::separator;
-                } else {
-                  std::string what_arg{
-                      "float digit separator must be surrounded by "
-                      "at least one digit on each side"};
-                  throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path,
-                      (start_pos +
-                       static_cast<std::ifstream::off_type>(raw_value_idx)));
-                }
-              } else {
-                std::string what_arg{
-                    "float digit separator must be surrounded by "
-                    "at least one digit on each side"};
-                throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
-              }
+        case character_constants::g_k_num_digit_separator: {
+          if (last_char == char_type::digit) {
+            if (is_digit(static_cast<char>(ctx.file_stream.peek()),
+                         numeral_system_decimal) == true) {
+              last_char = char_type::separator;
             } else {
               std::string what_arg{
                   "float digit separator must be surrounded by "
                   "at least one digit on each side"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             }
-          } break;
-
-          case character_constants::g_k_float_decimal_point: {
-            std::string what_arg{"floats can only contain one decimal point"};
+          } else {
+            std::string what_arg{"float digit separator must be surrounded by "
+                                 "at least one digit on each side"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
-          } break;
-
-          case character_constants::g_k_float_exponent_sign_lower:
-          case character_constants::g_k_float_exponent_sign_upper: {
-            if (last_char == char_type::digit) {
-              if (raw_value_idx != last_raw_value_idx) {
-                char next_char{raw_value[raw_value_idx + 1]};
-                if ((is_digit(next_char, numeral_system_decimal) == true) ||
-                    (next_char == character_constants::g_k_num_positive_sign) ||
-                    (character_constants::g_k_num_negative_sign)) {
-                  last_char = char_type::exponent;
-                  cur_location = num_location::exponent;
-                  sanitized_string.push_back(cur_char);
-                } else {
-                  std::string what_arg{
-                      "float exponent sign must be surrounded by at "
-                      "least on digit on each side"};
-                  throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path,
-                      (start_pos +
-                       static_cast<std::ifstream::off_type>(raw_value_idx)));
-                }
-              } else {
-                std::string what_arg{
-                    "float exponent sign must be surrounded by at "
-                    "least on digit on each side"};
-                throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
-              }
-            } else {
-              std::string what_arg{
-                  "float exponent sign must be surrounded by at "
-                  "least on digit on each side"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
-
-          default: {
-            if (is_digit(cur_char, numeral_system_decimal) == true) {
-              last_char = char_type::digit;
-              sanitized_string.push_back(cur_char);
-            } else {
-              std::string what_arg{"invalid character in float"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         } break;
 
-        case num_location::exponent: {
-          switch (cur_char) {
+        case character_constants::g_k_float_decimal_point: {
+          std::string what_arg{
+              "float decimal point can not appear after exponent sign"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } break;
 
-          case character_constants::g_k_num_positive_sign: {
-            if (last_char == char_type::exponent) {
-              last_char = char_type::positive;
-              sanitized_string.push_back(cur_char);
-            } else {
-              std::string what_arg{"positive sign may only appear at start of "
-                                   "integer part or exponent part of float"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
+        case character_constants::g_k_float_exponent_sign_lower:
+        case character_constants::g_k_float_exponent_sign_upper: {
+          std::string what_arg{"float exponent sign can only appear once"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } break;
 
-          case character_constants::g_k_num_negative_sign: {
-            if (last_char == char_type::exponent) {
-              last_char = char_type::positive;
-              sanitized_string.push_back(cur_char);
-            } else {
-              std::string what_arg{"negative sign may only appear at start of "
-                                   "integer part or exponent part of float"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
-
-          case character_constants::g_k_num_digit_separator: {
-            if (last_char == char_type::digit) {
-              if (raw_value_idx != last_raw_value_idx) {
-                char next_char{raw_value[raw_value_idx + 1]};
-                if (is_digit(next_char, numeral_system_decimal) == true) {
-                  last_char = char_type::separator;
-                } else {
-                  std::string what_arg{
-                      "float digit separator must be surrounded by "
-                      "at least one digit on each side"};
-                  throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path,
-                      (start_pos +
-                       static_cast<std::ifstream::off_type>(raw_value_idx)));
-                }
-              } else {
-                std::string what_arg{
-                    "float digit separator must be surrounded by "
-                    "at least one digit on each side"};
-                throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
-              }
-            } else {
-              std::string what_arg{
-                  "float digit separator must be surrounded by "
-                  "at least one digit on each side"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
-
-          case character_constants::g_k_float_decimal_point: {
-            std::string what_arg{
-                "float decimal point can not appear after exponent sign"};
+        default: {
+          if (is_digit(cur_char, numeral_system_decimal) == true) {
+            last_char = char_type::digit;
+            sanitized_string.push_back(cur_char);
+          } else {
+            std::string what_arg{"invalid character in float"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
-          } break;
-
-          case character_constants::g_k_float_exponent_sign_lower:
-          case character_constants::g_k_float_exponent_sign_upper: {
-            std::string what_arg{"float exponent sign can only appear once"};
-            throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
-          } break;
-
-          default: {
-            if (is_digit(cur_char, numeral_system_decimal) == true) {
-              last_char = char_type::digit;
-              sanitized_string.push_back(cur_char);
-            } else {
-              std::string what_arg{"invalid character in float"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path,
-                  (start_pos +
-                   static_cast<std::ifstream::off_type>(raw_value_idx)));
-            }
-          } break;
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         } break;
         }
+      } break;
       }
-
-      if (sanitized_string.empty()) {
-        sanitized_string = "0";
-      }
-
-      node_ptr<float_end_value_node> ret_val{nullptr};
-
-      static_assert(
-          (sizeof(decltype(std::stod(""))) >=
-           sizeof(float_end_value_node_data_t)),
-          "no string-to-float conversion function with return type large "
-          "enough "
-          "for float_end_value_node_t");
-
-      try {
-        if constexpr ((sizeof(decltype(std::stof("")))) >=
-                      (sizeof(float_end_value_node_data_t))) {
-          ret_val = make_node_ptr<float_end_value_node>(
-              std::stof(sanitized_string, nullptr));
-        } else if constexpr ((sizeof(decltype(std::stod("")))) >=
-                             (sizeof(float_end_value_node_data_t))) {
-          ret_val = make_node_ptr<float_end_value_node>(
-              std::stod(sanitized_string, nullptr));
-        } else {
-          ret_val = make_node_ptr<float_end_value_node>(
-              std::stold(sanitized_string, nullptr));
-        }
-
-      } catch (const std::out_of_range &ex) {
-        std::string what_arg{"float value is too large"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     start_pos);
-      }
-
-      return ret_val;
     }
   }
+
+  if (sanitized_string.empty()) {
+    sanitized_string = "0";
+  }
+
+  node_ptr<float_end_value_node> ret_val{nullptr};
+
+  static_assert(
+      (sizeof(decltype(std::stold(""))) >= sizeof(float_end_value_node_data_t)),
+      "no string-to-float conversion function with return type "
+      "large enough for float_end_value_node_t");
+
+  try {
+    if constexpr ((sizeof(decltype(std::stof("")))) >=
+                  (sizeof(float_end_value_node_data_t))) {
+      ret_val = make_node_ptr<float_end_value_node>(
+          std::stof(sanitized_string, nullptr));
+    } else if constexpr ((sizeof(decltype(std::stod("")))) >=
+                         (sizeof(float_end_value_node_data_t))) {
+      ret_val = make_node_ptr<float_end_value_node>(
+          std::stod(sanitized_string, nullptr));
+    } else {
+      ret_val = make_node_ptr<float_end_value_node>(
+          std::stold(sanitized_string, nullptr));
+    }
+
+  } catch (const std::out_of_range &ex) {
+    std::string what_arg{"float value is too large"};
+    throw syntax_error::generate_formatted_error(
+        what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+  }
+
+  return ret_val;
 }
 
 libconfigfile::node_ptr<libconfigfile::string_end_value_node>
 libconfigfile::parser::impl::parse_string_value(
-    context &ctx, const std::string &raw_value,
-    const std::ifstream::pos_type &start_pos) {
-  if (raw_value.empty()) {
-    std::string what_arg{"empty value"};
-    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                 start_pos);
-  } else {
-    bool in_string{false};
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
+  bool in_string{false};
 
-    std::string string_contents{};
-    string_contents.reserve(raw_value.size());
+  std::string string_contents{};
 
-    for (std::string::size_type raw_value_idx{};
-         raw_value_idx < raw_value.size(); ++raw_value_idx) {
-      char cur_char{raw_value[raw_value_idx]};
+  for (;;) {
+    char cur_char{};
+    bool eof{false};
+    std::ifstream::pos_type cur_pos{};
+    std::ifstream::pos_type last_newline_pos{};
+    while (true) {
+      if (in_string == false) {
+        handle_comments(ctx);
+      }
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
+        eof = true;
+        break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        last_newline_pos = cur_pos;
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        break;
+      }
+    }
+
+    if (eof == true) {
+      std::string what_arg{"unterminated string key-value"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else {
       if (in_string == true) {
         if (cur_char == character_constants::g_k_string_delimiter) {
           in_string = false;
         } else if (cur_char == character_constants::g_k_escape_leader) {
-          std::string::size_type escape_char_pos{raw_value_idx + 1};
-          if (escape_char_pos < raw_value.size()) {
-            char escape_char{raw_value[escape_char_pos]};
-
-            if (escape_char == character_constants::g_k_hex_escape_char) {
-              std::string::size_type hex_digit_pos_1{escape_char_pos + 1};
-              std::string::size_type hex_digit_pos_2{escape_char_pos + 2};
-
-              if ((hex_digit_pos_1 < raw_value.size()) &&
-                  (hex_digit_pos_2 < raw_value.size())) {
-                char hex_digit_1{raw_value[hex_digit_pos_1]};
-                char hex_digit_2{raw_value[hex_digit_pos_2]};
-
-                if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
-                    (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
-                  std::string hex_string{std::string{} + hex_digit_1 +
-                                         hex_digit_2};
-                  string_contents.push_back(static_cast<char>(std::stoi(
-                      hex_string, nullptr, numeral_system_hexadecimal.base)));
-                  raw_value_idx = hex_digit_2;
-                } else {
-                  std::string what_arg{
-                      "invalid digit in hexadecimal escape sequence"};
-                  throw syntax_error::generate_formatted_error(
-                      what_arg, ctx.file_path,
-                      (start_pos +
-                       static_cast<std::ifstream::off_type>(raw_value_idx)));
-                }
-              } else {
-                std::string what_arg{"incomplete escape sequence in string"};
-                throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path,
-                    (start_pos +
-                     static_cast<std::ifstream::off_type>(raw_value_idx)));
-              }
-            } else {
-              if (character_constants::g_k_basic_escape_chars.contains(
-                      escape_char)) {
-                string_contents.push_back(
-                    character_constants::g_k_basic_escape_chars.at(
-                        escape_char));
-                raw_value_idx = escape_char_pos;
-              }
-            }
-          } else {
-            std::string what_arg{"incomplete escape sequence in string"};
-            throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path,
-                (start_pos +
-                 static_cast<std::ifstream::off_type>(raw_value_idx)));
-          }
+          ctx.file_stream.unget();
+          --ctx.char_count;
+          string_contents.push_back(handle_escape_sequence(ctx));
         } else {
           string_contents.push_back(cur_char);
         }
       } else {
-        if (is_whitespace(cur_char,
-                          character_constants::g_k_whitespace_chars) == true) {
+        if (possible_terminating_chars.find(cur_char) != std::string::npos) {
+          if (actual_terminating_char != nullptr) {
+            *actual_terminating_char = cur_char;
+          };
+          break;
+        } else if (is_whitespace(cur_char,
+                                 character_constants::g_k_whitespace_chars) ==
+                   true) {
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           in_string = true;
         } else {
           std::string what_arg{"invalid character outside of string"};
           throw syntax_error::generate_formatted_error(
-              what_arg, ctx.file_path,
-              (start_pos +
-               static_cast<std::ifstream::off_type>(raw_value_idx)));
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         }
       }
     }
+  }
 
-    if (in_string == true) {
-      std::string what_arg{"unterminated string"};
-      throw syntax_error::generate_formatted_error(
-          what_arg, ctx.file_path,
-          (start_pos +
-           static_cast<std::ifstream::off_type>(
-               ((raw_value.empty()) ? (0) : (raw_value.size() - 1)))));
-    } else {
-      return make_node_ptr<string_end_value_node>(string_contents);
-    }
+  if (in_string == true) {
+    std::string what_arg{"unterminated string"};
+    throw syntax_error::generate_formatted_error(
+        what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+  } else {
+    return make_node_ptr<string_end_value_node>(std::move(string_contents));
   }
 }
 
 libconfigfile::node_ptr<libconfigfile::value_node>
 libconfigfile::parser::impl::call_appropriate_value_parse_func(
-    context &ctx, const std::string &raw_value,
-    const std::ifstream::pos_type &start_pos) {
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
 
   std::variant<value_node_type, end_value_node_type> value_type_variant{
-      identify_key_value_value_type(raw_value)};
+      identify_key_value_value_type(ctx, possible_terminating_chars,
+                                    actual_terminating_char)};
 
   switch (value_type_variant.index()) {
 
@@ -1788,13 +1651,13 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
     switch (value_type_extracted) {
 
     case value_node_type::ARRAY: {
-      return node_ptr_cast<value_node>(
-          parse_array_value(ctx, raw_value, start_pos));
+      return node_ptr_cast<value_node>(parse_array_value(
+          ctx, possible_terminating_chars, actual_terminating_char));
     } break;
 
     default: {
-      throw std::runtime_error{
-          "invalid value type returned by identify_key_value_value_type()"};
+      throw std::runtime_error{"invalid value type returned by "
+                               "identify_key_value_value_type()"};
     } break;
     }
   } break;
@@ -1805,23 +1668,22 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
     switch (value_type_extracted) {
 
     case end_value_node_type::STRING: {
-      return node_ptr_cast<value_node>(
-          parse_string_value(ctx, raw_value, start_pos));
+      return node_ptr_cast<value_node>(parse_string_value(
+          ctx, possible_terminating_chars, actual_terminating_char));
     } break;
 
     case end_value_node_type::INTEGER: {
-      return node_ptr_cast<value_node>(
-          parse_integer_value(ctx, raw_value, start_pos));
+      return node_ptr_cast<value_node>(parse_integer_value(
+          ctx, possible_terminating_chars, actual_terminating_char));
     } break;
 
     case end_value_node_type::FLOAT: {
-      return node_ptr_cast<value_node>(
-          parse_float_value(ctx, raw_value, start_pos));
+      return node_ptr_cast<value_node>(parse_float_value(
+          ctx, possible_terminating_chars, actual_terminating_char));
     } break;
 
     default: {
-      throw std::runtime_error{
-          "invalid value type returned by identify_key_value_value_type()"};
+      throw std::runtime_error{"impossible!"};
     } break;
     }
   } break;
@@ -1835,7 +1697,7 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
 std::pair<libconfigfile::parser::impl::directive,
           std::optional<libconfigfile::node_ptr<libconfigfile::section_node>>>
 libconfigfile::parser::impl::parse_directive(context &ctx) {
-  std::ifstream::pos_type start_pos{ctx.file.tellg()};
+  std::ifstream::pos_type start_pos{ctx.file_stream.tellg()};
 
   std::string name{};
   name.reserve(character_constants::g_k_max_directive_name_length);
@@ -1857,16 +1719,18 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     std::ifstream::pos_type last_newline_pos{};
     while (true) {
       handle_comments(ctx);
-      cur_pos = ctx.file.tellg();
-      ctx.file.get(cur_char);
-      if (ctx.file.eof() == true) {
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
-      }
-      if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::g_k_newline) {
         last_newline_pos = cur_pos;
+        ++ctx.line_count;
+        ctx.char_count = 0;
         continue;
       } else {
+        ++ctx.char_count;
         break;
       }
     }
@@ -1876,8 +1740,8 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     case name_location::directive_leader: {
       if (eof == true) {
         std::string what_arg{"expected directive name"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (cur_char == character_constants::g_k_directive_leader) {
           ;
@@ -1888,9 +1752,10 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
           ;
         } else {
           if (last_newline_pos > start_pos) {
-            std::string what_arg{"entire directive must appear on one line"};
+            std::string what_arg{"entire directive must appear "
+                                 "on one line"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           } else {
             last_state = name_location::name_proper;
             name.push_back(cur_char);
@@ -1902,17 +1767,18 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     case name_location::leading_whitespace: {
       if (eof == true) {
         std::string what_arg{"expected directive name"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (is_whitespace(cur_char,
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else {
           if (last_newline_pos > start_pos) {
-            std::string what_arg{"entire directive must appear on one line"};
+            std::string what_arg{"entire directive must appear "
+                                 "on one line"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           } else {
             last_state = name_location::name_proper;
             name.push_back(cur_char);
@@ -1930,9 +1796,10 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
           last_state = name_location::done;
         } else {
           if (last_newline_pos > start_pos) {
-            std::string what_arg{"entire directive must appear on one line"};
+            std::string what_arg{"entire directive must appear "
+                                 "on one line"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           } else {
             name.push_back(cur_char);
           }
@@ -1954,8 +1821,8 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     directive_func_to_call = directive::include;
   } else {
     std::string what_arg{"invalid directive"};
-    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                 cur_pos);
+    throw syntax_error::generate_formatted_error(
+        what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
   }
 
   switch (directive_func_to_call) {
@@ -1973,7 +1840,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 }
 
 void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
-  std::ifstream::pos_type start_pos{ctx.file.tellg()};
+  std::ifstream::pos_type start_pos{ctx.file_stream.tellg()};
 
   std::string version_str{};
 
@@ -1987,7 +1854,8 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   };
 
   std::ifstream::pos_type cur_pos{};
-  std::ifstream::pos_type start_of_version_str_pos{};
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      start_of_version_str_pos{};
 
   for (args_location last_state{args_location::leading_whitespace};
        last_state != args_location::done;) {
@@ -2000,66 +1868,71 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
           (last_state != args_location::version_str)) {
         handle_comments(ctx);
       }
-      cur_pos = ctx.file.tellg();
-      ctx.file.get(cur_char);
-      if (ctx.file.eof() == true) {
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
-      }
-      if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::g_k_newline) {
         last_newline_pos = cur_pos;
+        ++ctx.line_count;
+        ctx.char_count = 0;
         continue;
       } else {
+        ++ctx.char_count;
         break;
       }
     }
-
     switch (last_state) {
 
     case args_location::leading_whitespace: {
       if (eof == true) {
-        std::string what_arg{"version directive requires version argument"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        std::string what_arg{"version directive requires "
+                             "version argument"};
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (is_whitespace(cur_char,
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           if (last_newline_pos > start_pos) {
-            std::string what_arg{"entire directive must appear on one line"};
+            std::string what_arg{"entire directive must appear "
+                                 "on one line"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           } else {
             last_state = args_location::opening_delimiter;
           }
         } else {
-          std::string what_arg{"version directive requires version argument"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          std::string what_arg{"version directive requires "
+                               "version argument"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         }
       }
     } break;
 
     case args_location::opening_delimiter: {
       if (eof == true) {
-        std::string what_arg{
-            "unterminated string in version directive argument"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        std::string what_arg{"unterminated string in version "
+                             "directive argument"};
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (last_newline_pos > start_pos) {
-          std::string what_arg{"entire directive must appear on one line"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          std::string what_arg{"entire directive must appear on "
+                               "one line"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
-            start_of_version_str_pos = cur_pos;
+            start_of_version_str_pos = {ctx.line_count, ctx.char_count};
           } else {
             version_str.push_back(cur_char);
             last_state = args_location::version_str;
-            start_of_version_str_pos = cur_pos;
+            start_of_version_str_pos = {ctx.line_count, ctx.char_count};
           }
         }
       }
@@ -2067,15 +1940,16 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
 
     case args_location::version_str: {
       if (eof == true) {
-        std::string what_arg{
-            "unterminated string in version directive argument"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        std::string what_arg{"unterminated string in version "
+                             "directive argument"};
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (last_newline_pos > start_pos) {
-          std::string what_arg{"entire directive must appear on one line"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          std::string what_arg{"entire directive must appear on "
+                               "one line"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
@@ -2092,16 +1966,17 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
-          ctx.file.unget();
+          ctx.file_stream.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
               true) {
             last_state = args_location::trailing_whitespace;
           } else {
-            std::string what_arg{"excess arguments given to version directive"};
+            std::string what_arg{"excess arguments given to "
+                                 "version directive"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         }
       }
@@ -2113,16 +1988,17 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
-          ctx.file.unget();
+          ctx.file_stream.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
               true) {
             ;
           } else {
-            std::string what_arg{"excess arguments given to version directive"};
+            std::string what_arg{"excess arguments given to "
+                                 "version directive"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         }
       }
@@ -2135,24 +2011,26 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   }
 
   if (version_str.empty() == true) {
-    std::string what_arg{"empty version argument given to version directive"};
-    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                 cur_pos);
+    std::string what_arg{"empty version argument given to "
+                         "version directive"};
+    throw syntax_error::generate_formatted_error(
+        what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
   } else {
     if (version_str == g_k_version) {
       return;
     } else {
-      std::string what_arg{
-          "incompatible parser and configuration file versions"};
-      throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                   start_of_version_str_pos);
+      std::string what_arg{"incompatible parser and "
+                           "configuration file versions"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, start_of_version_str_pos.first,
+          start_of_version_str_pos.second);
     }
   }
 }
 
 libconfigfile::node_ptr<libconfigfile::section_node>
 libconfigfile::parser::impl::parse_include_directive(context &ctx) {
-  std::ifstream::pos_type start_pos{ctx.file.tellg()};
+  std::ifstream::pos_type start_pos{ctx.file_stream.tellg()};
 
   std::string file_path_str{};
 
@@ -2181,16 +2059,18 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           (last_state != args_location::file_path)) {
         handle_comments(ctx);
       }
-      cur_pos = ctx.file.tellg();
-      ctx.file.get(cur_char);
-      if (ctx.file.eof() == true) {
+      cur_pos = ctx.file_stream.tellg();
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
-      }
-      if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::g_k_newline) {
         last_newline_pos = cur_pos;
+        ++ctx.line_count;
+        ctx.char_count = 0;
         continue;
       } else {
+        ++ctx.char_count;
         break;
       }
     }
@@ -2199,40 +2079,44 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
 
     case args_location::leading_whitespace: {
       if (eof == true) {
-        std::string what_arg{"include directive requires file path argument"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        std::string what_arg{"include directive requires file "
+                             "path argument"};
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (is_whitespace(cur_char,
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           if (last_newline_pos > start_pos) {
-            std::string what_arg{"entire directive must appear on one line"};
+            std::string what_arg{"entire directive must appear "
+                                 "on one line"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           } else {
             last_state = args_location::opening_delimiter;
           }
         } else {
-          std::string what_arg{"include directive requires file path argument"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          std::string what_arg{"include directive requires file "
+                               "path argument"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         }
       }
     } break;
 
     case args_location::opening_delimiter: {
       if (eof == true) {
-        std::string what_arg{
-            "unterminated string in include directive argument"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        std::string what_arg{"unterminated string in include "
+                             "directive argument"};
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (last_newline_pos > start_pos) {
-          std::string what_arg{"entire directive must appear on one line"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          std::string what_arg{"entire directive must appear on "
+                               "one line"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
@@ -2253,15 +2137,16 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
 
     case args_location::file_path: {
       if (eof == true) {
-        std::string what_arg{
-            "unterminated string in include directive argument"};
-        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                     cur_pos);
+        std::string what_arg{"unterminated string in include "
+                             "directive argument"};
+        throw syntax_error::generate_formatted_error(
+            what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
         if (last_newline_pos > start_pos) {
-          std::string what_arg{"entire directive must appear on one line"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       cur_pos);
+          std::string what_arg{"entire directive must appear on "
+                               "one line"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             if (last_char_was_escape_leader == true) {
@@ -2286,16 +2171,17 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
-          ctx.file.unget();
+          ctx.file_stream.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
               true) {
             last_state = args_location::trailing_whitespace;
           } else {
-            std::string what_arg{"excess arguments given to include directive"};
+            std::string what_arg{"excess arguments given to "
+                                 "include directive"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         }
       }
@@ -2307,16 +2193,17 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
       } else {
         if (last_newline_pos > start_pos) {
           last_state = args_location::done;
-          ctx.file.unget();
+          ctx.file_stream.unget();
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
               true) {
             ;
           } else {
-            std::string what_arg{"excess arguments given to include directive"};
+            std::string what_arg{"excess arguments given to "
+                                 "include directive"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, cur_pos);
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           }
         }
       }
@@ -2329,9 +2216,10 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   }
 
   if (file_path_str.empty() == true) {
-    std::string what_arg{"empty file path argument given to include directive"};
-    throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                 cur_pos);
+    std::string what_arg{"empty file path argument given to "
+                         "include directive"};
+    throw syntax_error::generate_formatted_error(
+        what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
   } else {
     std::variant<std::string, std::string::size_type> file_path_escaped{
         replace_escape_sequences(file_path_str)};
@@ -2355,10 +2243,10 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           std::ifstream::off_type{static_cast<std::ifstream::off_type>(
               std::get<std::string::size_type>(file_path_escaped))};
 
-      std::string what_arg{
-          "invalid escape sequence in include directive argument"};
-      throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                   invalid_escape_sequence_pos);
+      std::string what_arg{"invalid escape sequence in include "
+                           "directive argument"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
     } break;
 
     default: {
@@ -2378,38 +2266,43 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
       character_constants::g_k_comment_cpp.front()};
 
   char cur_char{};
-  char peek_char{static_cast<char>(ctx.file.peek())};
+  char peek_char{static_cast<char>(ctx.file_stream.peek())};
 
   switch (peek_char) {
 
   case character_constants::g_k_comment_script: {
-    ctx.file.get(cur_char);
+    ctx.file_stream.get(cur_char);
+    ++ctx.char_count;
 
     while (true) {
-      ctx.file.get(cur_char);
-      if (ctx.file.eof() == true) {
+      ctx.file_stream.get(cur_char);
+      ++ctx.char_count;
+      if (ctx.file_stream.eof() == true) {
         return true;
       } else if (cur_char == character_constants::g_k_newline) {
-        ctx.file.unget();
+        ctx.file_stream.unget();
         return true;
       }
     }
   } break;
 
   case c_or_cpp_comment_leader: {
-    ctx.file.get(cur_char);
-    peek_char = ctx.file.peek();
+    ctx.file_stream.get(cur_char);
+    ++ctx.char_count;
+    peek_char = ctx.file_stream.peek();
 
     switch (peek_char) {
     case character_constants::g_k_comment_cpp.back(): {
-      ctx.file.get(cur_char);
+      ctx.file_stream.get(cur_char);
+      ++ctx.char_count;
 
       while (true) {
-        ctx.file.get(cur_char);
-        if (ctx.file.eof() == true) {
+        ctx.file_stream.get(cur_char);
+        ++ctx.char_count;
+        if (ctx.file_stream.eof() == true) {
           return true;
         } else if (cur_char == character_constants::g_k_newline) {
-          ctx.file.unget();
+          ctx.file_stream.unget();
           return true;
         }
       }
@@ -2417,17 +2310,23 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
     } break;
 
     case character_constants::g_k_comment_c_start.back(): {
-      ctx.file.get(cur_char);
+      ctx.file_stream.get(cur_char);
+      ++ctx.char_count;
       while (true) {
-        ctx.file.get(cur_char);
-        if (ctx.file.eof() == true) {
+        ctx.file_stream.get(cur_char);
+        ++ctx.char_count;
+        if (ctx.file_stream.eof() == true) {
           std::string what_arg{"unterminated C-style comment"};
-          throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
-                                                       ctx.file.tellg());
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } else if (cur_char == character_constants::g_k_newline) {
+          ++ctx.line_count;
+          ctx.char_count = 0;
         } else if (cur_char == character_constants::g_k_comment_c_end.front()) {
-          if (static_cast<char>(ctx.file.peek()) ==
+          if (static_cast<char>(ctx.file_stream.peek()) ==
               character_constants::g_k_comment_c_end.back()) {
-            ctx.file.get();
+            ctx.file_stream.get();
+            ++ctx.char_count;
             return true;
           }
         }
@@ -2435,7 +2334,8 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
     } break;
 
     default: {
-      ctx.file.unget();
+      ctx.file_stream.unget();
+      --ctx.char_count;
       return false;
     } break;
     }
@@ -2447,62 +2347,240 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
   }
 }
 
+char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
+  char escape_leader_char{};
+  ctx.file_stream.get(escape_leader_char);
+  if (ctx.file_stream.eof() == false) {
+    ++ctx.char_count;
+  }
+
+  if (escape_leader_char == character_constants::g_k_escape_leader) {
+    char escape_char_1{};
+    ctx.file_stream.get(escape_char_1);
+
+    if (ctx.file_stream.eof() == true) {
+      std::string what_arg{"incomplete escape sequence"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else if (escape_char_1 == character_constants::g_k_newline) {
+      std::string what_arg{"incomplete escape sequence"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else {
+      ++ctx.char_count;
+
+      if (escape_char_1 == character_constants::g_k_hex_escape_char) {
+        char hex_digit_1{};
+        ctx.file_stream.get(hex_digit_1);
+        if (ctx.file_stream.eof() == true) {
+          std::string what_arg{"incomplete escape sequence"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } else if (hex_digit_1 == character_constants::g_k_newline) {
+          std::string what_arg{"incomplete escape sequence"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } else {
+          ++ctx.char_count;
+        }
+
+        char hex_digit_2{};
+        ctx.file_stream.get(hex_digit_2);
+        if (ctx.file_stream.eof() == true) {
+          std::string what_arg{"incomplete escape sequence"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } else if (hex_digit_2 == character_constants::g_k_newline) {
+          std::string what_arg{"incomplete escape sequence"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        } else {
+          ++ctx.char_count;
+        }
+
+        if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
+            (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
+          std::string hex_string{std::string{} + hex_digit_1 + hex_digit_2};
+          return static_cast<char>(
+              std::stoi(hex_string, nullptr, numeral_system_hexadecimal.base));
+        } else {
+          std::string what_arg{"invalid digit in hexadecimal escape sequence"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+        }
+      } else {
+        if (character_constants::g_k_basic_escape_chars.contains(
+                escape_char_1)) {
+          return character_constants::g_k_basic_escape_chars.at(escape_char_1);
+        }
+      }
+    }
+  } else {
+    std::string what_arg{"expected escape sequence leader"};
+    throw syntax_error::generate_formatted_error(
+        what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+  }
+}
+
 std::variant<libconfigfile::value_node_type, libconfigfile::end_value_node_type>
 libconfigfile::parser::impl::identify_key_value_value_type(
-    const std::string &value_contents) {
-  std::string::size_type first_non_whitespace_char_pos{
-      value_contents.find_first_not_of(
-          character_constants::g_k_whitespace_chars)};
-  char first_non_whitespace_char{value_contents[first_non_whitespace_char_pos]};
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
 
-  switch (first_non_whitespace_char) {
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      pos_count_at_start{ctx.line_count, ctx.char_count};
 
-  case character_constants::g_k_array_opening_delimiter: {
-    return value_node_type::ARRAY;
-  } break;
+  std::string gotten_chars{};
+  char cur_char{};
+  bool eof{false};
 
-  case character_constants::g_k_string_delimiter: {
-    return end_value_node_type::STRING;
-  } break;
+  const auto reset_context{[&ctx, &gotten_chars, &pos_count_at_start]() {
+    for (auto i{gotten_chars.rbegin()}; i != gotten_chars.rend(); ++i) {
+      ctx.file_stream.putback(*i);
+    }
+    ctx.line_count = pos_count_at_start.first;
+    ctx.char_count = pos_count_at_start.second;
+  }};
 
-  default: {
-    return identify_key_value_numeric_value_type(value_contents);
-  } break;
+  while (true) {
+    while (true) {
+      handle_comments(ctx);
+      ctx.file_stream.get(cur_char);
+      if (ctx.file_stream.eof() == true) {
+        eof = true;
+        break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        break;
+      }
+    }
+
+    if (eof == true) {
+      std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+          pos_count_at_error{ctx.line_count, ctx.char_count};
+
+      reset_context();
+
+      std::string what_arg{"empty key-value value"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else {
+      gotten_chars.push_back(cur_char);
+
+      if (is_whitespace(cur_char) == true) {
+        continue;
+      } else if (cur_char == character_constants::g_k_key_value_terminate) {
+        std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+            pos_count_at_error{ctx.line_count, ctx.char_count};
+
+        reset_context();
+
+        std::string what_arg{"empty key-value value"};
+        throw syntax_error::generate_formatted_error(what_arg, ctx.file_path,
+                                                     pos_count_at_start.first,
+                                                     pos_count_at_error.second);
+      } else {
+        reset_context();
+
+        switch (cur_char) {
+        case character_constants::g_k_array_opening_delimiter: {
+          return value_node_type::ARRAY;
+        } break;
+
+        case character_constants::g_k_string_delimiter: {
+          return end_value_node_type::STRING;
+        } break;
+
+        default: {
+          return identify_key_value_numeric_value_type(
+              ctx, possible_terminating_chars, actual_terminating_char);
+        } break;
+        }
+      }
+    }
   }
 }
 
 libconfigfile::end_value_node_type
 libconfigfile::parser::impl::identify_key_value_numeric_value_type(
-    const std::string &value_contents) {
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
+
+  std::string gotten_chars{};
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      pos_count_at_start{ctx.line_count, ctx.char_count};
+  char cur_char{};
+  bool eof{false};
+  while (true) {
+    handle_comments(ctx);
+    ctx.file_stream.get(cur_char);
+    if (ctx.file_stream.eof() == true) {
+      eof = true;
+      break;
+    } else {
+      gotten_chars.push_back(cur_char);
+      if (cur_char == character_constants::g_k_newline) {
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        if (possible_terminating_chars.find(cur_char) != std::string::npos) {
+          if (actual_terminating_char != nullptr) {
+            *actual_terminating_char = cur_char;
+          };
+          break;
+        }
+      }
+    }
+  }
+
+  const auto reset_context{[&ctx, &gotten_chars, &pos_count_at_start]() {
+    for (auto i{gotten_chars.rbegin()}; i != gotten_chars.rend(); ++i) {
+      ctx.file_stream.putback(*i);
+    }
+    ctx.line_count = pos_count_at_start.first;
+    ctx.char_count = pos_count_at_start.second;
+  }};
+
+  const auto cleanup_and_return{
+      [&reset_context](const end_value_node_type ret_val) {
+        reset_context();
+        return ret_val;
+      }};
+
   if ((case_insensitive_string_find(
-           value_contents, character_constants::g_k_float_infinity.second) !=
+           gotten_chars, character_constants::g_k_float_infinity.second) !=
        (std::string::npos)) ||
       (case_insensitive_string_find(
-           value_contents,
-           character_constants::g_k_float_not_a_number.second) !=
+           gotten_chars, character_constants::g_k_float_not_a_number.second) !=
        (std::string::npos))) {
-    return end_value_node_type::FLOAT;
+    return cleanup_and_return(end_value_node_type::FLOAT);
   } else {
-    if ((value_contents.find(character_constants::g_k_float_decimal_point)) !=
+    if ((gotten_chars.find(character_constants::g_k_float_decimal_point)) !=
         (std::string::npos)) {
-      return end_value_node_type::FLOAT;
+      return cleanup_and_return(end_value_node_type::FLOAT);
     } else {
-      if (((value_contents.find(
+      if (((gotten_chars.find(
                character_constants::g_k_float_exponent_sign_lower)) !=
            (std::string::npos)) ||
-          ((value_contents.find(
+          ((gotten_chars.find(
                character_constants::g_k_float_exponent_sign_upper)) !=
            (std::string::npos))) {
-        if (((value_contents.find(numeral_system_hexadecimal.prefix)) !=
+        if (((gotten_chars.find(numeral_system_hexadecimal.prefix)) !=
              (std::string::npos)) ||
-            ((value_contents.find(numeral_system_hexadecimal.prefix_alt)) !=
+            ((gotten_chars.find(numeral_system_hexadecimal.prefix_alt)) !=
              (std::string::npos))) {
-          return end_value_node_type::INTEGER;
+          return cleanup_and_return(end_value_node_type::INTEGER);
         } else {
-          return end_value_node_type::FLOAT;
+          return cleanup_and_return(end_value_node_type::FLOAT);
         }
       } else {
-        return end_value_node_type::INTEGER;
+        return cleanup_and_return(end_value_node_type::INTEGER);
       }
     }
   }
@@ -2562,8 +2640,12 @@ std::variant<std::vector<std::vector<std::string>> /*result*/,
              std::string::size_type /*unterminated_string_pos*/>
 libconfigfile::parser::impl::extract_strings(
     const std::string &raw,
-    const char delimiter /*= character_constants::g_k_string_delimiter*/,
-    const char delimiter_escape /*= character_constants::g_k_escape_leader*/,
+    const char delimiter /*=
+               character_constants::g_k_string_delimiter*/
+    ,
+    const char delimiter_escape /*=
+               character_constants::g_k_escape_leader*/
+    ,
     const std::string
         &whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
 
@@ -2653,8 +2735,9 @@ bool libconfigfile::parser::impl::is_whitespace(
 
 std::string libconfigfile::parser::impl::trim_whitespace(
     const std::string &str,
-    const std::string
-        &whitespace_chars /*= character_constants::g_k_whitespace_chars*/,
+    const std::string &whitespace_chars /*=
+                      character_constants::g_k_whitespace_chars*/
+    ,
     bool trim_leading /*= true*/, bool trim_trailing /*= true*/) {
   if (str.empty() == true) {
     return "";
@@ -2740,11 +2823,18 @@ bool libconfigfile::parser::impl::is_digit(
   return (num_sys.digits.find(ch) != std::string::npos);
 }
 
+bool libconfigfile::parser::impl::case_insensitive_char_compare(char ch1,
+                                                                char ch2) {
+  return ((std::tolower(static_cast<unsigned char>(ch1))) ==
+          (std::tolower(static_cast<unsigned char>(ch2))));
+}
+
 bool libconfigfile::parser::impl::case_insensitive_string_compare(
     const std::string &str1, const std::string &str2) {
   if (str1.size() == str2.size()) {
     for (std::string::size_type i{0}; i < str1.size(); ++i) {
-      if (std::tolower(str1[i]) != std::tolower(str1[i])) {
+      if (std::tolower(static_cast<unsigned char>(str1[i])) !=
+          std::tolower(static_cast<unsigned char>(str1[i]))) {
         return false;
       }
     }
@@ -2759,7 +2849,8 @@ libconfigfile::parser::impl::case_insensitive_string_find(
     const std::string &str, const std::string &to_find) {
   static const auto case_insensitive_char_compare{
       [](std::string::value_type ch1, std::string::value_type ch2) -> bool {
-        return ((std::tolower(ch1)) == (std::tolower(ch2)));
+        return ((std::tolower(static_cast<unsigned char>(ch1))) ==
+                (std::tolower(static_cast<unsigned char>(ch2))));
       }};
 
   auto found_iter{std::search(str.begin(), str.end(), to_find.begin(),
@@ -2788,7 +2879,8 @@ libconfigfile::parser::impl::string_to_upper(const std::string &str) {
   ret_val.resize(str.size());
 
   for (size_t i{0}; i < str.size(); ++i) {
-    ret_val[i] = std::toupper(str[i]);
+    ret_val[i] =
+        static_cast<char>(std::toupper(static_cast<unsigned char>(str[i])));
   }
 
   return ret_val;
@@ -2800,7 +2892,8 @@ libconfigfile::parser::impl::string_to_lower(const std::string &str) {
   ret_val.resize(str.size());
 
   for (size_t i{0}; i < str.size(); ++i) {
-    ret_val[i] = std::tolower(str[i]);
+    ret_val[i] =
+        static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
   }
 
   return ret_val;
