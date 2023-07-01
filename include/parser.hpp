@@ -30,9 +30,12 @@ namespace parser {
 node_ptr<section_node> parse(const std::filesystem::path &file_path);
 
 namespace impl {
+
 struct context {
   std::filesystem::path file_path;
-  std::ifstream file;
+  std::ifstream file_stream;
+  long long line_count;
+  long long char_count;
   node_ptr<section_node> root_section;
 };
 
@@ -52,21 +55,22 @@ std::string parse_key_value_key(context &ctx);
 node_ptr<value_node> parse_key_value_value(context &ctx);
 
 node_ptr<array_value_node>
-parse_array_value(context &ctx, const std::string &raw_value,
-                  const std::ifstream::pos_type &start_pos);
+parse_array_value(context &ctx, const std::string &possible_terminating_chars,
+                  char *actual_terminating_char = nullptr);
 node_ptr<integer_end_value_node>
-parse_integer_value(context &ctx, const std::string &raw_value,
-                    const std::ifstream::pos_type &start_pos);
+parse_integer_value(context &ctx, const std::string &possible_terminating_chars,
+                    char *actual_terminating_char = nullptr);
 node_ptr<float_end_value_node>
-parse_float_value(context &ctx, const std::string &raw_value,
-                  const std::ifstream::pos_type &start_pos);
+parse_float_value(context &ctx, const std::string &possible_terminating_chars,
+                  char *actual_terminating_char = nullptr);
 node_ptr<string_end_value_node>
-parse_string_value(context &ctx, const std::string &raw_value,
-                   const std::ifstream::pos_type &start_pos);
+parse_string_value(context &ctx, const std::string &possible_terminating_chars,
+                   char *actual_terminating_char = nullptr);
 
 node_ptr<value_node>
-call_appropriate_value_parse_func(context &ctx, const std::string &raw_value,
-                                  const std::ifstream::pos_type &start_pos);
+call_appropriate_value_parse_func(context &ctx,
+                                  const std::string &possible_terminating_chars,
+                                  char *actual_terminating_char = nullptr);
 
 std::pair<directive, std::optional<node_ptr<section_node>>>
 parse_directive(context &ctx);
@@ -74,11 +78,15 @@ void parse_version_directive(context &ctx);
 node_ptr<section_node> parse_include_directive(context &ctx);
 
 bool handle_comments(context &ctx);
+char handle_escape_sequence(context &ctx);
 
 std::variant<value_node_type, end_value_node_type>
-identify_key_value_value_type(const std::string &value_contents);
-end_value_node_type
-identify_key_value_numeric_value_type(const std::string &value_contents);
+identify_key_value_value_type(context &ctx,
+                              const std::string &possible_terminating_chars,
+                              char *actual_terminating_char = nullptr);
+end_value_node_type identify_key_value_numeric_value_type(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char = nullptr);
 
 std::variant<std::string /*result*/,
              std::string::size_type /*invalid_escape_sequence_pos*/>
@@ -126,6 +134,7 @@ contains_invalid_character_invalid_provided(const std::string &str,
 
 bool is_digit(char ch, const numeral_system &num_sys = numeral_system_decimal);
 
+bool case_insensitive_char_compare(char ch1, char ch2);
 bool case_insensitive_string_compare(const std::string &str1,
                                      const std::string &str2);
 std::string::size_type case_insensitive_string_find(const std::string &str,

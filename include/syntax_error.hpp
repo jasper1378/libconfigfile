@@ -5,7 +5,6 @@
 
 #include <exception>
 #include <filesystem>
-#include <fstream>
 #include <stdexcept>
 #include <string>
 
@@ -30,15 +29,7 @@ public:
   static syntax_error
   generate_formatted_error(const std::string &what_arg,
                            const std::filesystem::path &file_path,
-                           const std::ifstream::pos_type &pos);
-  static syntax_error
-  generate_formatted_error(const std::string &what_arg,
-                           const std::filesystem::path &file_path,
                            const size_t pos_line, const size_t pos_char);
-  static syntax_error
-  generate_formatted_error(const std::string &what_arg,
-                           const std::string &file_path,
-                           const std::ifstream::pos_type &pos);
   static syntax_error generate_formatted_error(const std::string &what_arg,
                                                const std::string &file_path,
                                                const size_t pos_line,
