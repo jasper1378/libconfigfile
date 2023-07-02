@@ -75,7 +75,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       closing_delimiter,
     };
 
-    std::ifstream::pos_type start_of_name_proper_pos{};
+    std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+        start_of_name_proper_pos_count{};
 
     bool first_loop{true};
 
@@ -84,10 +85,19 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
 
       char cur_char{};
       bool eof{false};
+      bool handled_comment_in_name_proper{};
+      std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+          pos_count_before_handled_comment_in_name_proper{};
       std::ifstream::pos_type cur_pos{};
       std::ifstream::pos_type last_newline_pos{};
       while (true) {
-        handle_comments(ctx);
+        if (last_state == name_location::name_proper) {
+          pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
+                                                             ctx.char_count};
+          handled_comment_in_name_proper = handle_comments(ctx);
+        } else {
+          handle_comments(ctx);
+        }
         cur_pos = ctx.file_stream.tellg();
         ctx.file_stream.get(cur_char);
         if (ctx.file_stream.eof() == true) {
@@ -128,7 +138,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
                     what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
               } else {
                 last_state = name_location::name_proper;
-                start_of_name_proper_pos = cur_pos;
+                start_of_name_proper_pos_count = {ctx.line_count,
+                                                  ctx.char_count};
 
                 if (is_invalid_character_valid_provided(
                         cur_char, character_constants::g_k_valid_name_chars) ==
@@ -163,7 +174,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
                   what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
             } else {
               last_state = name_location::name_proper;
-              start_of_name_proper_pos = cur_pos;
+              start_of_name_proper_pos_count = {ctx.line_count, ctx.char_count};
 
               if (is_invalid_character_valid_provided(
                       cur_char, character_constants::g_k_valid_name_chars) ==
@@ -192,11 +203,18 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
                 character_constants::g_k_section_name_closing_delimiter) {
               last_state = name_location::closing_delimiter;
             } else {
-              if (last_newline_pos > start_of_name_proper_pos) {
+              if (start_of_name_proper_pos_count.first != ctx.line_count) {
                 std::string what_arg{
                     "section name must appear completely on one line"};
                 throw syntax_error::generate_formatted_error(
                     what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+              } else if (handled_comment_in_name_proper == true) {
+                std::string what_arg{
+                    "section name can not be split by comments"};
+                throw syntax_error::generate_formatted_error(
+                    what_arg, ctx.file_path,
+                    pos_count_before_handled_comment_in_name_proper.first,
+                    pos_count_before_handled_comment_in_name_proper.second);
               } else {
                 if (is_invalid_character_valid_provided(
                         cur_char, character_constants::g_k_valid_name_chars) ==
@@ -433,14 +451,26 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     equal_sign,
   };
 
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      start_of_name_proper_pos_count{};
+
   for (key_name_location last_state{key_name_location::leading_whitespace};
        last_state != key_name_location::equal_sign;) {
 
     char cur_char{};
     bool eof{false};
+    bool handled_comment_in_name_proper{};
+    std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+        pos_count_before_handled_comment_in_name_proper{};
     std::ifstream::pos_type cur_pos{};
     while (true) {
-      handle_comments(ctx);
+      if (last_state == key_name_location::name_proper) {
+        pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
+                                                           ctx.char_count};
+        handled_comment_in_name_proper = handle_comments(ctx);
+      } else {
+        handle_comments(ctx);
+      }
       cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
@@ -467,6 +497,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
         if (is_whitespace(cur_char)) {
           ;
         } else {
+          start_of_name_proper_pos_count = {ctx.line_count, ctx.char_count};
           last_state = key_name_location::name_proper;
 
           if (is_invalid_character_valid_provided(
@@ -511,25 +542,33 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
         } else {
           if (cur_char == character_constants::g_k_key_value_assign) {
             last_state = key_name_location::equal_sign;
-          } else if (is_invalid_character_valid_provided(
-                         cur_char, character_constants::g_k_valid_name_chars) ==
-                     true) {
-            switch (cur_char) {
-
-            case character_constants::g_k_key_value_terminate: {
-              std::string what_arg{"missing value part of key-value"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
-            } break;
-
-            default: {
-              std::string what_arg{"invalid character in key name"};
-              throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
-            } break;
-            }
+          } else if (cur_char == character_constants::g_k_key_value_terminate) {
+            std::string what_arg{"missing value part of key-value"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
           } else {
-            key_name.push_back(cur_char);
+            if (start_of_name_proper_pos_count.first != ctx.line_count) {
+              std::string what_arg{
+                  "key name must appear completely on one line"};
+              throw syntax_error::generate_formatted_error(
+                  what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+            } else if (handled_comment_in_name_proper == true) {
+              std::string what_arg{"key name can not be split by comments"};
+              throw syntax_error::generate_formatted_error(
+                  what_arg, ctx.file_path,
+                  pos_count_before_handled_comment_in_name_proper.first,
+                  pos_count_before_handled_comment_in_name_proper.second);
+            } else {
+              if (is_invalid_character_valid_provided(
+                      cur_char, character_constants::g_k_valid_name_chars) ==
+                  true) {
+                std::string what_arg{"invalid character in key name"};
+                throw syntax_error::generate_formatted_error(
+                    what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+              } else {
+                key_name.push_back(cur_char);
+              }
+            }
           }
         }
       }
@@ -756,18 +795,17 @@ libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
 libconfigfile::parser::impl::parse_integer_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
-  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-      pos_count_at_start{ctx.line_count, ctx.char_count};
-
   static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
 
   std::string actual_digits{};
   bool is_negative{false};
   const numeral_system *num_sys{nullptr};
 
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      pos_count_at_start{ctx.line_count, ctx.char_count};
+
   bool last_char_was_digit{false};
   bool any_digits_so_far{false};
-
   bool last_char_was_leading_zero{false};
   size_t num_of_leading_zeroes{0};
 
@@ -797,10 +835,14 @@ libconfigfile::parser::impl::parse_integer_value(
   bool first_loop{true};
   for (;; first_loop = false) {
     bool eof{false};
+    bool handled_comment{};
+    std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+        pos_count_before_handled_comment{};
     std::ifstream::pos_type cur_pos{};
     std::ifstream::pos_type last_newline_pos{};
     while (true) {
-      handle_comments(ctx);
+      pos_count_before_handled_comment = {ctx.line_count, ctx.char_count};
+      handled_comment = handle_comments(ctx);
       cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
@@ -826,6 +868,15 @@ libconfigfile::parser::impl::parse_integer_value(
         *actual_terminating_char = cur_char;
       };
       break;
+    } else if (pos_count_at_start.first != ctx.line_count) {
+      std::string what_arg{"integer must appear completely on one line"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else if (handled_comment == true) {
+      std::string what_arg{"integer can not be split by comments"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, pos_count_before_handled_comment.first,
+          pos_count_before_handled_comment.second);
     } else {
 
       switch (cur_char) {
@@ -1031,6 +1082,9 @@ libconfigfile::parser::impl::parse_float_value(
     char *actual_terminating_char /*= nullptr*/) {
   std::string sanitized_string{};
 
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      pos_count_at_start{ctx.line_count, ctx.char_count};
+
   static const std::unordered_map<std::string, float_end_value_node_data_t>
       special_floats{{character_constants::g_k_float_infinity.second,
                       character_constants::g_k_float_infinity.first},
@@ -1072,10 +1126,14 @@ libconfigfile::parser::impl::parse_float_value(
   for (;;) {
     char cur_char{};
     bool eof{false};
+    bool handled_comment{};
+    std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+        pos_count_before_handled_comment{};
     std::ifstream::pos_type cur_pos{};
     std::ifstream::pos_type last_newline_pos{};
     while (true) {
-      handle_comments(ctx);
+      pos_count_before_handled_comment = {ctx.line_count, ctx.char_count};
+      handled_comment = handle_comments(ctx);
       cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
@@ -1101,6 +1159,15 @@ libconfigfile::parser::impl::parse_float_value(
         *actual_terminating_char = cur_char;
       };
       break;
+    } else if (pos_count_at_start.first != ctx.line_count) {
+      std::string what_arg{"float must appear completely on one line"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+    } else if (handled_comment == true) {
+      std::string what_arg{"float can not be split by comments"};
+      throw syntax_error::generate_formatted_error(
+          what_arg, ctx.file_path, pos_count_before_handled_comment.first,
+          pos_count_before_handled_comment.second);
     } else {
 
       switch (cur_location) {
@@ -1565,6 +1632,9 @@ libconfigfile::parser::impl::parse_string_value(
 
   std::string string_contents{};
 
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      last_opening_delimiter_pos_count{};
+
   for (;;) {
     char cur_char{};
     bool eof{false};
@@ -1596,14 +1666,20 @@ libconfigfile::parser::impl::parse_string_value(
           what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
     } else {
       if (in_string == true) {
-        if (cur_char == character_constants::g_k_string_delimiter) {
-          in_string = false;
-        } else if (cur_char == character_constants::g_k_escape_leader) {
-          ctx.file_stream.unget();
-          --ctx.char_count;
-          string_contents.push_back(handle_escape_sequence(ctx));
+        if (last_opening_delimiter_pos_count.first != ctx.line_count) {
+          std::string what_arg{"string must appear completely on one line"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
         } else {
-          string_contents.push_back(cur_char);
+          if (cur_char == character_constants::g_k_string_delimiter) {
+            in_string = false;
+          } else if (cur_char == character_constants::g_k_escape_leader) {
+            ctx.file_stream.unget();
+            --ctx.char_count;
+            string_contents.push_back(handle_escape_sequence(ctx));
+          } else {
+            string_contents.push_back(cur_char);
+          }
         }
       } else {
         if (possible_terminating_chars.find(cur_char) != std::string::npos) {
@@ -1616,6 +1692,7 @@ libconfigfile::parser::impl::parse_string_value(
                    true) {
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           in_string = true;
+          last_opening_delimiter_pos_count = {ctx.line_count, ctx.char_count};
         } else {
           std::string what_arg{"invalid character outside of string"};
           throw syntax_error::generate_formatted_error(
