@@ -88,8 +88,6 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
       bool handled_comment_in_name_proper{};
       std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
           pos_count_before_handled_comment_in_name_proper{};
-      std::ifstream::pos_type cur_pos{};
-      std::ifstream::pos_type last_newline_pos{};
       while (true) {
         if (last_state == name_location::name_proper) {
           pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
@@ -98,13 +96,11 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
         } else {
           handle_comments(ctx);
         }
-        cur_pos = ctx.file_stream.tellg();
         ctx.file_stream.get(cur_char);
         if (ctx.file_stream.eof() == true) {
           eof = true;
           break;
         } else if (cur_char == character_constants::g_k_newline) {
-          last_newline_pos = cur_pos;
           ++ctx.line_count;
           ctx.char_count = 0;
           continue;
@@ -275,10 +271,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
 
       char cur_char{};
       bool eof{false};
-      std::ifstream::pos_type cur_pos{};
       while (true) {
         handle_comments(ctx);
-        cur_pos = ctx.file_stream.tellg();
         ctx.file_stream.get(cur_char);
         if (ctx.file_stream.eof() == true) {
           eof = true;
@@ -323,14 +317,12 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
 
   {
     bool ended_on_body_closing_delimiter{false};
-    std::ifstream::pos_type cur_pos{};
     for (;;) {
 
       char cur_char{};
       bool eof{false};
       while (true) {
         handle_comments(ctx);
-        cur_pos = ctx.file_stream.tellg();
         ctx.file_stream.get(cur_char);
         if (ctx.file_stream.eof() == true) {
           eof = true;
@@ -462,7 +454,6 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     bool handled_comment_in_name_proper{};
     std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
         pos_count_before_handled_comment_in_name_proper{};
-    std::ifstream::pos_type cur_pos{};
     while (true) {
       if (last_state == key_name_location::name_proper) {
         pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
@@ -471,7 +462,6 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
       } else {
         handle_comments(ctx);
       }
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
@@ -617,10 +607,8 @@ libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
   for (; true; first_loop = false) {
 
     bool eof{false};
-    std::ifstream::pos_type cur_pos{};
     while (true) {
       handle_comments(ctx);
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
@@ -682,17 +670,13 @@ libconfigfile::parser::impl::parse_array_value(
 
   for (;;) {
     bool eof{false};
-    std::ifstream::pos_type cur_pos{};
-    std::ifstream::pos_type last_newline_pos{};
     while (true) {
       handle_comments(ctx);
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
       } else if (cur_char == character_constants::g_k_newline) {
-        last_newline_pos = cur_pos;
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -838,18 +822,14 @@ libconfigfile::parser::impl::parse_integer_value(
     bool handled_comment{};
     std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
         pos_count_before_handled_comment{};
-    std::ifstream::pos_type cur_pos{};
-    std::ifstream::pos_type last_newline_pos{};
     while (true) {
       pos_count_before_handled_comment = {ctx.line_count, ctx.char_count};
       handled_comment = handle_comments(ctx);
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
       } else if (cur_char == character_constants::g_k_newline) {
-        last_newline_pos = cur_pos;
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1129,18 +1109,14 @@ libconfigfile::parser::impl::parse_float_value(
     bool handled_comment{};
     std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
         pos_count_before_handled_comment{};
-    std::ifstream::pos_type cur_pos{};
-    std::ifstream::pos_type last_newline_pos{};
     while (true) {
       pos_count_before_handled_comment = {ctx.line_count, ctx.char_count};
       handled_comment = handle_comments(ctx);
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
       } else if (cur_char == character_constants::g_k_newline) {
-        last_newline_pos = cur_pos;
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1193,13 +1169,11 @@ libconfigfile::parser::impl::parse_float_value(
             while (true) {
               while (true) {
                 handle_comments(ctx);
-                cur_pos = ctx.file_stream.tellg();
                 ctx.file_stream.get(cur_char);
                 if (ctx.file_stream.eof() == true) {
                   eof = true;
                   break;
                 } else if (cur_char == character_constants::g_k_newline) {
-                  last_newline_pos = cur_pos;
                   ++ctx.line_count;
                   ctx.char_count = 0;
                   continue;
@@ -1269,13 +1243,11 @@ libconfigfile::parser::impl::parse_float_value(
             while (true) {
               while (true) {
                 handle_comments(ctx);
-                cur_pos = ctx.file_stream.tellg();
                 ctx.file_stream.get(cur_char);
                 if (ctx.file_stream.eof() == true) {
                   eof = true;
                   break;
                 } else if (cur_char == character_constants::g_k_newline) {
-                  last_newline_pos = cur_pos;
                   ++ctx.line_count;
                   ctx.char_count = 0;
                   continue;
@@ -1638,19 +1610,15 @@ libconfigfile::parser::impl::parse_string_value(
   for (;;) {
     char cur_char{};
     bool eof{false};
-    std::ifstream::pos_type cur_pos{};
-    std::ifstream::pos_type last_newline_pos{};
     while (true) {
       if (in_string == false) {
         handle_comments(ctx);
       }
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
       } else if (cur_char == character_constants::g_k_newline) {
-        last_newline_pos = cur_pos;
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1786,8 +1754,6 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     done,
   };
 
-  std::ifstream::pos_type cur_pos{};
-
   for (name_location last_state{name_location::directive_leader};
        last_state != name_location::done;) {
 
@@ -1796,13 +1762,11 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     std::ifstream::pos_type last_newline_pos{};
     while (true) {
       handle_comments(ctx);
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
       } else if (cur_char == character_constants::g_k_newline) {
-        last_newline_pos = cur_pos;
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1930,7 +1894,6 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
     done,
   };
 
-  std::ifstream::pos_type cur_pos{};
   std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_of_version_str_pos{};
 
@@ -1945,13 +1908,11 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
           (last_state != args_location::version_str)) {
         handle_comments(ctx);
       }
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
       } else if (cur_char == character_constants::g_k_newline) {
-        last_newline_pos = cur_pos;
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
