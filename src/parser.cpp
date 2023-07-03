@@ -40,7 +40,7 @@ libconfigfile::parser::parse(const std::filesystem::path &file_path) {
 
 libconfigfile::node_ptr<libconfigfile::section_node>
 libconfigfile::parser::impl::parse(const std::filesystem::path &file_path) {
-  context ctx{file_path, std::ifstream{file_path}, 0, 1,
+  context ctx{file_path, std::ifstream{file_path}, 1, 0,
               make_node_ptr<section_node>()};
 
   if ((ctx.file_stream.is_open() == false) ||
@@ -350,7 +350,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
                    character_constants::g_k_section_name_opening_delimiter) {
           ctx.file_stream.unget();
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              start_pos{ctx.line_count, ctx.char_count};
+              start_pos_count{ctx.line_count, ctx.char_count};
 
           std::pair<std::string, node_ptr<section_node>> new_section{
               parse_section(ctx, false)};
@@ -358,13 +358,14 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           if (ret_val.second->contains(new_section.first) == true) {
             std::string what_arg{"duplicate name in scope"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, start_pos.first, start_pos.second);
+                what_arg, ctx.file_path, start_pos_count.first,
+                start_pos_count.second);
           } else {
             ret_val.second->insert({std::move(new_section)});
           }
         } else if (cur_char == character_constants::g_k_directive_leader) {
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              start_pos{ctx.line_count, ctx.char_count};
+              start_pos_count{ctx.line_count, ctx.char_count};
           std::pair<directive, std::optional<node_ptr<section_node>>> dir_res{
               parse_directive(ctx)};
 
@@ -384,7 +385,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
               if (ret_val.second->contains(i->first)) {
                 std::string what_arg{"duplicate name in scope"};
                 throw syntax_error::generate_formatted_error(
-                    what_arg, ctx.file_path, start_pos.first, start_pos.second);
+                    what_arg, ctx.file_path, start_pos_count.first,
+                    start_pos_count.second);
               }
             }
 
@@ -396,7 +398,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
         } else {
           ctx.file_stream.unget();
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              start_pos{ctx.line_count, ctx.char_count};
+              start_pos_count{ctx.line_count, ctx.char_count};
 
           std::pair<std::string, node_ptr<value_node>> new_key_value{
               parse_key_value(ctx)};
@@ -404,7 +406,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           if (ret_val.second->contains(new_key_value.first) == true) {
             std::string what_arg{"duplicate name in scope"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.file_path, start_pos.first, start_pos.second);
+                what_arg, ctx.file_path, start_pos_count.first,
+                start_pos_count.second);
           } else {
             ret_val.second->insert({std::move(new_key_value)});
           }
@@ -1742,7 +1745,7 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
 std::pair<libconfigfile::parser::impl::directive,
           std::optional<libconfigfile::node_ptr<libconfigfile::section_node>>>
 libconfigfile::parser::impl::parse_directive(context &ctx) {
-  std::ifstream::pos_type start_pos{ctx.file_stream.tellg()};
+  std::ifstream::pos_type start_pos_count{ctx.file_stream.tellg()};
 
   std::string name{};
   name.reserve(character_constants::g_k_max_directive_name_length);
@@ -1759,7 +1762,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 
     char cur_char{};
     bool eof{false};
-    std::ifstream::pos_type last_newline_pos{};
+    std::ifstream::pos_type last_newline_pos_count{};
     while (true) {
       handle_comments(ctx);
       ctx.file_stream.get(cur_char);
@@ -1792,7 +1795,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
           last_state = name_location::leading_whitespace;
           ;
         } else {
-          if (last_newline_pos > start_pos) {
+          if (last_newline_pos_count > start_pos_count) {
             std::string what_arg{"entire directive must appear "
                                  "on one line"};
             throw syntax_error::generate_formatted_error(
@@ -1815,7 +1818,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else {
-          if (last_newline_pos > start_pos) {
+          if (last_newline_pos_count > start_pos_count) {
             std::string what_arg{"entire directive must appear "
                                  "on one line"};
             throw syntax_error::generate_formatted_error(
@@ -1836,7 +1839,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
                           character_constants::g_k_whitespace_chars) == true) {
           last_state = name_location::done;
         } else {
-          if (last_newline_pos > start_pos) {
+          if (last_newline_pos_count > start_pos_count) {
             std::string what_arg{"entire directive must appear "
                                  "on one line"};
             throw syntax_error::generate_formatted_error(
@@ -1881,7 +1884,8 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 }
 
 void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
-  std::ifstream::pos_type start_pos{ctx.file_stream.tellg()};
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)> start_pos_count{
+      ctx.line_count, ctx.char_count};
 
   std::string version_str{};
 
@@ -1895,14 +1899,13 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   };
 
   std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-      start_of_version_str_pos{};
+      start_of_version_str_pos_count{};
 
   for (args_location last_state{args_location::leading_whitespace};
        last_state != args_location::done;) {
 
     char cur_char{};
     bool eof{false};
-    std::ifstream::pos_type last_newline_pos{};
     while (true) {
       if ((last_state != args_location::opening_delimiter) &&
           (last_state != args_location::version_str)) {
@@ -1934,7 +1937,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else if (cur_char == character_constants::g_k_string_delimiter) {
-          if (last_newline_pos > start_pos) {
+          if (start_pos_count.first != ctx.line_count) {
             std::string what_arg{"entire directive must appear "
                                  "on one line"};
             throw syntax_error::generate_formatted_error(
@@ -1958,7 +1961,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           std::string what_arg{"entire directive must appear on "
                                "one line"};
           throw syntax_error::generate_formatted_error(
@@ -1966,11 +1969,11 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
-            start_of_version_str_pos = {ctx.line_count, ctx.char_count};
+            start_of_version_str_pos_count = {ctx.line_count, ctx.char_count};
           } else {
             version_str.push_back(cur_char);
             last_state = args_location::version_str;
-            start_of_version_str_pos = {ctx.line_count, ctx.char_count};
+            start_of_version_str_pos_count = {ctx.line_count, ctx.char_count};
           }
         }
       }
@@ -1983,7 +1986,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           std::string what_arg{"entire directive must appear on "
                                "one line"};
           throw syntax_error::generate_formatted_error(
@@ -2002,7 +2005,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       if (eof == true) {
         last_state = args_location::done;
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
         } else {
@@ -2024,7 +2027,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       if (eof == true) {
         last_state = args_location::done;
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
         } else {
@@ -2060,15 +2063,16 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       std::string what_arg{"incompatible parser and "
                            "configuration file versions"};
       throw syntax_error::generate_formatted_error(
-          what_arg, ctx.file_path, start_of_version_str_pos.first,
-          start_of_version_str_pos.second);
+          what_arg, ctx.file_path, start_of_version_str_pos_count.first,
+          start_of_version_str_pos_count.second);
     }
   }
 }
 
 libconfigfile::node_ptr<libconfigfile::section_node>
 libconfigfile::parser::impl::parse_include_directive(context &ctx) {
-  std::ifstream::pos_type start_pos{ctx.file_stream.tellg()};
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)> start_pos_count{
+      ctx.line_count, ctx.char_count};
 
   std::string file_path_str{};
 
@@ -2081,8 +2085,8 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     done,
   };
 
-  std::ifstream::pos_type cur_pos{};
-  std::ifstream::pos_type start_of_file_path_str_pos{};
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      start_of_file_path_str_pos_count{};
 
   bool last_char_was_escape_leader{false};
 
@@ -2091,19 +2095,16 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
 
     char cur_char{};
     bool eof{false};
-    std::ifstream::pos_type last_newline_pos{};
     while (true) {
       if ((last_state != args_location::opening_delimiter) &&
           (last_state != args_location::file_path)) {
         handle_comments(ctx);
       }
-      cur_pos = ctx.file_stream.tellg();
       ctx.file_stream.get(cur_char);
       if (ctx.file_stream.eof() == true) {
         eof = true;
         break;
       } else if (cur_char == character_constants::g_k_newline) {
-        last_newline_pos = cur_pos;
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -2126,7 +2127,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else if (cur_char == character_constants::g_k_string_delimiter) {
-          if (last_newline_pos > start_pos) {
+          if (start_pos_count.first != ctx.line_count) {
             std::string what_arg{"entire directive must appear "
                                  "on one line"};
             throw syntax_error::generate_formatted_error(
@@ -2150,7 +2151,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           std::string what_arg{"entire directive must appear on "
                                "one line"};
           throw syntax_error::generate_formatted_error(
@@ -2158,16 +2159,16 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
-            start_of_file_path_str_pos = cur_pos;
+            start_of_file_path_str_pos_count = {ctx.line_count, ctx.char_count};
           } else if (cur_char == character_constants::g_k_escape_leader) {
             last_char_was_escape_leader = true;
             file_path_str.push_back(cur_char);
             last_state = args_location::file_path;
-            start_of_file_path_str_pos = cur_pos;
+            start_of_file_path_str_pos_count = {ctx.line_count, ctx.char_count};
           } else {
             file_path_str.push_back(cur_char);
             last_state = args_location::file_path;
-            start_of_file_path_str_pos = cur_pos;
+            start_of_file_path_str_pos_count = {ctx.line_count, ctx.char_count};
           }
         }
       }
@@ -2180,7 +2181,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           std::string what_arg{"entire directive must appear on "
                                "one line"};
           throw syntax_error::generate_formatted_error(
@@ -2207,7 +2208,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
       if (eof == true) {
         last_state = args_location::done;
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
         } else {
@@ -2229,7 +2230,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
       if (eof == true) {
         last_state = args_location::done;
       } else {
-        if (last_newline_pos > start_pos) {
+        if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
         } else {
@@ -2275,16 +2276,18 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     } break;
 
     case 1: {
-      std::ifstream::pos_type invalid_escape_sequence_pos{
-          start_of_file_path_str_pos};
-      invalid_escape_sequence_pos +=
-          std::ifstream::off_type{static_cast<std::ifstream::off_type>(
-              std::get<std::string::size_type>(file_path_escaped))};
+      std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+          invalid_escape_sequence_pos_count{
+              start_of_file_path_str_pos_count.first,
+              static_cast<decltype(ctx.char_count)>(
+                  start_of_file_path_str_pos_count.second +
+                  std::get<std::string::size_type>(file_path_escaped))};
 
       std::string what_arg{"invalid escape sequence in include "
                            "directive argument"};
       throw syntax_error::generate_formatted_error(
-          what_arg, ctx.file_path, ctx.line_count, ctx.char_count);
+          what_arg, ctx.file_path, invalid_escape_sequence_pos_count.first,
+          invalid_escape_sequence_pos_count.second);
     } break;
 
     default: {
@@ -2625,29 +2628,31 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
 }
 
 std::variant<std::string /*result*/,
-             std::string::size_type /*invalid_escape_sequence_pos*/>
+             std::string::size_type /*invalid_escape_sequence_pos_count*/>
 libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
   std::string result{};
   result.reserve(str.size());
 
   for (std::string::size_type cur_char{0}; cur_char < str.size(); ++cur_char) {
     if (str[cur_char] == character_constants::g_k_escape_leader) {
-      std::string::size_type escape_char_pos{cur_char + 1};
-      if (escape_char_pos < str.size()) {
-        char escape_char{str[escape_char_pos]};
+      std::string::size_type escape_char_pos_count{cur_char + 1};
+      if (escape_char_pos_count < str.size()) {
+        char escape_char{str[escape_char_pos_count]};
         if (escape_char == character_constants::g_k_hex_escape_char) {
-          std::string::size_type hex_digit_pos_1{escape_char_pos + 1};
-          std::string::size_type hex_digit_pos_2{escape_char_pos + 2};
-          if ((hex_digit_pos_1 < str.size()) &&
-              (hex_digit_pos_2 < str.size())) {
-            char hex_digit_1{str[hex_digit_pos_1]};
-            char hex_digit_2{str[hex_digit_pos_2]};
+          std::string::size_type hex_digit_pos_count_1{escape_char_pos_count +
+                                                       1};
+          std::string::size_type hex_digit_pos_count_2{escape_char_pos_count +
+                                                       2};
+          if ((hex_digit_pos_count_1 < str.size()) &&
+              (hex_digit_pos_count_2 < str.size())) {
+            char hex_digit_1{str[hex_digit_pos_count_1]};
+            char hex_digit_2{str[hex_digit_pos_count_2]};
             if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
                 (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
               std::string hex_string{std::string{} + hex_digit_1 + hex_digit_2};
               result.push_back(
                   static_cast<char>(std::stoi(hex_string, nullptr, 16)));
-              cur_char = hex_digit_pos_2;
+              cur_char = hex_digit_pos_count_2;
             } else {
               return cur_char;
             }
@@ -2675,7 +2680,7 @@ libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
 }
 
 std::variant<std::vector<std::vector<std::string>> /*result*/,
-             std::string::size_type /*unterminated_string_pos*/>
+             std::string::size_type /*unterminated_string_pos_count*/>
 libconfigfile::parser::impl::extract_strings(
     const std::string &raw,
     const char delimiter /*=
@@ -2780,21 +2785,22 @@ std::string libconfigfile::parser::impl::trim_whitespace(
   if (str.empty() == true) {
     return "";
   } else {
-    std::string::size_type start_pos{0};
-    start_pos = str.find_first_not_of(whitespace_chars);
+    std::string::size_type start_pos_count{0};
+    start_pos_count = str.find_first_not_of(whitespace_chars);
 
-    std::string::size_type end_pos{str.size() - 1};
-    end_pos = str.find_last_not_of(whitespace_chars);
+    std::string::size_type end_pos_count{str.size() - 1};
+    end_pos_count = str.find_last_not_of(whitespace_chars);
 
     if ((trim_leading == false) && (trim_trailing == false)) {
       return str;
     } else if ((trim_leading == true) && (trim_trailing == false)) {
-      return get_substr_between_indices_inclusive(str, start_pos,
+      return get_substr_between_indices_inclusive(str, start_pos_count,
                                                   std::string::npos);
     } else if ((trim_leading == false) && (trim_trailing == true)) {
-      return get_substr_between_indices_inclusive(str, 0, end_pos);
+      return get_substr_between_indices_inclusive(str, 0, end_pos_count);
     } else if ((trim_leading == true) && (trim_trailing == true)) {
-      return get_substr_between_indices_inclusive(str, start_pos, end_pos);
+      return get_substr_between_indices_inclusive(str, start_pos_count,
+                                                  end_pos_count);
     } else {
       throw std::runtime_error{"impossible!"};
     }
