@@ -287,7 +287,7 @@ key = "value"; @directive "argument1" // invalid
 - This directive takes one required argument: the path of the file to be inlined, enclosed by double quotes.
 - The file path string supports the same escape characters as regular key-value strings; adjacent strings will not be concatenated.
 - Any included files must be syntactically valid by themselves; i.e. they must be parsable without any additional surrounding context.
-- Currently the parser does not check for recursive includes. You have been warned! If the parser segfaults due to a stack overflow, you only have yourself to blame!
+- Currently the parser does not check for recursive includes. You have been warned! If the parser segfaults due to a stack overflow, you have only yourself to blame!
 ```
 // main.conf
 key1 = "value";
