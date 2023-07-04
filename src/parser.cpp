@@ -351,6 +351,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           ctx.file_stream.unget();
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
               start_pos_count{ctx.line_count, ctx.char_count};
+          --ctx.char_count;
 
           std::pair<std::string, node_ptr<section_node>> new_section{
               parse_section(ctx, false)};
@@ -364,8 +365,10 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
             ret_val.second->insert({std::move(new_section)});
           }
         } else if (cur_char == character_constants::g_k_directive_leader) {
+          ctx.file_stream.unget();
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
               start_pos_count{ctx.line_count, ctx.char_count};
+          --ctx.char_count;
           std::pair<directive, std::optional<node_ptr<section_node>>> dir_res{
               parse_directive(ctx)};
 
@@ -399,6 +402,7 @@ libconfigfile::parser::impl::parse_section(context &ctx, bool is_root_section) {
           ctx.file_stream.unget();
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
               start_pos_count{ctx.line_count, ctx.char_count};
+          --ctx.char_count;
 
           std::pair<std::string, node_ptr<value_node>> new_key_value{
               parse_key_value(ctx)};
@@ -2008,6 +2012,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
         if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
+          --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
@@ -2030,6 +2035,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
         if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
+          --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
@@ -2211,6 +2217,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
         if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
+          --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
@@ -2233,6 +2240,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
         if (start_pos_count.first != ctx.line_count) {
           last_state = args_location::done;
           ctx.file_stream.unget();
+          --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
                             character_constants::g_k_whitespace_chars) ==
