@@ -3,6 +3,7 @@
 
 #include "array_value_node.hpp"
 #include "character_constants.hpp"
+#include "constexpr_tolower_toupper.hpp"
 #include "end_value_node.hpp"
 #include "file.hpp"
 #include "float_end_value_node.hpp"
@@ -17,5 +18,6 @@
 #include "string_end_value_node.hpp"
 #include "syntax_error.hpp"
 #include "value_node.hpp"
+#include "version.hpp"
 
 #endif
