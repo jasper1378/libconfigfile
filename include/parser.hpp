@@ -158,6 +158,7 @@ std::string string_to_upper(const std::string &str);
 std::string string_to_lower(const std::string &str);
 } // namespace impl
 } // namespace parser
+using parser::parse;
 } // namespace libconfigfile
 
 #endif
