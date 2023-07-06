@@ -24,12 +24,15 @@ $ make install
 ## Usage
 The Makefile will install both static and shared versions of the library, use whichever you prefer. Most users will just want to include `libconfigfile.hpp`, which itself includes all the other headers. All code in the library is found within the `libconfigfile` namespace.
 
-Proper documentation will be coming the future. If you have a question in the meantime either: a) open an issue on GitHub (I'll try to respond as soon as a I can) or b) just look at the code (it's fairly straightforward and simple).
+### Configuration file syntax specification
 
-If the library is lacking functionality that you would find useful, feel free to open an issue on GitHub, there's a good chance that I'll implement it.
+For a description of the syntax used in the configuration files parsed by this library, see [configuration_file_syntax_specification.md](configuration_file_syntax_specification.md).
 
-## Config File Syntax Specification
-See [configuration_file_syntax_specification.md](configuration_file_syntax_specification.md) for details.
+### Parsing a file
+
+### Data structures (`node` class hierarchy)
+
+### Error handling
 
 ## License
 See [LICENSE.md](LICENSE.md) for details.
