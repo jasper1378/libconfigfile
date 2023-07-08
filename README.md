@@ -34,6 +34,17 @@ The main function of this library, parsing a configuration file, can be accompli
 
 ### Data structures (`node` class hierarchy)
 
+```
+node
+├── section_node
+└── value_node
+    ├── array_value_node
+    └── end_value_node
+        ├── integer_end_value_node
+        ├── float_end_value_node
+        └── string_end_value_node
+```
+
 ### Error handling
 
 While calling `libconfigfile::parser()`, errors resulting in the parser itself (such as being unable to open a file) with be thrown as `std::runtime_error`. If the parser detects a violation of the syntax specification (see above) a `libconfigfile::syntax_error` will be thrown. This class is derived from `std::runtime_error` and behaves similarily. Its `what_arg` will be a string containing the line and char position of the error, as well as a brief description of what went wrong. This string is suitable for displaying to the end user.
