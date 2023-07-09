@@ -81,6 +81,10 @@ The hierarchy is designed in such a way as to promote polymorphic usage. The act
     - member of
         - all `node` classes
 
+To avoid the hassle of dealing with a bare polymorphic `node` (or child) pointer (memory leaks, checking success of `dynamic_cast`, etc,), the smart pointer class `node_ptr` can be used. In order to maintain a degree of harmony with the library interfaces, `node`-derived classes should always be used and managed through a `node_ptr`. This class is similar to `std::unique_ptr` in that it is responsible for deallocating any resources associated with the pointer when it goes out of scope. However, its specialized nature (will always be used with a `node`-derived class, usually polymorphically) means that it can offer additional featues. `node_ptr` is designed in such a way that the pointer component is completely abstracted and the object obtains value semantics.
+
+//TODO details on node_ptr
+
 ### Error handling
 
 While calling `libconfigfile::parser()`, errors resulting in the parser itself (such as being unable to open a file) with be thrown as `std::runtime_error`. If the parser detects a violation of the syntax specification (see above) a `libconfigfile::syntax_error` will be thrown. This class is derived from `std::runtime_error` and behaves similarily. Its `what_arg` will be a string containing the line and char position of the error, as well as a brief description of what went wrong. This string is suitable for displaying to the end user.
