@@ -34,16 +34,52 @@ The main function of this library, parsing a configuration file, can be accompli
 
 ### Data structures (`node` class hierarchy)
 
+All syntactical constructs (with the exception of directives and comments) within the configuration file can be represented by a class derived from `libconfigfile::node`. This class hierarchy is a mix of abstract and concrete classes. It is shown visually below, abstract classes are marked with `*`.
+
 ```
-node
+*node
 ├── section_node
-└── value_node
+└── *value_node
     ├── array_value_node
-    └── end_value_node
+    └── *end_value_node
         ├── integer_end_value_node
         ├── float_end_value_node
         └── string_end_value_node
 ```
+
+Abstract classes (`node`, `value_node`, `end_value_node`) correspond to increasingly specific classifications of config file constructs. Concrete classes (`section_node`, `array_value_node`, `integer_end_value_node`, `float_end_value_node`, `string_end_value_node`) correspond to the actual types of information found within a config file. Many of these concrete classes provide interfaces similar to familiar standard library classes (`section_node` : `std::unordered_map`, `array_value_node`: `std::vector`, `string_end_value_node`: `std::string`). Others provide a simple get/set interface (`integer_end_value_node`, `float_end_value_node`).
+
+The hierarchy is designed in such a way as to promote polymorphic usage. The actual, pointed-to type of a polymorphic pointer can be identified by calling the increasingly more specific `get_node_type()`, `get_value_node_type()`, and `get_end_value_node_type()` member functions, which return an `enum` value corresponding to the appropriate abstract or concrete child class. Which of these member functions are available for a given `node` class depends on its location in the hierarchy. If only the concrete class that the pointer is ultimately pointing to is of interest, `get_absolute_node_type()` can be used. Details are given below.
+
+
+- `get_node_type()`
+    - returns:
+        - `node_type::VALUE`
+        - `node_type::SECTION`
+    - member of:
+        - `node` and children
+- `get_value_node_type()`
+    - returns:
+        - `value_node_type::END_VALUE`
+        - `value_node_type::ARRAY`
+    - member of:
+        - `value_node` and children
+- `get_end_value_node_type()`
+    - returns:
+        - `end_value_node_type::INTEGER`
+        - `end_value_node_type::FLOAT`
+        - `end_value_node_type::STRING`
+    - member of:
+        - `end_value_node` and children
+- `get_absolute_node_type()`
+    - returns:
+        - `absolute_node_type::SECTION`
+        - `absolute_node_type::ARRAY`
+        - `absolute_node_type::INTEGER`
+        - `absolute_node_type::FLOAT`
+        - `absolute_node_type::STRING`
+    - member of
+        - all `node` classes
 
 ### Error handling
 
