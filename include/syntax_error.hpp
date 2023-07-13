@@ -1,8 +1,6 @@
 #ifndef LIBCONFIGFILE_SYNTAX_ERROR_HPP
 #define LIBCONFIGFILE_SYNTAX_ERROR_HPP
 
-#include "file.hpp"
-
 #include <exception>
 #include <filesystem>
 #include <stdexcept>
