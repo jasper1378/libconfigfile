@@ -11,7 +11,6 @@
 #include "node_types.hpp"
 #include "numeral_system.hpp"
 #include "section_node.hpp"
-#include "semantic_error.hpp"
 #include "string_end_value_node.hpp"
 #include "syntax_error.hpp"
 #include "value_node.hpp"
