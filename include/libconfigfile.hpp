@@ -7,7 +7,6 @@
 #include "end_value_node.hpp"
 #include "float_end_value_node.hpp"
 #include "integer_end_value_node.hpp"
-#include "libconfigfile.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
