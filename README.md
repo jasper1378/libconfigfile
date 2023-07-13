@@ -30,7 +30,7 @@ For a description of the syntax used in the configuration files parsed by this l
 
 ### Parsing a file
 
-The main function of this library, parsing a configuration file, can be accomplished by calling `parse()`. This function takes a single `std::filesystem::path` argument representing the file path (should be absolute, not relative) and returns a data structure (see below) representing the parsed file, possibly throwing exceptions during the process (see below).
+Config files can be read from a physical file or a provided input stream. To parse from a physical file, call `parse_file()`. This function takes a single `std::filesystem::path` argument representing the file path (should be absolute, not relative) To parse from a provided input stream, call `parse()`. This function takes a `std::string` argument identifying the stream, a `std::istream` reference argument corresponding to the stream to read from, and a defaul boolean argument specfying whether the identifier is a valid file path and the stream corresponds to a physical file (used for determining relative file paths for included sub-files). Both functions return a data structure (see below) representing the parsed file, and possibly throw exceptions during the process (see below).
 
 ### Data structures (`node` class hierarchy)
 
@@ -91,7 +91,6 @@ While calling `libconfigfile::parser()`, errors resulting in the parser itself (
 
 The following are a few of the improvements that I would like to implement in libconfigfile sometime in the future.
 
-- Allow parsing from anytype of standard library input stream, not just `std::ifstream`
 - Improve standardization and phrasing of error messages
 - Provide a "snapshot" into file at the location of a syntax error (see GCC for an example)
 - Functionality to verify semantic correctness of config file (would rely on another file provided by the application developer specifying which options should be set and what data types they should be)

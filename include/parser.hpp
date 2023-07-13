@@ -18,7 +18,7 @@
 #include <cmath>
 #include <concepts>
 #include <filesystem>
-#include <fstream>
+#include <istream>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -27,13 +27,17 @@
 
 namespace libconfigfile {
 namespace parser {
-node_ptr<section_node> parse(const std::filesystem::path &file_path);
+node_ptr<section_node> parse(const std::string &identifier,
+                             std::istream &input_stream,
+                             bool identifier_is_file_path = false);
+node_ptr<section_node> parse_file(const std::filesystem::path &file_path);
 
 namespace impl {
 
 struct context {
-  std::filesystem::path file_path;
-  std::ifstream file_stream;
+  std::string identifier;
+  std::istream &input_stream;
+  bool identifier_is_file_path;
   long long line_count;
   long long char_count;
   node_ptr<section_node> root_section;
@@ -45,7 +49,9 @@ enum class directive {
   include,
 };
 
-node_ptr<section_node> parse(const std::filesystem::path &file_path);
+node_ptr<section_node> parse(const std::string &identifier,
+                             std::istream &input_stream,
+                             bool identifier_is_file_path = false);
 
 std::pair<std::string, node_ptr<section_node>>
 parse_section(context &ctx, bool is_root_section = false);
@@ -159,6 +165,7 @@ std::string string_to_lower(const std::string &str);
 } // namespace impl
 } // namespace parser
 using parser::parse;
+using parser::parse_file;
 } // namespace libconfigfile
 
 #endif
