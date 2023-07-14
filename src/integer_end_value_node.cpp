@@ -11,7 +11,8 @@
 #include <type_traits>
 #include <utility>
 
-libconfigfile::integer_end_value_node::integer_end_value_node() : m_value{} {}
+libconfigfile::integer_end_value_node::integer_end_value_node()
+    : m_value{}, m_num_sys{&numeral_system_decimal} {}
 
 libconfigfile::integer_end_value_node::integer_end_value_node(
     value_t value,

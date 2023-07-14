@@ -746,11 +746,11 @@ libconfigfile::parser::impl::parse_array_value(
         } else {
           --ctx.char_count;
           ctx.input_stream.unget();
-          char actual_terminating_char{};
+          char element_actual_terminating_char{};
           ret_val->push_back(call_appropriate_value_parse_func(
               ctx, possible_terminating_chars_for_elements,
-              &actual_terminating_char));
-          switch (actual_terminating_char) {
+              &element_actual_terminating_char));
+          switch (element_actual_terminating_char) {
           case character_constants::g_k_array_element_separator: {
             last_char_type = char_type::element_separator;
           } break;
@@ -772,11 +772,11 @@ libconfigfile::parser::impl::parse_array_value(
         } else {
           --ctx.char_count;
           ctx.input_stream.unget();
-          char actual_terminating_char{};
+          char element_actual_terminating_char{};
           ret_val->push_back(call_appropriate_value_parse_func(
               ctx, possible_terminating_chars_for_elements,
-              &actual_terminating_char));
-          switch (actual_terminating_char) {
+              &element_actual_terminating_char));
+          switch (element_actual_terminating_char) {
           case character_constants::g_k_array_element_separator: {
             last_char_type = char_type::element_separator;
           } break;
@@ -1179,7 +1179,8 @@ libconfigfile::parser::impl::parse_float_value(
         case libconfigfile::toupper<
             character_constants::g_k_float_infinity.second.front()>(): {
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              pos_count_at_start{ctx.line_count, ctx.char_count};
+              pos_count_at_start_of_special_float{ctx.line_count,
+                                                  ctx.char_count};
 
           if ((last_char == char_type::start) ||
               (last_char == char_type::positive) ||
@@ -1237,14 +1238,16 @@ libconfigfile::parser::impl::parse_float_value(
             } else {
               std::string what_arg{"invalid character in float"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.identifier, pos_count_at_start.first,
-                  pos_count_at_start.second);
+                  what_arg, ctx.identifier,
+                  pos_count_at_start_of_special_float.first,
+                  pos_count_at_start_of_special_float.second);
             }
           } else {
             std::string what_arg{"invalid character in float"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.identifier, pos_count_at_start.first,
-                pos_count_at_start.second);
+                what_arg, ctx.identifier,
+                pos_count_at_start_of_special_float.first,
+                pos_count_at_start_of_special_float.second);
           }
         } break;
 
@@ -1253,7 +1256,8 @@ libconfigfile::parser::impl::parse_float_value(
         case libconfigfile::toupper<
             character_constants::g_k_float_not_a_number.second.front()>(): {
           std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              pos_count_at_start{ctx.line_count, ctx.char_count};
+              pos_count_at_start_of_special_float{ctx.line_count,
+                                                  ctx.char_count};
 
           if ((last_char == char_type::start) ||
               (last_char == char_type::positive) ||
@@ -1312,14 +1316,16 @@ libconfigfile::parser::impl::parse_float_value(
             } else {
               std::string what_arg{"invalid character in float"};
               throw syntax_error::generate_formatted_error(
-                  what_arg, ctx.identifier, pos_count_at_start.first,
-                  pos_count_at_start.second);
+                  what_arg, ctx.identifier,
+                  pos_count_at_start_of_special_float.first,
+                  pos_count_at_start_of_special_float.second);
             }
           } else {
             std::string what_arg{"invalid character in float"};
             throw syntax_error::generate_formatted_error(
-                what_arg, ctx.identifier, pos_count_at_start.first,
-                pos_count_at_start.second);
+                what_arg, ctx.identifier,
+                pos_count_at_start_of_special_float.first,
+                pos_count_at_start_of_special_float.second);
           }
         } break;
 
@@ -2479,6 +2485,10 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
         if (character_constants::g_k_basic_escape_chars.contains(
                 escape_char_1)) {
           return character_constants::g_k_basic_escape_chars.at(escape_char_1);
+        } else {
+          std::string what_arg{"invalid escape sequence"};
+          throw syntax_error::generate_formatted_error(
+              what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         }
       }
     }
@@ -2917,12 +2927,6 @@ bool libconfigfile::parser::impl::case_insensitive_string_compare(
 std::string::size_type
 libconfigfile::parser::impl::case_insensitive_string_find(
     const std::string &str, const std::string &to_find) {
-  static const auto case_insensitive_char_compare{
-      [](std::string::value_type ch1, std::string::value_type ch2) -> bool {
-        return ((std::tolower(static_cast<unsigned char>(ch1))) ==
-                (std::tolower(static_cast<unsigned char>(ch2))));
-      }};
-
   auto found_iter{std::search(str.begin(), str.end(), to_find.begin(),
                               to_find.end(), case_insensitive_char_compare)};
 
