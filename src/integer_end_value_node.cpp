@@ -15,7 +15,7 @@ libconfigfile::integer_end_value_node::integer_end_value_node()
     : m_value{}, m_num_sys{&numeral_system_decimal} {}
 
 libconfigfile::integer_end_value_node::integer_end_value_node(
-    value_t value,
+    const value_t value,
     const numeral_system *num_sys /*= &character_constants::g_k_dec_num_sys*/)
     : m_value{value}, m_num_sys{num_sys} {}
 
@@ -63,7 +63,7 @@ bool libconfigfile::integer_end_value_node::polymorphic_value_compare(
 std::ostream &
 libconfigfile::integer_end_value_node::print(std::ostream &out) const {
 
-  std::ostreambuf_iterator<char> out_iter{out};
+  std::ostreambuf_iterator<char> const out_iter{out};
 
   switch (m_num_sys->base) {
   case numeral_system_decimal.base: {
@@ -97,7 +97,7 @@ libconfigfile::integer_end_value_node::get() const {
   return m_value;
 }
 
-void libconfigfile::integer_end_value_node::set(value_t value) {
+void libconfigfile::integer_end_value_node::set(const value_t value) {
   m_value = value;
 }
 
@@ -141,7 +141,7 @@ libconfigfile::integer_end_value_node::operator=(
 }
 
 libconfigfile::integer_end_value_node &
-libconfigfile::integer_end_value_node::operator=(value_t value) {
+libconfigfile::integer_end_value_node::operator=(const value_t value) {
   m_value = value;
   return *this;
 }

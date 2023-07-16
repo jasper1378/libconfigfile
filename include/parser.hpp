@@ -29,7 +29,7 @@ namespace libconfigfile {
 namespace parser {
 node_ptr<section_node> parse(const std::string &identifier,
                              std::istream &input_stream,
-                             bool identifier_is_file_path = false);
+                             const bool identifier_is_file_path = false);
 node_ptr<section_node> parse_file(const std::filesystem::path &file_path);
 
 namespace impl {
@@ -40,7 +40,6 @@ struct context {
   bool identifier_is_file_path;
   long long line_count;
   long long char_count;
-  node_ptr<section_node> root_section;
 };
 
 enum class directive {
@@ -51,10 +50,10 @@ enum class directive {
 
 node_ptr<section_node> parse(const std::string &identifier,
                              std::istream &input_stream,
-                             bool identifier_is_file_path = false);
+                             const bool identifier_is_file_path = false);
 
 std::pair<std::string, node_ptr<section_node>>
-parse_section(context &ctx, bool is_root_section = false);
+parse_section(context &ctx, const bool is_root_section = false);
 
 std::pair<std::string, node_ptr<value_node>> parse_key_value(context &ctx);
 std::string parse_key_value_key(context &ctx);
@@ -121,8 +120,8 @@ bool is_whitespace(const char ch,
 std::string trim_whitespace(const std::string &str,
                             const std::string &whitespace_chars =
                                 character_constants::g_k_whitespace_chars,
-                            bool trim_leading = true,
-                            bool trim_trailing = true);
+                            const bool trim_leading = true,
+                            const bool trim_trailing = true);
 bool is_actual_delimiter(
     const std::string::size_type pos, const std::string &str,
     const char delimiter,
@@ -138,16 +137,16 @@ std::pair<bool, std::string::size_type>
 contains_invalid_character_invalid_provided(const std::string &str,
                                             const std::string &invalid_chars);
 
-bool is_digit(char ch, const numeral_system &num_sys = numeral_system_decimal);
+bool is_digit(const char ch, const numeral_system &num_sys = numeral_system_decimal);
 
-bool case_insensitive_char_compare(char ch1, char ch2);
+bool case_insensitive_char_compare(const char ch1, const char ch2);
 bool case_insensitive_string_compare(const std::string &str1,
                                      const std::string &str2);
 std::string::size_type case_insensitive_string_find(const std::string &str,
                                                     const std::string &to_find);
 
 template <std::floating_point T>
-bool compare_floats(T a, T b, T abs_epsilon = T{1e-12},
+bool compare_floats(const T a, const T b, const T abs_epsilon = T{1e-12},
                     T rel_epsilon = T{1e-8}) {
   T diff{std::abs(a - b)};
   if (diff <= abs_epsilon) {

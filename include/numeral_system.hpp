@@ -18,7 +18,7 @@ public:
   constexpr ~numeral_system(){};
 
 public:
-  constexpr numeral_system(int a_base, char a_prefix, char a_prefix_alt,
+  constexpr numeral_system(const int a_base, const char a_prefix, const char a_prefix_alt,
                            std::string_view a_digits)
       : base{a_base}, prefix{a_prefix},
         prefix_alt{a_prefix_alt}, digits{a_digits} {}
