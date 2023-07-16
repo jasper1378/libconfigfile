@@ -9,7 +9,7 @@
 
 libconfigfile::float_end_value_node::float_end_value_node() : m_value{} {}
 
-libconfigfile::float_end_value_node::float_end_value_node(value_t value)
+libconfigfile::float_end_value_node::float_end_value_node(const value_t value)
     : m_value{value} {}
 
 libconfigfile::float_end_value_node::float_end_value_node(
@@ -63,7 +63,7 @@ libconfigfile::float_end_value_node::get() const {
   return m_value;
 }
 
-void libconfigfile::float_end_value_node::set(value_t value) {
+void libconfigfile::float_end_value_node::set(const value_t value) {
   m_value = value;
 }
 
@@ -83,7 +83,7 @@ libconfigfile::float_end_value_node::operator=(
 }
 
 libconfigfile::float_end_value_node &
-libconfigfile::float_end_value_node::operator=(value_t value) {
+libconfigfile::float_end_value_node::operator=(const value_t value) {
   m_value = value;
   return *this;
 }

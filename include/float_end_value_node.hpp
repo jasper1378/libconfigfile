@@ -25,7 +25,7 @@ private:
 
 public:
   float_end_value_node();
-  float_end_value_node(value_t value);
+  float_end_value_node(const value_t value);
   float_end_value_node(const float_end_value_node &other);
   float_end_value_node(float_end_value_node &&other) noexcept(
       std::is_nothrow_move_constructible_v<value_t>);
@@ -42,12 +42,12 @@ public:
 
 public:
   value_t get() const;
-  void set(value_t value);
+  void set(const value_t value);
 
   float_end_value_node &operator=(const float_end_value_node &other);
   float_end_value_node &operator=(float_end_value_node &&other) noexcept(
       std::is_nothrow_move_assignable_v<value_t>);
-  float_end_value_node &operator=(value_t value);
+  float_end_value_node &operator=(const value_t value);
 
 public:
   friend bool operator==(const float_end_value_node &x,

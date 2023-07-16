@@ -27,7 +27,7 @@ private:
 public:
   integer_end_value_node();
   integer_end_value_node(
-      value_t value, const numeral_system *num_sys = &numeral_system_decimal);
+      const value_t value, const numeral_system *num_sys = &numeral_system_decimal);
   integer_end_value_node(const integer_end_value_node &other);
   integer_end_value_node(integer_end_value_node &&other) noexcept(
       std::is_nothrow_move_constructible_v<value_t>);
@@ -44,7 +44,7 @@ public:
 
 public:
   value_t get() const;
-  void set(value_t value);
+  void set(const value_t value);
 
   const numeral_system *get_num_sys() const;
   void set_num_sys(const numeral_system *num_sys);
@@ -55,7 +55,7 @@ public:
   integer_end_value_node &operator=(const integer_end_value_node &other);
   integer_end_value_node &operator=(integer_end_value_node &&other) noexcept(
       std::is_nothrow_move_assignable_v<value_t>);
-  integer_end_value_node &operator=(value_t value);
+  integer_end_value_node &operator=(const value_t value);
   integer_end_value_node &
   operator=(const std::pair<value_t, const numeral_system *> &both);
 
