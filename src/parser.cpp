@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cctype>
+#include <concepts>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
@@ -33,10 +34,12 @@
 #include <variant>
 #include <vector>
 
-libconfigfile::node_ptr<libconfigfile::section_node>
-libconfigfile::parser::parse(const std::string &identifier,
-                             std::istream &input_stream,
-                             const bool identifier_is_file_path /*= false*/) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
+    parse(const std::string &identifier, t_input_stream &input_stream,
+          const bool identifier_is_file_path /*= false*/) {
   return impl::parse(identifier, input_stream, identifier_is_file_path);
 }
 
@@ -46,15 +49,14 @@ libconfigfile::parser::parse_file(const std::filesystem::path &file_path) {
   return impl::parse(file_path, input_stream, true);
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
-libconfigfile::parser::impl::parse(const std::string &identifier,
-                                   std::istream &input_stream,
-                                   const bool identifier_is_file_path /*= false*/) {
-  context ctx{identifier,
-              input_stream,
-              identifier_is_file_path,
-              1,
-              0};
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
+    impl::parse(const std::string &identifier, t_input_stream &input_stream,
+                const bool identifier_is_file_path /*= false*/) {
+  context<t_input_stream> ctx{identifier, input_stream, identifier_is_file_path,
+                              1, 0};
 
   if (ctx.input_stream.good() == false) {
     throw std::runtime_error{
@@ -68,14 +70,19 @@ libconfigfile::parser::impl::parse(const std::string &identifier,
   }
 }
 
-std::pair<std::string, libconfigfile::node_ptr<libconfigfile::section_node>>
-libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_section) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+std::pair<std::string,
+          libconfigfile::node_ptr<libconfigfile::section_node>> libconfigfile::
+    parser::impl::parse_section(context<t_input_stream> &ctx,
+                                const bool is_root_section) {
   std::pair<std::string, node_ptr<section_node>> ret_val{
       "", make_node_ptr<section_node>()};
 
   if (is_root_section == true) {
-    std::ifstream::int_type const first_char{ctx.input_stream.peek()};
-    if (first_char == std::ifstream::traits_type::eof()) {
+    const typename t_input_stream::int_type first_char{ctx.input_stream.peek()};
+    if (first_char == t_input_stream::traits_type::eof()) {
       return ret_val;
     }
   }
@@ -144,7 +151,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
                   character_constants::g_k_section_name_closing_delimiter) {
                 last_state = name_location::closing_delimiter;
 
-                std::string const what_arg{"empty section names are not permitted"};
+                std::string const what_arg{
+                    "empty section names are not permitted"};
                 throw syntax_error::generate_formatted_error(
                     what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
               } else {
@@ -155,7 +163,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
                 if (is_invalid_character_valid_provided(
                         cur_char, character_constants::g_k_valid_name_chars) ==
                     true) {
-                  std::string const what_arg{"invalid character in section name"};
+                  std::string const what_arg{
+                      "invalid character in section name"};
                   throw syntax_error::generate_formatted_error(
                       what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
                 } else {
@@ -180,7 +189,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
                 character_constants::g_k_section_name_closing_delimiter) {
               last_state = name_location::closing_delimiter;
 
-              std::string const what_arg{"empty section names are not permitted"};
+              std::string const what_arg{
+                  "empty section names are not permitted"};
               throw syntax_error::generate_formatted_error(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             } else {
@@ -230,7 +240,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
                 if (is_invalid_character_valid_provided(
                         cur_char, character_constants::g_k_valid_name_chars) ==
                     true) {
-                  std::string const what_arg{"invalid character in section name"};
+                  std::string const what_arg{
+                      "invalid character in section name"};
                   throw syntax_error::generate_formatted_error(
                       what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
                 } else {
@@ -316,7 +327,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
                      character_constants::g_k_section_body_opening_delimiter) {
             last_state = name_body_gap_location::opening_body_delimiter;
           } else {
-            std::string const what_arg{"expected section body opening delimiter"};
+            std::string const what_arg{
+                "expected section body opening delimiter"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -364,8 +376,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
         } else if (cur_char ==
                    character_constants::g_k_section_name_opening_delimiter) {
           ctx.input_stream.unget();
-          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              const start_pos_count{ctx.line_count, ctx.char_count};
+          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos_count{ctx.line_count, ctx.char_count};
           --ctx.char_count;
 
           std::pair<std::string, node_ptr<section_node>> new_section{
@@ -381,8 +393,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
           }
         } else if (cur_char == character_constants::g_k_directive_leader) {
           ctx.input_stream.unget();
-          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              const start_pos_count{ctx.line_count, ctx.char_count};
+          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos_count{ctx.line_count, ctx.char_count};
           --ctx.char_count;
           std::pair<directive, std::optional<node_ptr<section_node>>> dir_res{
               parse_directive(ctx)};
@@ -415,8 +427,8 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
           }
         } else {
           ctx.input_stream.unget();
-          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              const start_pos_count{ctx.line_count, ctx.char_count};
+          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos_count{ctx.line_count, ctx.char_count};
           --ctx.char_count;
 
           std::pair<std::string, node_ptr<value_node>> new_key_value{
@@ -445,8 +457,12 @@ libconfigfile::parser::impl::parse_section(context &ctx, const bool is_root_sect
   return ret_val;
 }
 
-std::pair<std::string, libconfigfile::node_ptr<libconfigfile::value_node>>
-libconfigfile::parser::impl::parse_key_value(context &ctx) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+std::pair<std::string,
+          libconfigfile::node_ptr<libconfigfile::value_node>> libconfigfile::
+    parser::impl::parse_key_value(context<t_input_stream> &ctx) {
   std::pair<std::string, node_ptr<value_node>> ret_val{};
 
   ret_val.first = parse_key_value_key(ctx);
@@ -455,7 +471,11 @@ libconfigfile::parser::impl::parse_key_value(context &ctx) {
   return ret_val;
 }
 
-std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+std::string libconfigfile::parser::impl::parse_key_value_key(
+    context<t_input_stream> &ctx) {
   std::string key_name{};
 
   enum class key_name_location {
@@ -565,7 +585,8 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
               throw syntax_error::generate_formatted_error(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             } else if (handled_comment_in_name_proper == true) {
-              std::string const what_arg{"key name can not be split by comments"};
+              std::string const what_arg{
+                  "key name can not be split by comments"};
               throw syntax_error::generate_formatted_error(
                   what_arg, ctx.identifier,
                   pos_count_before_handled_comment_in_name_proper.first,
@@ -603,7 +624,8 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
               throw syntax_error::generate_formatted_error(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             } else {
-              std::string const what_arg{"expected value assigment after key name"};
+              std::string const what_arg{
+                  "expected value assigment after key name"};
               throw syntax_error::generate_formatted_error(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             }
@@ -621,8 +643,11 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
   return key_name;
 }
 
-libconfigfile::node_ptr<libconfigfile::value_node>
-libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::value_node> libconfigfile::parser::impl::
+    parse_key_value_value(context<t_input_stream> &ctx) {
   bool first_loop{true};
   char cur_char{};
 
@@ -668,10 +693,13 @@ libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::array_value_node>
-libconfigfile::parser::impl::parse_array_value(
-    context &ctx, const std::string &possible_terminating_chars,
-    char *actual_terminating_char /*= nullptr*/) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::array_value_node> libconfigfile::parser::
+    impl::parse_array_value(context<t_input_stream> &ctx,
+                            const std::string &possible_terminating_chars,
+                            char *actual_terminating_char /*= nullptr*/) {
   node_ptr<libconfigfile::array_value_node> ret_val{
       make_node_ptr<array_value_node>()};
 
@@ -756,9 +784,9 @@ libconfigfile::parser::impl::parse_array_value(
           case character_constants::g_k_array_closing_delimiter: {
             last_char_type = char_type::closing_delimiter;
           } break;
-	  default: {
+          default: {
             throw std::runtime_error{"impossible!"};
-	  } break;
+          } break;
           }
         }
       } break;
@@ -768,7 +796,8 @@ libconfigfile::parser::impl::parse_array_value(
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char ==
                    character_constants::g_k_array_element_separator) {
-          std::string const what_arg{"expected array element or closing delimiter"};
+          std::string const what_arg{
+              "expected array element or closing delimiter"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } else {
@@ -785,9 +814,9 @@ libconfigfile::parser::impl::parse_array_value(
           case character_constants::g_k_array_closing_delimiter: {
             last_char_type = char_type::closing_delimiter;
           } break;
-	  default: {
+          default: {
             throw std::runtime_error{"impossible!"};
-	  } break;
+          } break;
           }
         }
       } break;
@@ -803,18 +832,22 @@ libconfigfile::parser::impl::parse_array_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
-libconfigfile::parser::impl::parse_integer_value(
-    context &ctx, const std::string &possible_terminating_chars,
-    char *actual_terminating_char /*= nullptr*/) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::integer_end_value_node> libconfigfile::
+    parser::impl::parse_integer_value(
+        context<t_input_stream> &ctx,
+        const std::string &possible_terminating_chars,
+        char *actual_terminating_char /*= nullptr*/) {
   static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
 
   std::string actual_digits{};
   bool is_negative{false};
   const numeral_system *num_sys{nullptr};
 
-  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-      const pos_count_at_start{ctx.line_count, ctx.char_count};
+  const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      pos_count_at_start{ctx.line_count, ctx.char_count};
 
   bool last_char_was_digit{false};
   bool any_digits_so_far{false};
@@ -890,9 +923,10 @@ libconfigfile::parser::impl::parse_integer_value(
       switch (cur_char) {
       case character_constants::g_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
-            (ctx.input_stream.peek() == std::ifstream::traits_type::eof())) {
-          std::string const what_arg{"integer digit separator must be surrounded by "
-                               "at least one digit on each side"};
+            (ctx.input_stream.peek() == t_input_stream::traits_type::eof())) {
+          std::string const what_arg{
+              "integer digit separator must be surrounded by "
+              "at least one digit on each side"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } else {
@@ -907,7 +941,8 @@ libconfigfile::parser::impl::parse_integer_value(
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
         } else {
-          std::string const what_arg{"positive sign must appear at start of integer"};
+          std::string const what_arg{
+              "positive sign must appear at start of integer"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         }
@@ -919,7 +954,8 @@ libconfigfile::parser::impl::parse_integer_value(
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
         } else {
-          std::string const what_arg{"negative sign must appear at start of integer"};
+          std::string const what_arg{
+              "negative sign must appear at start of integer"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         }
@@ -1084,14 +1120,18 @@ libconfigfile::parser::impl::parse_integer_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::float_end_value_node>
-libconfigfile::parser::impl::parse_float_value(
-    context &ctx, const std::string &possible_terminating_chars,
-    char *actual_terminating_char /*= nullptr*/) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::float_end_value_node> libconfigfile::
+    parser::impl::parse_float_value(
+        context<t_input_stream> &ctx,
+        const std::string &possible_terminating_chars,
+        char *actual_terminating_char /*= nullptr*/) {
   std::string sanitized_string{};
 
-  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-      const pos_count_at_start{ctx.line_count, ctx.char_count};
+  const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      pos_count_at_start{ctx.line_count, ctx.char_count};
 
   static const std::unordered_map<std::string, float_end_value_node_data_t>
       special_floats{{character_constants::g_k_float_infinity.second,
@@ -1183,8 +1223,8 @@ libconfigfile::parser::impl::parse_float_value(
             character_constants::g_k_float_infinity.second.front()>():
         case libconfigfile::toupper<
             character_constants::g_k_float_infinity.second.front()>(): {
-          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              const pos_count_at_start_of_special_float{ctx.line_count,
+          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              pos_count_at_start_of_special_float{ctx.line_count,
                                                   ctx.char_count};
 
           if ((last_char == char_type::start) ||
@@ -1260,8 +1300,8 @@ libconfigfile::parser::impl::parse_float_value(
             character_constants::g_k_float_not_a_number.second.front()>():
         case libconfigfile::toupper<
             character_constants::g_k_float_not_a_number.second.front()>(): {
-          std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              const pos_count_at_start_of_special_float{ctx.line_count,
+          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              pos_count_at_start_of_special_float{ctx.line_count,
                                                   ctx.char_count};
 
           if ((last_char == char_type::start) ||
@@ -1339,8 +1379,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
           } else {
-            std::string const what_arg{"positive sign may only appear at start of "
-                                 "integer part or exponent part of float"};
+            std::string const what_arg{
+                "positive sign may only appear at start of "
+                "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1351,8 +1392,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::negative;
             sanitized_string.push_back(cur_char);
           } else {
-            std::string const what_arg{"negative sign may only appear at start of "
-                                 "integer part or exponent part of float"};
+            std::string const what_arg{
+                "negative sign may only appear at start of "
+                "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1371,8 +1413,9 @@ libconfigfile::parser::impl::parse_float_value(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             }
           } else {
-            std::string const what_arg{"float digit separator must be surrounded by "
-                                 "at least one digit on each side"};
+            std::string const what_arg{
+                "float digit separator must be surrounded by "
+                "at least one digit on each side"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1393,8 +1436,9 @@ libconfigfile::parser::impl::parse_float_value(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             }
           } else {
-            std::string const what_arg{"float decimal point must be surrounded by at "
-                                 "least one digit on each side"};
+            std::string const what_arg{
+                "float decimal point must be surrounded by at "
+                "least one digit on each side"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1403,7 +1447,7 @@ libconfigfile::parser::impl::parse_float_value(
         case character_constants::g_k_float_exponent_sign_lower:
         case character_constants::g_k_float_exponent_sign_upper: {
           if (last_char == char_type::digit) {
-            char const next_char{static_cast<char>(ctx.input_stream.peek())};
+            const char next_char{static_cast<char>(ctx.input_stream.peek())};
             if ((is_digit(next_char, numeral_system_decimal) == true) ||
                 (next_char == character_constants::g_k_num_positive_sign) ||
                 (next_char == character_constants::g_k_num_negative_sign)) {
@@ -1418,8 +1462,9 @@ libconfigfile::parser::impl::parse_float_value(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             }
           } else {
-            std::string const what_arg{"float exponent sign must be surrounded by at "
-                                 "least on digit on each side"};
+            std::string const what_arg{
+                "float exponent sign must be surrounded by at "
+                "least on digit on each side"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1442,15 +1487,17 @@ libconfigfile::parser::impl::parse_float_value(
         switch (cur_char) {
 
         case character_constants::g_k_num_positive_sign: {
-          std::string const what_arg{"positive sign may only appear at start of "
-                               "integer part or exponent part of float"};
+          std::string const what_arg{
+              "positive sign may only appear at start of "
+              "integer part or exponent part of float"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } break;
 
         case character_constants::g_k_num_negative_sign: {
-          std::string const what_arg{"negative sign may only appear at start of "
-                               "integer part or exponent part of float"};
+          std::string const what_arg{
+              "negative sign may only appear at start of "
+              "integer part or exponent part of float"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } break;
@@ -1468,15 +1515,17 @@ libconfigfile::parser::impl::parse_float_value(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             }
           } else {
-            std::string const what_arg{"float digit separator must be surrounded by "
-                                 "at least one digit on each side"};
+            std::string const what_arg{
+                "float digit separator must be surrounded by "
+                "at least one digit on each side"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
         } break;
 
         case character_constants::g_k_float_decimal_point: {
-          std::string const what_arg{"floats can only contain one decimal point"};
+          std::string const what_arg{
+              "floats can only contain one decimal point"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } break;
@@ -1484,7 +1533,7 @@ libconfigfile::parser::impl::parse_float_value(
         case character_constants::g_k_float_exponent_sign_lower:
         case character_constants::g_k_float_exponent_sign_upper: {
           if (last_char == char_type::digit) {
-            char const next_char{static_cast<char>(ctx.input_stream.peek())};
+            const char next_char{static_cast<char>(ctx.input_stream.peek())};
             if ((is_digit(next_char, numeral_system_decimal) == true) ||
                 (next_char == character_constants::g_k_num_positive_sign) ||
                 (next_char == character_constants::g_k_num_negative_sign)) {
@@ -1499,8 +1548,9 @@ libconfigfile::parser::impl::parse_float_value(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             }
           } else {
-            std::string const what_arg{"float exponent sign must be surrounded by at "
-                                 "least on digit on each side"};
+            std::string const what_arg{
+                "float exponent sign must be surrounded by at "
+                "least on digit on each side"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1527,8 +1577,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
           } else {
-            std::string const what_arg{"positive sign may only appear at start of "
-                                 "integer part or exponent part of float"};
+            std::string const what_arg{
+                "positive sign may only appear at start of "
+                "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1539,8 +1590,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
           } else {
-            std::string const what_arg{"negative sign may only appear at start of "
-                                 "integer part or exponent part of float"};
+            std::string const what_arg{
+                "negative sign may only appear at start of "
+                "integer part or exponent part of float"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1559,8 +1611,9 @@ libconfigfile::parser::impl::parse_float_value(
                   what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
             }
           } else {
-            std::string const what_arg{"float digit separator must be surrounded by "
-                                 "at least one digit on each side"};
+            std::string const what_arg{
+                "float digit separator must be surrounded by "
+                "at least one digit on each side"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -1575,7 +1628,8 @@ libconfigfile::parser::impl::parse_float_value(
 
         case character_constants::g_k_float_exponent_sign_lower:
         case character_constants::g_k_float_exponent_sign_upper: {
-          std::string const what_arg{"float exponent sign can only appear once"};
+          std::string const what_arg{
+              "float exponent sign can only appear once"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } break;
@@ -1630,10 +1684,14 @@ libconfigfile::parser::impl::parse_float_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::string_end_value_node>
-libconfigfile::parser::impl::parse_string_value(
-    context &ctx, const std::string &possible_terminating_chars,
-    char *actual_terminating_char /*= nullptr*/) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::string_end_value_node> libconfigfile::
+    parser::impl::parse_string_value(
+        context<t_input_stream> &ctx,
+        const std::string &possible_terminating_chars,
+        char *actual_terminating_char /*= nullptr*/) {
   bool in_string{false};
 
   std::string string_contents{};
@@ -1669,7 +1727,8 @@ libconfigfile::parser::impl::parse_string_value(
     } else {
       if (in_string == true) {
         if (last_opening_delimiter_pos_count.first != ctx.line_count) {
-          std::string const what_arg{"string must appear completely on one line"};
+          std::string const what_arg{
+              "string must appear completely on one line"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } else {
@@ -1713,10 +1772,14 @@ libconfigfile::parser::impl::parse_string_value(
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::value_node>
-libconfigfile::parser::impl::call_appropriate_value_parse_func(
-    context &ctx, const std::string &possible_terminating_chars,
-    char *actual_terminating_char /*= nullptr*/) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::value_node> libconfigfile::parser::impl::
+    call_appropriate_value_parse_func(
+        context<t_input_stream> &ctx,
+        const std::string &possible_terminating_chars,
+        char *actual_terminating_char /*= nullptr*/) {
 
   std::variant<value_node_type, end_value_node_type> value_type_variant{
       identify_key_value_value_type(ctx, possible_terminating_chars,
@@ -1725,7 +1788,7 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
   switch (value_type_variant.index()) {
 
   case 0: {
-    value_node_type const value_type_extracted{std::get<0>(value_type_variant)};
+    const value_node_type value_type_extracted{std::get<0>(value_type_variant)};
 
     switch (value_type_extracted) {
 
@@ -1742,7 +1805,8 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
   } break;
 
   case 1: {
-    end_value_node_type const value_type_extracted{std::get<1>(value_type_variant)};
+    const end_value_node_type value_type_extracted{
+        std::get<1>(value_type_variant)};
 
     switch (value_type_extracted) {
 
@@ -1773,10 +1837,15 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
   }
 }
 
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
 std::pair<libconfigfile::parser::impl::directive,
-          std::optional<libconfigfile::node_ptr<libconfigfile::section_node>>>
-libconfigfile::parser::impl::parse_directive(context &ctx) {
-  std::ifstream::pos_type const start_pos_count{ctx.input_stream.tellg()};
+          std::optional<libconfigfile::node_ptr<
+              libconfigfile::section_node>>> libconfigfile::parser::impl::
+    parse_directive(context<t_input_stream> &ctx) {
+  const typename t_input_stream::pos_type start_pos_count{
+      ctx.input_stream.tellg()}; // TODO
 
   std::string name{};
   name.reserve(character_constants::g_k_max_directive_name_length);
@@ -1793,7 +1862,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 
     char cur_char{};
     bool eof{false};
-    std::ifstream::pos_type const last_newline_pos_count{};
+    const typename t_input_stream::pos_type last_newline_pos_count{};
     while (true) {
       handle_comments(ctx);
       ctx.input_stream.get(cur_char);
@@ -1828,7 +1897,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
         } else {
           if (last_newline_pos_count > start_pos_count) {
             std::string const what_arg{"entire directive must appear "
-                                 "on one line"};
+                                       "on one line"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           } else {
@@ -1851,7 +1920,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
         } else {
           if (last_newline_pos_count > start_pos_count) {
             std::string const what_arg{"entire directive must appear "
-                                 "on one line"};
+                                       "on one line"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           } else {
@@ -1872,7 +1941,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
         } else {
           if (last_newline_pos_count > start_pos_count) {
             std::string const what_arg{"entire directive must appear "
-                                 "on one line"};
+                                       "on one line"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           } else {
@@ -1914,9 +1983,13 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
   }
 }
 
-void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
-  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)> const start_pos_count{
-      ctx.line_count, ctx.char_count};
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+void libconfigfile::parser::impl::parse_version_directive(
+    context<t_input_stream> &ctx) {
+  const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      start_pos_count{ctx.line_count, ctx.char_count};
 
   std::string version_str{};
 
@@ -1960,7 +2033,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
     case args_location::leading_whitespace: {
       if (eof == true) {
         std::string const what_arg{"version directive requires "
-                             "version argument"};
+                                   "version argument"};
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
       } else {
@@ -1970,7 +2043,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
             std::string const what_arg{"entire directive must appear "
-                                 "on one line"};
+                                       "on one line"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           } else {
@@ -1978,7 +2051,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
           }
         } else {
           std::string const what_arg{"version directive requires "
-                               "version argument"};
+                                     "version argument"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         }
@@ -1988,13 +2061,13 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
     case args_location::opening_delimiter: {
       if (eof == true) {
         std::string const what_arg{"unterminated string in version "
-                             "directive argument"};
+                                   "directive argument"};
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
       } else {
         if (start_pos_count.first != ctx.line_count) {
           std::string const what_arg{"entire directive must appear on "
-                               "one line"};
+                                     "one line"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } else {
@@ -2013,13 +2086,13 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
     case args_location::version_str: {
       if (eof == true) {
         std::string const what_arg{"unterminated string in version "
-                             "directive argument"};
+                                   "directive argument"};
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
       } else {
         if (start_pos_count.first != ctx.line_count) {
           std::string const what_arg{"entire directive must appear on "
-                               "one line"};
+                                     "one line"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } else {
@@ -2047,7 +2120,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
             last_state = args_location::trailing_whitespace;
           } else {
             std::string const what_arg{"excess arguments given to "
-                                 "version directive"};
+                                       "version directive"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -2070,7 +2143,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
             ;
           } else {
             std::string const what_arg{"excess arguments given to "
-                                 "version directive"};
+                                       "version directive"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -2086,7 +2159,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
 
   if (version_str.empty() == true) {
     std::string const what_arg{"empty version argument given to "
-                         "version directive"};
+                               "version directive"};
     throw syntax_error::generate_formatted_error(
         what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
   } else {
@@ -2094,7 +2167,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       return;
     } else {
       std::string const what_arg{"incompatible parser and "
-                           "configuration file versions"};
+                                 "configuration file versions"};
       throw syntax_error::generate_formatted_error(
           what_arg, ctx.identifier, start_of_version_str_pos_count.first,
           start_of_version_str_pos_count.second);
@@ -2102,10 +2175,13 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
-libconfigfile::parser::impl::parse_include_directive(context &ctx) {
-  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)> const start_pos_count{
-      ctx.line_count, ctx.char_count};
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
+    impl::parse_include_directive(context<t_input_stream> &ctx) {
+  const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      start_pos_count{ctx.line_count, ctx.char_count};
 
   std::string file_path_str{};
 
@@ -2152,7 +2228,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     case args_location::leading_whitespace: {
       if (eof == true) {
         std::string const what_arg{"include directive requires file "
-                             "path argument"};
+                                   "path argument"};
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
       } else {
@@ -2162,7 +2238,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
             std::string const what_arg{"entire directive must appear "
-                                 "on one line"};
+                                       "on one line"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           } else {
@@ -2170,7 +2246,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           }
         } else {
           std::string const what_arg{"include directive requires file "
-                               "path argument"};
+                                     "path argument"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         }
@@ -2180,13 +2256,13 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     case args_location::opening_delimiter: {
       if (eof == true) {
         std::string const what_arg{"unterminated string in include "
-                             "directive argument"};
+                                   "directive argument"};
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
       } else {
         if (start_pos_count.first != ctx.line_count) {
           std::string const what_arg{"entire directive must appear on "
-                               "one line"};
+                                     "one line"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } else {
@@ -2210,13 +2286,13 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     case args_location::file_path: {
       if (eof == true) {
         std::string const what_arg{"unterminated string in include "
-                             "directive argument"};
+                                   "directive argument"};
         throw syntax_error::generate_formatted_error(
             what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
       } else {
         if (start_pos_count.first != ctx.line_count) {
           std::string const what_arg{"entire directive must appear on "
-                               "one line"};
+                                     "one line"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         } else {
@@ -2252,7 +2328,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
             last_state = args_location::trailing_whitespace;
           } else {
             std::string const what_arg{"excess arguments given to "
-                                 "include directive"};
+                                       "include directive"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -2275,7 +2351,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
             ;
           } else {
             std::string const what_arg{"excess arguments given to "
-                                 "include directive"};
+                                       "include directive"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
           }
@@ -2291,7 +2367,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
 
   if (file_path_str.empty() == true) {
     std::string const what_arg{"empty file path argument given to "
-                         "include directive"};
+                               "include directive"};
     throw syntax_error::generate_formatted_error(
         what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
   } else {
@@ -2313,15 +2389,15 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     } break;
 
     case 1: {
-      std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-          const invalid_escape_sequence_pos_count{
+      const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+          invalid_escape_sequence_pos_count{
               start_of_file_path_str_pos_count.first,
               static_cast<decltype(ctx.char_count)>(
                   start_of_file_path_str_pos_count.second +
                   std::get<std::string::size_type>(file_path_escaped))};
 
       std::string const what_arg{"invalid escape sequence in include "
-                           "directive argument"};
+                                 "directive argument"};
       throw syntax_error::generate_formatted_error(
           what_arg, ctx.identifier, invalid_escape_sequence_pos_count.first,
           invalid_escape_sequence_pos_count.second);
@@ -2334,7 +2410,10 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   }
 }
 
-bool libconfigfile::parser::impl::handle_comments(context &ctx) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>)) bool
+libconfigfile::parser::impl::handle_comments(context<t_input_stream> &ctx) {
   static_assert(character_constants::g_k_comment_cpp.front() ==
                 character_constants::g_k_comment_c_start.front());
   static_assert(character_constants::g_k_comment_cpp.size() == 2);
@@ -2367,7 +2446,7 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
   case c_or_cpp_comment_leader: {
     ctx.input_stream.get(cur_char);
     ++ctx.char_count;
-    peek_char = (ctx.input_stream.peek());//TODO
+    peek_char = (ctx.input_stream.peek());
 
     switch (peek_char) {
     case character_constants::g_k_comment_cpp.back(): {
@@ -2425,7 +2504,11 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
   }
 }
 
-char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+char libconfigfile::parser::impl::handle_escape_sequence(
+    context<t_input_stream> &ctx) {
   char escape_leader_char{};
   ctx.input_stream.get(escape_leader_char);
   if (ctx.input_stream.eof() == false) {
@@ -2478,11 +2561,13 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
 
         if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
             (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
-          std::string const hex_string{std::string{} + hex_digit_1 + hex_digit_2};
+          std::string const hex_string{std::string{} + hex_digit_1 +
+                                       hex_digit_2};
           return static_cast<char>(
               std::stoi(hex_string, nullptr, numeral_system_hexadecimal.base));
         } else {
-          std::string const what_arg{"invalid digit in hexadecimal escape sequence"};
+          std::string const what_arg{
+              "invalid digit in hexadecimal escape sequence"};
           throw syntax_error::generate_formatted_error(
               what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
         }
@@ -2504,10 +2589,14 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
   }
 }
 
-std::variant<libconfigfile::value_node_type, libconfigfile::end_value_node_type>
-libconfigfile::parser::impl::identify_key_value_value_type(
-    context &ctx, const std::string &possible_terminating_chars,
-    char *actual_terminating_char /*= nullptr*/) {
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
+std::variant<libconfigfile::value_node_type,
+             libconfigfile::end_value_node_type> libconfigfile::parser::impl::
+    identify_key_value_value_type(context<t_input_stream> &ctx,
+                                  const std::string &possible_terminating_chars,
+                                  char *actual_terminating_char /*= nullptr*/) {
 
   std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       pos_count_at_start{ctx.line_count, ctx.char_count};
@@ -2517,12 +2606,11 @@ libconfigfile::parser::impl::identify_key_value_value_type(
   bool eof{false};
 
   const auto reset_context{[&ctx, &gotten_chars, &pos_count_at_start]() {
-	  if (gotten_chars.empty() == false)
-	  {
-    for (auto i{gotten_chars.rbegin()}; i != gotten_chars.rend(); ++i) {
-      ctx.input_stream.putback(*i);
+    if (gotten_chars.empty() == false) {
+      for (auto i{gotten_chars.rbegin()}; i != gotten_chars.rend(); ++i) {
+        ctx.input_stream.putback(*i);
+      }
     }
-	  }
     ctx.line_count = pos_count_at_start.first;
     ctx.char_count = pos_count_at_start.second;
   }};
@@ -2545,8 +2633,8 @@ libconfigfile::parser::impl::identify_key_value_value_type(
     }
 
     if (eof == true) {
-      std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-          const pos_count_at_error{ctx.line_count, ctx.char_count};
+      const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+          pos_count_at_error{ctx.line_count, ctx.char_count};
 
       reset_context();
 
@@ -2559,8 +2647,8 @@ libconfigfile::parser::impl::identify_key_value_value_type(
       if (is_whitespace(cur_char) == true) {
         continue;
       } else if (cur_char == character_constants::g_k_key_value_terminate) {
-        std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-            const pos_count_at_error{ctx.line_count, ctx.char_count};
+        const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+            pos_count_at_error{ctx.line_count, ctx.char_count};
 
         reset_context();
 
@@ -2590,10 +2678,14 @@ libconfigfile::parser::impl::identify_key_value_value_type(
   }
 }
 
+template <typename t_input_stream>
+  requires((std::same_as<t_input_stream, std::istream>) ||
+           (std::derived_from<t_input_stream, std::istream>))
 libconfigfile::end_value_node_type
-libconfigfile::parser::impl::identify_key_value_numeric_value_type(
-    context &ctx, const std::string &possible_terminating_chars,
-    char *actual_terminating_char /*= nullptr*/) {
+    libconfigfile::parser::impl::identify_key_value_numeric_value_type(
+        context<t_input_stream> &ctx,
+        const std::string &possible_terminating_chars,
+        char *actual_terminating_char /*= nullptr*/) {
 
   std::string gotten_chars{};
   std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
@@ -2623,12 +2715,11 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
   }
 
   const auto reset_context{[&ctx, &gotten_chars, &pos_count_at_start]() {
-	  if (gotten_chars.empty() == false)
-	  {
-    for (auto i{gotten_chars.rbegin()}; i != gotten_chars.rend(); ++i) {
-      ctx.input_stream.putback(*i);
+    if (gotten_chars.empty() == false) {
+      for (auto i{gotten_chars.rbegin()}; i != gotten_chars.rend(); ++i) {
+        ctx.input_stream.putback(*i);
+      }
     }
-	  }
     ctx.line_count = pos_count_at_start.first;
     ctx.char_count = pos_count_at_start.second;
   }};
@@ -2682,21 +2773,22 @@ libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
     if (str[cur_char] == character_constants::g_k_escape_leader) {
       std::string::size_type const escape_char_pos_count{cur_char + 1};
       if (escape_char_pos_count < str.size()) {
-        char const escape_char{str[escape_char_pos_count]};
+        const char escape_char{str[escape_char_pos_count]};
         if (escape_char == character_constants::g_k_hex_escape_char) {
-          std::string::size_type const hex_digit_pos_count_1{escape_char_pos_count +
-                                                       1};
-          std::string::size_type const hex_digit_pos_count_2{escape_char_pos_count +
-                                                       2};
+          std::string::size_type const hex_digit_pos_count_1{
+              escape_char_pos_count + 1};
+          std::string::size_type const hex_digit_pos_count_2{
+              escape_char_pos_count + 2};
           if ((hex_digit_pos_count_1 < str.size()) &&
               (hex_digit_pos_count_2 < str.size())) {
-            char const hex_digit_1{str[hex_digit_pos_count_1]};
-            char const hex_digit_2{str[hex_digit_pos_count_2]};
+            const char hex_digit_1{str[hex_digit_pos_count_1]};
+            const char hex_digit_2{str[hex_digit_pos_count_2]};
             if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
                 (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
-              std::string const hex_string{std::string{} + hex_digit_1 + hex_digit_2};
-              result.push_back(
-                  static_cast<char>(std::stoi(hex_string, nullptr, numeral_system_hexadecimal.base)));
+              std::string const hex_string{std::string{} + hex_digit_1 +
+                                           hex_digit_2};
+              result.push_back(static_cast<char>(std::stoi(
+                  hex_string, nullptr, numeral_system_hexadecimal.base)));
               cur_char = hex_digit_pos_count_2;
             } else {
               return cur_char;
@@ -2824,7 +2916,7 @@ bool libconfigfile::parser::impl::is_whitespace(
 std::string libconfigfile::parser::impl::trim_whitespace(
     const std::string &str,
     const std::string &whitespace_chars /*=
-                      character_constants::g_k_whitespace_chars*/
+                  character_constants::g_k_whitespace_chars*/
     ,
     const bool trim_leading /*= true*/, const bool trim_trailing /*= true*/) {
   if (str.empty() == true) {
@@ -2912,8 +3004,8 @@ bool libconfigfile::parser::impl::is_digit(
   return (num_sys.digits.find(ch) != std::string::npos);
 }
 
-bool libconfigfile::parser::impl::case_insensitive_char_compare(const char ch1,
-                                                                const char ch2) {
+bool libconfigfile::parser::impl::case_insensitive_char_compare(
+    const char ch1, const char ch2) {
   return ((std::tolower(static_cast<unsigned char>(ch1))) ==
           (std::tolower(static_cast<unsigned char>(ch2))));
 }

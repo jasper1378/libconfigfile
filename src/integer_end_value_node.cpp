@@ -63,7 +63,7 @@ bool libconfigfile::integer_end_value_node::polymorphic_value_compare(
 std::ostream &
 libconfigfile::integer_end_value_node::print(std::ostream &out) const {
 
-  std::ostreambuf_iterator<char> const out_iter{out};
+  const std::ostreambuf_iterator<char> out_iter{out};
 
   switch (m_num_sys->base) {
   case numeral_system_decimal.base: {

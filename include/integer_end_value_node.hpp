@@ -26,8 +26,8 @@ private:
 
 public:
   integer_end_value_node();
-  integer_end_value_node(
-      const value_t value, const numeral_system *num_sys = &numeral_system_decimal);
+  integer_end_value_node(const value_t value, const numeral_system *num_sys =
+                                                  &numeral_system_decimal);
   integer_end_value_node(const integer_end_value_node &other);
   integer_end_value_node(integer_end_value_node &&other) noexcept(
       std::is_nothrow_move_constructible_v<value_t>);
