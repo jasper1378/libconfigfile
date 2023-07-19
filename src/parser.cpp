@@ -1844,8 +1844,8 @@ std::pair<libconfigfile::parser::impl::directive,
           std::optional<libconfigfile::node_ptr<
               libconfigfile::section_node>>> libconfigfile::parser::impl::
     parse_directive(context<t_input_stream> &ctx) {
-  const typename t_input_stream::pos_type start_pos_count{
-      ctx.input_stream.tellg()}; // TODO
+  const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      start_pos_count{ctx.line_count, ctx.char_count};
 
   std::string name{};
   name.reserve(character_constants::g_k_max_directive_name_length);
@@ -1862,9 +1862,18 @@ std::pair<libconfigfile::parser::impl::directive,
 
     char cur_char{};
     bool eof{false};
-    const typename t_input_stream::pos_type last_newline_pos_count{};
+    bool handled_comment_in_name_proper{};
+    std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+        pos_count_before_handled_comment_in_name_proper{};
     while (true) {
-      handle_comments(ctx);
+      if (last_state == name_location::name_proper) {
+        pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
+                                                           ctx.char_count};
+        handled_comment_in_name_proper = handle_comments(ctx);
+      }
+      {
+        handle_comments(ctx); // TODO
+      }
       ctx.input_stream.get(cur_char);
       if (ctx.input_stream.eof() == true) {
         eof = true;
@@ -1895,7 +1904,7 @@ std::pair<libconfigfile::parser::impl::directive,
           last_state = name_location::leading_whitespace;
           ;
         } else {
-          if (last_newline_pos_count > start_pos_count) {
+          if (ctx.line_count != start_pos_count.first) {
             std::string const what_arg{"entire directive must appear "
                                        "on one line"};
             throw syntax_error::generate_formatted_error(
@@ -1918,7 +1927,7 @@ std::pair<libconfigfile::parser::impl::directive,
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else {
-          if (last_newline_pos_count > start_pos_count) {
+          if (ctx.line_count != start_pos_count.first) {
             std::string const what_arg{"entire directive must appear "
                                        "on one line"};
             throw syntax_error::generate_formatted_error(
@@ -1939,11 +1948,18 @@ std::pair<libconfigfile::parser::impl::directive,
                           character_constants::g_k_whitespace_chars) == true) {
           last_state = name_location::done;
         } else {
-          if (last_newline_pos_count > start_pos_count) {
+          if (ctx.line_count != start_pos_count.first) {
             std::string const what_arg{"entire directive must appear "
                                        "on one line"};
             throw syntax_error::generate_formatted_error(
                 what_arg, ctx.identifier, ctx.line_count, ctx.char_count);
+          } else if (handled_comment_in_name_proper == true) {
+            std::string const what_arg{
+                "directive name can no tbe split by comments"};
+            throw syntax_error::generate_formatted_error(
+                what_arg, ctx.identifier,
+                pos_count_before_handled_comment_in_name_proper.first,
+                pos_count_before_handled_comment_in_name_proper.second);
           } else {
             name.push_back(cur_char);
           }
