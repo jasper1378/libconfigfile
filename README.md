@@ -91,7 +91,6 @@ While calling `libconfigfile::parser()`, errors resulting in the parser itself (
 
 The following are a few of the improvements that I would like to implement in libconfigfile sometime in the future.
 
-- Improve standardization and phrasing of error messages
 - Provide a "snapshot" into file at the location of a syntax error (see GCC for an example)
 - Functionality to verify semantic correctness of config file (would rely on another file provided by the application developer specifying which options should be set and what data types they should be)
 - Unicode support for strings
