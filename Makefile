@@ -10,7 +10,7 @@ LINK_FLAGS := -shared
 RELEASE_LINK_FLAGS :=
 DEBUG_LINK_FLAGS :=
 SOURCE_DIRS := ./src
-INCLUDE_DIR := ./include
+INCLUDE_DIRS := ./include
 LIBRARIES :=
 INSTALL_PATH := /usr/local
 
@@ -25,7 +25,7 @@ SHELL := /bin/bash
 
 .SUFFIXES:
 
-INCLUDE_FLAGS := $(addprefix -I, $(shell find $(INCLUDE_DIR) -type d))
+INCLUDE_FLAGS := $(addprefix -I, $(shell find $(INCLUDE_DIRS) -type d))
 export CPPFLAGS := $(INCLUDE_FLAGS) -MMD -MP
 
 LINK_FLAGS += $(addprefix -l, $(LIBRARIES))
@@ -67,7 +67,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 install:
 	@install -v -Dm755 $(BUILD_DIR)/$(SHARED_LIB_NAME) -t $(LIB_INSTALL_PATH)/
 	@install -v -Dm644 $(BUILD_DIR)/$(STATIC_LIB_NAME) -t $(LIB_INSTALL_PATH)/
-	@install -v -Dm644 $(INCLUDE_DIR)/* -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
+	@install -v -Dm644 $(INCLUDE_DIRS)/* -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
 
 .PHONY: uninstall
 uninstall:
