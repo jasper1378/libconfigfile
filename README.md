@@ -3,9 +3,6 @@
 ## About
 libconfigfile is a C++ configuration file parsing library. 
 
-## Note
-This project is currently in progress. Do not use!
-
 ## Installation
 Acquire the sources
 ```
