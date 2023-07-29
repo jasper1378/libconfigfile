@@ -1,7 +1,7 @@
 # Remember:
 # GNU make is a picky little bugger who doesn't like spaces in his file paths
 
-LIB_NAME := libconfigfile
+LIB_NAME := hello_world
 CXX := g++
 COMPILE_FLAGS := -fPIC -std=c++20 -Wall -Wextra -g
 RELEASE_COMPILE_FLAGS := -O2 -DNDEBUG
@@ -10,8 +10,10 @@ LINK_FLAGS := -shared
 RELEASE_LINK_FLAGS :=
 DEBUG_LINK_FLAGS :=
 SOURCE_DIRS := ./src
-INCLUDE_DIRS := ./include
+SUBMODULE_DIR := ./submodules
+INCLUDE_DIRS := ./include $(wildcard $(SUBMODULE_DIR)/*/include)
 LIBRARIES :=
+SUBMODULE_OBJECTS := $(wildcard $(SUBMODULE_DIR)/*/build/*.a)
 INSTALL_PATH := /usr/local
 
 STATIC_LIB_NAME := $(LIB_NAME).a
@@ -52,10 +54,10 @@ all: $(BUILD_DIR)/$(SHARED_LIB_NAME) $(BUILD_DIR)/$(STATIC_LIB_NAME)
 
 
 $(BUILD_DIR)/$(SHARED_LIB_NAME): $(OBJECTS)
-	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
+	$(CXX) $(OBJECTS) $(SUBMODULE_OBJECTS) $(LDFLAGS) -o $@
 
 $(BUILD_DIR)/$(STATIC_LIB_NAME): $(OBJECTS)
-	ar rcs $@ $(OBJECTS)
+	ar rcs $@ $(OBJECTS) $(SUBMODULE_OBJECTS)
 
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	@mkdir -p $(dir $@)
