@@ -1,7 +1,7 @@
 # Remember:
 # GNU make is a picky little bugger who doesn't like spaces in his file paths
 
-LIB_NAME := hello_world
+LIB_NAME := libconfigfile
 CXX := g++
 COMPILE_FLAGS := -fPIC -std=c++20 -Wall -Wextra -g
 RELEASE_COMPILE_FLAGS := -O2 -DNDEBUG
