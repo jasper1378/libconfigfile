@@ -1616,9 +1616,15 @@ libconfigfile::parser::impl::parse_string_value(
     }
 
     if (eof == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_3_3, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      if (in_string == true) {
+        throw syntax_error::generate_formatted_error(
+            error_messages::err_msg_1_3_3, ctx.identifier, ctx.line_count,
+            ctx.char_count);
+      } else {
+        throw syntax_error::generate_formatted_error(
+            error_messages::err_msg_1_2_3, ctx.identifier, ctx.line_count,
+            ctx.char_count);
+      }
     } else {
       if (in_string == true) {
         if (last_opening_delimiter_pos_count.first != ctx.line_count) {
