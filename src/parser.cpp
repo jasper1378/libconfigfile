@@ -35,12 +35,10 @@
 #include <variant>
 #include <vector>
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
-    parse(const std::string &identifier, t_input_stream &input_stream,
-          const bool identifier_is_file_path /*= false*/) {
+libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::parser::parse(const std::string &identifier,
+                             std::istream &input_stream,
+                             const bool identifier_is_file_path /*= false*/) {
   return impl::parse(identifier, input_stream, identifier_is_file_path);
 }
 
@@ -50,14 +48,11 @@ libconfigfile::parser::parse_file(const std::filesystem::path &file_path) {
   return impl::parse(file_path, input_stream, true);
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
-    impl::parse(const std::string &identifier, t_input_stream &input_stream,
-                const bool identifier_is_file_path /*= false*/) {
-  context<t_input_stream> ctx{identifier, input_stream, identifier_is_file_path,
-                              1, 0};
+libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::parser::impl::parse(
+    const std::string &identifier, std::istream &input_stream,
+    const bool identifier_is_file_path /*= false*/) {
+  context ctx{identifier, input_stream, identifier_is_file_path, 1, 0};
 
   if (ctx.input_stream.good() == false) {
     throw std::runtime_error{
@@ -71,19 +66,15 @@ libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-std::pair<std::string,
-          libconfigfile::node_ptr<libconfigfile::section_node>> libconfigfile::
-    parser::impl::parse_section(context<t_input_stream> &ctx,
-                                const bool is_root_section) {
+std::pair<std::string, libconfigfile::node_ptr<libconfigfile::section_node>>
+libconfigfile::parser::impl::parse_section(context &ctx,
+                                           const bool is_root_section) {
   std::pair<std::string, node_ptr<section_node>> ret_val{
       "", make_node_ptr<section_node>()};
 
   if (is_root_section == true) {
-    const typename t_input_stream::int_type first_char{ctx.input_stream.peek()};
-    if (first_char == t_input_stream::traits_type::eof()) {
+    const typename std::istream::int_type first_char{ctx.input_stream.peek()};
+    if (first_char == std::istream::traits_type::eof()) {
       return ret_val;
     }
   }
@@ -446,12 +437,8 @@ std::pair<std::string,
   return ret_val;
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-std::pair<std::string,
-          libconfigfile::node_ptr<libconfigfile::value_node>> libconfigfile::
-    parser::impl::parse_key_value(context<t_input_stream> &ctx) {
+std::pair<std::string, libconfigfile::node_ptr<libconfigfile::value_node>>
+libconfigfile::parser::impl::parse_key_value(context &ctx) {
   std::pair<std::string, node_ptr<value_node>> ret_val{};
 
   ret_val.first = parse_key_value_key(ctx);
@@ -460,11 +447,7 @@ std::pair<std::string,
   return ret_val;
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-std::string libconfigfile::parser::impl::parse_key_value_key(
-    context<t_input_stream> &ctx) {
+std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
   std::string key_name{};
 
   enum class key_name_location {
@@ -628,11 +611,8 @@ std::string libconfigfile::parser::impl::parse_key_value_key(
   return key_name;
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::value_node> libconfigfile::parser::impl::
-    parse_key_value_value(context<t_input_stream> &ctx) {
+libconfigfile::node_ptr<libconfigfile::value_node>
+libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
   bool first_loop{true};
   char cur_char{};
 
@@ -678,13 +658,10 @@ libconfigfile::node_ptr<libconfigfile::value_node> libconfigfile::parser::impl::
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::array_value_node> libconfigfile::parser::
-    impl::parse_array_value(context<t_input_stream> &ctx,
-                            const std::string &possible_terminating_chars,
-                            char *actual_terminating_char /*= nullptr*/) {
+libconfigfile::node_ptr<libconfigfile::array_value_node>
+libconfigfile::parser::impl::parse_array_value(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
   node_ptr<libconfigfile::array_value_node> ret_val{
       make_node_ptr<array_value_node>()};
 
@@ -816,14 +793,10 @@ libconfigfile::node_ptr<libconfigfile::array_value_node> libconfigfile::parser::
   return ret_val;
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::integer_end_value_node> libconfigfile::
-    parser::impl::parse_integer_value(
-        context<t_input_stream> &ctx,
-        const std::string &possible_terminating_chars,
-        char *actual_terminating_char /*= nullptr*/) {
+libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
+libconfigfile::parser::impl::parse_integer_value(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
   static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
 
   std::string actual_digits{};
@@ -907,7 +880,7 @@ libconfigfile::node_ptr<libconfigfile::integer_end_value_node> libconfigfile::
       switch (cur_char) {
       case character_constants::g_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
-            (ctx.input_stream.peek() == t_input_stream::traits_type::eof())) {
+            (ctx.input_stream.peek() == std::istream::traits_type::eof())) {
           throw syntax_error::generate_formatted_error(
               error_messages::err_msg_1_4_2, ctx.identifier, ctx.line_count,
               ctx.char_count);
@@ -1093,14 +1066,10 @@ libconfigfile::node_ptr<libconfigfile::integer_end_value_node> libconfigfile::
   return ret_val;
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::float_end_value_node> libconfigfile::
-    parser::impl::parse_float_value(
-        context<t_input_stream> &ctx,
-        const std::string &possible_terminating_chars,
-        char *actual_terminating_char /*= nullptr*/) {
+libconfigfile::node_ptr<libconfigfile::float_end_value_node>
+libconfigfile::parser::impl::parse_float_value(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
   std::string sanitized_string{};
 
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
@@ -1614,14 +1583,10 @@ libconfigfile::node_ptr<libconfigfile::float_end_value_node> libconfigfile::
   return ret_val;
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::string_end_value_node> libconfigfile::
-    parser::impl::parse_string_value(
-        context<t_input_stream> &ctx,
-        const std::string &possible_terminating_chars,
-        char *actual_terminating_char /*= nullptr*/) {
+libconfigfile::node_ptr<libconfigfile::string_end_value_node>
+libconfigfile::parser::impl::parse_string_value(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
   bool in_string{false};
 
   std::string string_contents{};
@@ -1701,14 +1666,10 @@ libconfigfile::node_ptr<libconfigfile::string_end_value_node> libconfigfile::
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::value_node> libconfigfile::parser::impl::
-    call_appropriate_value_parse_func(
-        context<t_input_stream> &ctx,
-        const std::string &possible_terminating_chars,
-        char *actual_terminating_char /*= nullptr*/) {
+libconfigfile::node_ptr<libconfigfile::value_node>
+libconfigfile::parser::impl::call_appropriate_value_parse_func(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
 
   std::variant<value_node_type, end_value_node_type> value_type_variant{
       identify_key_value_value_type(ctx, possible_terminating_chars,
@@ -1766,13 +1727,9 @@ libconfigfile::node_ptr<libconfigfile::value_node> libconfigfile::parser::impl::
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
 std::pair<libconfigfile::parser::impl::directive,
-          std::optional<libconfigfile::node_ptr<
-              libconfigfile::section_node>>> libconfigfile::parser::impl::
-    parse_directive(context<t_input_stream> &ctx) {
+          std::optional<libconfigfile::node_ptr<libconfigfile::section_node>>>
+libconfigfile::parser::impl::parse_directive(context &ctx) {
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_pos_count{ctx.line_count, ctx.char_count};
 
@@ -1923,11 +1880,7 @@ std::pair<libconfigfile::parser::impl::directive,
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-void libconfigfile::parser::impl::parse_version_directive(
-    context<t_input_stream> &ctx) {
+void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_pos_count{ctx.line_count, ctx.char_count};
 
@@ -2104,11 +2057,8 @@ void libconfigfile::parser::impl::parse_version_directive(
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
-    impl::parse_include_directive(context<t_input_stream> &ctx) {
+libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_pos_count{ctx.line_count, ctx.char_count};
 
@@ -2328,10 +2278,7 @@ libconfigfile::node_ptr<libconfigfile::section_node> libconfigfile::parser::
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>)) bool
-libconfigfile::parser::impl::handle_comments(context<t_input_stream> &ctx) {
+bool libconfigfile::parser::impl::handle_comments(context &ctx) {
   static_assert(character_constants::g_k_comment_cpp.front() ==
                 character_constants::g_k_comment_c_start.front());
   static_assert(character_constants::g_k_comment_cpp.size() == 2);
@@ -2422,11 +2369,7 @@ libconfigfile::parser::impl::handle_comments(context<t_input_stream> &ctx) {
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-char libconfigfile::parser::impl::handle_escape_sequence(
-    context<t_input_stream> &ctx) {
+char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
   char escape_leader_char{};
   ctx.input_stream.get(escape_leader_char);
   if (ctx.input_stream.eof() == false) {
@@ -2506,14 +2449,10 @@ char libconfigfile::parser::impl::handle_escape_sequence(
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
-std::variant<libconfigfile::value_node_type,
-             libconfigfile::end_value_node_type> libconfigfile::parser::impl::
-    identify_key_value_value_type(context<t_input_stream> &ctx,
-                                  const std::string &possible_terminating_chars,
-                                  char *actual_terminating_char /*= nullptr*/) {
+std::variant<libconfigfile::value_node_type, libconfigfile::end_value_node_type>
+libconfigfile::parser::impl::identify_key_value_value_type(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
 
   std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       pos_count_at_start{ctx.line_count, ctx.char_count};
@@ -2594,14 +2533,10 @@ std::variant<libconfigfile::value_node_type,
   }
 }
 
-template <typename t_input_stream>
-  requires((std::same_as<t_input_stream, std::istream>) ||
-           (std::derived_from<t_input_stream, std::istream>))
 libconfigfile::end_value_node_type
-    libconfigfile::parser::impl::identify_key_value_numeric_value_type(
-        context<t_input_stream> &ctx,
-        const std::string &possible_terminating_chars,
-        char *actual_terminating_char /*= nullptr*/) {
+libconfigfile::parser::impl::identify_key_value_numeric_value_type(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
 
   std::string gotten_chars{};
   std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
