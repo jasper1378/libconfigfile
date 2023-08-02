@@ -59,8 +59,27 @@ bool libconfigfile::string_end_value_node::polymorphic_value_compare(
 
 std::ostream &
 libconfigfile::string_end_value_node::print(std::ostream &out) const {
-  out << character_constants::g_k_string_delimiter << static_cast<base_t>(*this)
-      << character_constants::g_k_string_delimiter;
+  static constexpr std::string escaped_string_delimiter{
+      character_constants::g_k_escape_leader +
+      character_constants::g_k_string_delimiter};
+  out << character_constants::g_k_string_delimiter;
+
+  std::string::size_type pos{0};
+  std::string::size_type pos_prev{0};
+  while (true) {
+    pos = this->find(character_constants::g_k_string_delimiter, pos_prev);
+    if (pos == std::string::npos) {
+      break;
+    } else {
+      out << this->substr(pos_prev, (pos - pos_prev));
+      out << escaped_string_delimiter;
+      pos_prev = pos + 1;
+    }
+  }
+  out << this->substr(pos_prev);
+
+  out << character_constants::g_k_string_delimiter;
+
   return out;
 }
 
