@@ -1,20 +1,18 @@
 #include "parser.hpp"
 
-#include "array_value_node.hpp"
+#include "array_node.hpp"
 #include "character_constants.hpp"
 #include "constexpr_tolower_toupper.hpp"
-#include "end_value_node.hpp"
 #include "error_messages.hpp"
-#include "float_end_value_node.hpp"
-#include "integer_end_value_node.hpp"
+#include "float_node.hpp"
+#include "integer_node.hpp"
+#include "map_node.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
 #include "numeral_system.hpp"
-#include "section_node.hpp"
-#include "string_end_value_node.hpp"
+#include "string_node.hpp"
 #include "syntax_error.hpp"
-#include "value_node.hpp"
 #include "version.hpp"
 
 #include <algorithm>
@@ -35,20 +33,20 @@
 #include <variant>
 #include <vector>
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::parse(const std::string &identifier,
                              std::istream &input_stream,
                              const bool identifier_is_file_path /*= false*/) {
   return impl::parse(identifier, input_stream, identifier_is_file_path);
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::parse_file(const std::filesystem::path &file_path) {
   std::ifstream input_stream{file_path};
   return impl::parse(file_path, input_stream, true);
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::impl::parse(
     const std::string &identifier, std::istream &input_stream,
     const bool identifier_is_file_path /*= false*/) {
@@ -62,13 +60,13 @@ libconfigfile::parser::impl::parse(
         "\" could not be opened for "
         "reading"};
   } else {
-    return parse_section(ctx, true).second;
+    return parse_map_value(ctx, true).second;
   }
 }
 
-std::pair<std::string, libconfigfile::node_ptr<libconfigfile::section_node>>
-libconfigfile::parser::impl::parse_section(context &ctx,
-                                           const bool is_root_section) {
+std::pair<std::string, libconfigfile::node_ptr<libconfigfile::map_node>>
+libconfigfile::parser::impl::parse_map_value(context &ctx,
+                                             const bool is_root_section) {
   std::pair<std::string, node_ptr<section_node>> ret_val{
       "", make_node_ptr<section_node>()};
 
@@ -437,9 +435,9 @@ libconfigfile::parser::impl::parse_section(context &ctx,
   return ret_val;
 }
 
-std::pair<std::string, libconfigfile::node_ptr<libconfigfile::value_node>>
+std::pair<std::string, libconfigfile::node_ptr<libconfigfile::node>>
 libconfigfile::parser::impl::parse_key_value(context &ctx) {
-  std::pair<std::string, node_ptr<value_node>> ret_val{};
+  std::pair<std::string, node_ptr<node>> ret_val{};
 
   ret_val.first = parse_key_value_key(ctx);
   ret_val.second = parse_key_value_value(ctx);
@@ -611,7 +609,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
   return key_name;
 }
 
-libconfigfile::node_ptr<libconfigfile::value_node>
+libconfigfile::node_ptr<libconfigfile::node>
 libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
   bool first_loop{true};
   char cur_char{};
@@ -658,12 +656,11 @@ libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::array_value_node>
+libconfigfile::node_ptr<libconfigfile::array_node>
 libconfigfile::parser::impl::parse_array_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
-  node_ptr<libconfigfile::array_value_node> ret_val{
-      make_node_ptr<array_value_node>()};
+  node_ptr<libconfigfile::array_node> ret_val{make_node_ptr<array_node>()};
 
   static const std::string possible_terminating_chars_for_elements{
       std::string{} + character_constants::g_k_array_element_separator +
@@ -793,7 +790,7 @@ libconfigfile::parser::impl::parse_array_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
+libconfigfile::node_ptr<libconfigfile::integer_node>
 libconfigfile::parser::impl::parse_integer_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -1032,25 +1029,25 @@ libconfigfile::parser::impl::parse_integer_value(
     num_sys = &numeral_system_decimal;
   }
 
-  node_ptr<integer_end_value_node> ret_val{nullptr};
+  node_ptr<integer_node> ret_val{nullptr};
 
-  static_assert((sizeof(decltype(std::stoll(""))) >=
-                 sizeof(integer_end_value_node_data_t)),
-                "no string-to-int conversion function (std::stoi(), "
-                "std::stol(), std::stoll()) with return type large enough for "
-                "integer_end_value_node_t");
+  static_assert(
+      (sizeof(decltype(std::stoll(""))) >= sizeof(integer_node_data_t)),
+      "no string-to-int conversion function (std::stoi(), "
+      "std::stol(), std::stoll()) with return type large enough for "
+      "integer_end_value_node_t");
 
   try {
     if constexpr ((sizeof(decltype(std::stoi("")))) >=
-                  (sizeof(integer_end_value_node_data_t))) {
-      ret_val = make_node_ptr<integer_end_value_node>(
+                  (sizeof(integer_node_data_t))) {
+      ret_val = make_node_ptr<integer_node>(
           std::stoi(actual_digits, nullptr, num_sys->base), num_sys);
     } else if constexpr ((sizeof(decltype(std::stol("")))) >=
-                         (sizeof(integer_end_value_node_data_t))) {
-      ret_val = make_node_ptr<integer_end_value_node>(
+                         (sizeof(integer_node_data_t))) {
+      ret_val = make_node_ptr<integer_node>(
           std::stol(actual_digits, nullptr, num_sys->base), num_sys);
     } else {
-      ret_val = make_node_ptr<integer_end_value_node>(
+      ret_val = make_node_ptr<integer_node>(
           std::stoll(actual_digits, nullptr, num_sys->base), num_sys);
     }
   } catch (const std::out_of_range &ex) {
@@ -1066,7 +1063,7 @@ libconfigfile::parser::impl::parse_integer_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::float_end_value_node>
+libconfigfile::node_ptr<libconfigfile::float_node>
 libconfigfile::parser::impl::parse_float_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -1075,7 +1072,7 @@ libconfigfile::parser::impl::parse_float_value(
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       pos_count_at_start{ctx.line_count, ctx.char_count};
 
-  static const std::unordered_map<std::string, float_end_value_node_data_t>
+  static const std::unordered_map<std::string, float_node_data_t>
       special_floats{{character_constants::g_k_float_infinity.second,
                       character_constants::g_k_float_infinity.first},
                      {(character_constants::g_k_num_positive_sign +
@@ -1211,13 +1208,13 @@ libconfigfile::parser::impl::parse_float_value(
             if (case_insensitive_string_compare(
                     special_float_string,
                     character_constants::g_k_float_infinity.second) == true) {
-              node_ptr<float_end_value_node> ret_val{nullptr};
+              node_ptr<float_node> ret_val{nullptr};
 
               if (last_char == char_type::negative) {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     -(character_constants::g_k_float_infinity.first));
               } else {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     character_constants::g_k_float_infinity.first);
               }
 
@@ -1287,13 +1284,13 @@ libconfigfile::parser::impl::parse_float_value(
                     special_float_string,
                     character_constants::g_k_float_not_a_number.second) ==
                 true) {
-              node_ptr<float_end_value_node> ret_val{nullptr};
+              node_ptr<float_node> ret_val{nullptr};
 
               if (last_char == char_type::negative) {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     -(character_constants::g_k_float_not_a_number.first));
               } else {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     character_constants::g_k_float_not_a_number.first);
               }
 
@@ -1553,25 +1550,22 @@ libconfigfile::parser::impl::parse_float_value(
     sanitized_string = "0";
   }
 
-  node_ptr<float_end_value_node> ret_val{nullptr};
+  node_ptr<float_node> ret_val{nullptr};
 
-  static_assert(
-      (sizeof(decltype(std::stold(""))) >= sizeof(float_end_value_node_data_t)),
-      "no string-to-float conversion function with return type "
-      "large enough for float_end_value_node_t");
+  static_assert((sizeof(decltype(std::stold(""))) >= sizeof(float_node)),
+                "no string-to-float conversion function with return type "
+                "large enough for float_node_t");
 
   try {
     if constexpr ((sizeof(decltype(std::stof("")))) >=
-                  (sizeof(float_end_value_node_data_t))) {
-      ret_val = make_node_ptr<float_end_value_node>(
-          std::stof(sanitized_string, nullptr));
+                  (sizeof(float_node_data_t))) {
+      ret_val = make_node_ptr<float_node>(std::stof(sanitized_string, nullptr));
     } else if constexpr ((sizeof(decltype(std::stod("")))) >=
-                         (sizeof(float_end_value_node_data_t))) {
-      ret_val = make_node_ptr<float_end_value_node>(
-          std::stod(sanitized_string, nullptr));
+                         (sizeof(float_node_data_t))) {
+      ret_val = make_node_ptr<float_node>(std::stod(sanitized_string, nullptr));
     } else {
-      ret_val = make_node_ptr<float_end_value_node>(
-          std::stold(sanitized_string, nullptr));
+      ret_val =
+          make_node_ptr<float_node>(std::stold(sanitized_string, nullptr));
     }
 
   } catch (const std::out_of_range &ex) {
@@ -1583,7 +1577,7 @@ libconfigfile::parser::impl::parse_float_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::string_end_value_node>
+libconfigfile::node_ptr<libconfigfile::string_node>
 libconfigfile::parser::impl::parse_string_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -1668,11 +1662,11 @@ libconfigfile::parser::impl::parse_string_value(
                                                  ctx.identifier, ctx.line_count,
                                                  ctx.char_count);
   } else {
-    return make_node_ptr<string_end_value_node>(std::move(string_contents));
+    return make_node_ptr<string_node>(std::move(string_contents));
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::value_node>
+libconfigfile::node_ptr<libconfigfile::node>
 libconfigfile::parser::impl::call_appropriate_value_parse_func(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -1734,7 +1728,7 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
 }
 
 std::pair<libconfigfile::parser::impl::directive,
-          std::optional<libconfigfile::node_ptr<libconfigfile::section_node>>>
+          std::optional<libconfigfile::node_ptr<libconfigfile::map_node>>>
 libconfigfile::parser::impl::parse_directive(context &ctx) {
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_pos_count{ctx.line_count, ctx.char_count};
@@ -1762,9 +1756,8 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
         pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
                                                            ctx.char_count};
         handled_comment_in_name_proper = handle_comments(ctx);
-      }
-      {
-        handle_comments(ctx); // TODO
+      } else {
+        handle_comments(ctx); // TODO // TODO: why is there a TODO here?
       }
       ctx.input_stream.get(cur_char);
       if (ctx.input_stream.eof() == true) {
@@ -2063,7 +2056,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_pos_count{ctx.line_count, ctx.char_count};
@@ -2455,7 +2448,7 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
   }
 }
 
-std::variant<libconfigfile::value_node_type, libconfigfile::end_value_node_type>
+libconfigfile::node_type
 libconfigfile::parser::impl::identify_key_value_value_type(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -2521,12 +2514,16 @@ libconfigfile::parser::impl::identify_key_value_value_type(
         reset_context();
 
         switch (cur_char) {
+        case character_constants::g_k_section_body_opening_delimiter: {
+          return node_type::MAP;
+        } break;
+
         case character_constants::g_k_array_opening_delimiter: {
-          return value_node_type::ARRAY;
+          return node_type::ARRAY;
         } break;
 
         case character_constants::g_k_string_delimiter: {
-          return end_value_node_type::STRING;
+          return node_type::STRING;
         } break;
 
         default: {
@@ -2539,7 +2536,7 @@ libconfigfile::parser::impl::identify_key_value_value_type(
   }
 }
 
-libconfigfile::end_value_node_type
+libconfigfile::node_type
 libconfigfile::parser::impl::identify_key_value_numeric_value_type(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -2581,11 +2578,10 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
     ctx.char_count = pos_count_at_start.second;
   }};
 
-  const auto cleanup_and_return{
-      [&reset_context](const end_value_node_type ret_val) {
-        reset_context();
-        return ret_val;
-      }};
+  const auto cleanup_and_return{[&reset_context](const node_type ret_val) {
+    reset_context();
+    return ret_val;
+  }};
 
   if ((case_insensitive_string_find(
            gotten_chars, character_constants::g_k_float_infinity.second) !=
@@ -2593,11 +2589,11 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
       (case_insensitive_string_find(
            gotten_chars, character_constants::g_k_float_not_a_number.second) !=
        (std::string::npos))) {
-    return cleanup_and_return(end_value_node_type::FLOAT);
+    return cleanup_and_return(node_type::FLOAT);
   } else {
     if ((gotten_chars.find(character_constants::g_k_float_decimal_point)) !=
         (std::string::npos)) {
-      return cleanup_and_return(end_value_node_type::FLOAT);
+      return cleanup_and_return(node_type::FLOAT);
     } else {
       if (((gotten_chars.find(
                character_constants::g_k_float_exponent_sign_lower)) !=
@@ -2609,12 +2605,12 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
              (std::string::npos)) ||
             ((gotten_chars.find(numeral_system_hexadecimal.prefix_alt)) !=
              (std::string::npos))) {
-          return cleanup_and_return(end_value_node_type::INTEGER);
+          return cleanup_and_return(node_type::INTEGER);
         } else {
-          return cleanup_and_return(end_value_node_type::FLOAT);
+          return cleanup_and_return(node_type::FLOAT);
         }
       } else {
-        return cleanup_and_return(end_value_node_type::INTEGER);
+        return cleanup_and_return(node_type::INTEGER);
       }
     }
   }

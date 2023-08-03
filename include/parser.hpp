@@ -1,18 +1,16 @@
 #ifndef LIBCONFIGFILE_PARSER_HPP
 #define LIBCONFIGFILE_PARSER_HPP
 
-#include "array_value_node.hpp"
+#include "array_node.hpp"
 #include "character_constants.hpp"
-#include "end_value_node.hpp"
-#include "float_end_value_node.hpp"
-#include "integer_end_value_node.hpp"
+#include "float_node.hpp"
+#include "integer_node.hpp"
+#include "map_node.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
 #include "numeral_system.hpp"
-#include "section_node.hpp"
-#include "string_end_value_node.hpp"
-#include "value_node.hpp"
+#include "string_node.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -26,10 +24,10 @@
 
 namespace libconfigfile {
 namespace parser {
-node_ptr<section_node> parse(const std::string &identifier,
-                             std::istream &input_stream,
-                             const bool identifier_is_file_path = false);
-node_ptr<section_node> parse_file(const std::filesystem::path &file_path);
+node_ptr<map_node> parse(const std::string &identifier,
+                         std::istream &input_stream,
+                         const bool identifier_is_file_path = false);
+node_ptr<map_node> parse_file(const std::filesystem::path &file_path);
 
 namespace impl {
 
@@ -47,48 +45,47 @@ enum class directive {
   include,
 };
 
-node_ptr<section_node> parse(const std::string &identifier,
-                             std::istream &input_stream,
-                             const bool identifier_is_file_path = false);
+node_ptr<map_node> parse(const std::string &identifier,
+                         std::istream &input_stream,
+                         const bool identifier_is_file_path = false);
 
-std::pair<std::string, node_ptr<section_node>>
-parse_section(context &ctx, const bool is_root_section = false);
-
-std::pair<std::string, node_ptr<value_node>> parse_key_value(context &ctx);
+std::pair<std::string, node_ptr<node>> parse_key_value(context &ctx);
 std::string parse_key_value_key(context &ctx);
-node_ptr<value_node> parse_key_value_value(context &ctx);
+node_ptr<node> parse_key_value_value(context &ctx);
 
-node_ptr<array_value_node>
+std::pair<std::string, node_ptr<map_node>>
+parse_map_value(context &ctx, const bool is_root_section = false);
+node_ptr<array_node>
 parse_array_value(context &ctx, const std::string &possible_terminating_chars,
                   char *actual_terminating_char = nullptr);
-node_ptr<integer_end_value_node>
+node_ptr<integer_node>
 parse_integer_value(context &ctx, const std::string &possible_terminating_chars,
                     char *actual_terminating_char = nullptr);
-node_ptr<float_end_value_node>
+node_ptr<float_node>
 parse_float_value(context &ctx, const std::string &possible_terminating_chars,
                   char *actual_terminating_char = nullptr);
-node_ptr<string_end_value_node>
+node_ptr<string_node>
 parse_string_value(context &ctx, const std::string &possible_terminating_chars,
                    char *actual_terminating_char = nullptr);
 
-node_ptr<value_node>
+node_ptr<node>
 call_appropriate_value_parse_func(context &ctx,
                                   const std::string &possible_terminating_chars,
                                   char *actual_terminating_char = nullptr);
 
-std::pair<directive, std::optional<node_ptr<section_node>>>
+std::pair<directive, std::optional<node_ptr<map_node>>>
 parse_directive(context &ctx);
 void parse_version_directive(context &ctx);
-node_ptr<section_node> parse_include_directive(context &ctx);
+node_ptr<map_node> parse_include_directive(context &ctx);
 
 bool handle_comments(context &ctx);
 char handle_escape_sequence(context &ctx);
 
-std::variant<value_node_type, end_value_node_type>
+node_type
 identify_key_value_value_type(context &ctx,
                               const std::string &possible_terminating_chars,
                               char *actual_terminating_char = nullptr);
-end_value_node_type identify_key_value_numeric_value_type(
+node_type identify_key_value_numeric_value_type(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char = nullptr);
 
