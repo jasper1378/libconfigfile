@@ -53,20 +53,22 @@ std::pair<std::string, node_ptr<node>> parse_key_value(context &ctx);
 std::string parse_key_value_key(context &ctx);
 node_ptr<node> parse_key_value_value(context &ctx);
 
-std::pair<std::string, node_ptr<map_node>>
-parse_map_value(context &ctx, const bool is_root_section = false);
-node_ptr<array_node>
-parse_array_value(context &ctx, const std::string &possible_terminating_chars,
-                  char *actual_terminating_char = nullptr);
+node_ptr<string_node>
+parse_string_value(context &ctx, const std::string &possible_terminating_chars,
+                   char *actual_terminating_char = nullptr);
 node_ptr<integer_node>
 parse_integer_value(context &ctx, const std::string &possible_terminating_chars,
                     char *actual_terminating_char = nullptr);
 node_ptr<float_node>
 parse_float_value(context &ctx, const std::string &possible_terminating_chars,
                   char *actual_terminating_char = nullptr);
-node_ptr<string_node>
-parse_string_value(context &ctx, const std::string &possible_terminating_chars,
-                   char *actual_terminating_char = nullptr);
+node_ptr<array_node>
+parse_array_value(context &ctx, const std::string &possible_terminating_chars,
+                  char *actual_terminating_char = nullptr);
+node_ptr<map_node>
+parse_map_value(context &ctx, const std::string &possible_terminating_chars,
+                char *actual_terminating_char = nullptr,
+                const bool is_root_map = false);
 
 node_ptr<node>
 call_appropriate_value_parse_func(context &ctx,

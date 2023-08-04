@@ -3,12 +3,12 @@
 
 namespace libconfigfile {
 enum class node_type {
-  MAP,
-  ARRAY,
   STRING,
-  FLOAT,
   INTEGER,
-  MAX,
+  FLOAT,
+  ARRAY,
+  MAP,
+  NULLL,
 };
 } // namespace libconfigfile
 

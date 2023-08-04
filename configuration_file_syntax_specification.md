@@ -11,7 +11,7 @@ Version: 0
 - [Floats](#floats)
 - [Booleans](#booleans)
 - [Arrays](#arrays)
-- [Sections](#sections)
+- [Maps](#maps)
 - [Directives](#directives)
     - [Version Directive](#version-directive)
     - [Include Directive](#include-directive)
@@ -58,6 +58,7 @@ key4 = "/* string, not a comment */";
     - Integer
     - Float
     - Array
+    - Map
 ```
 key1 = "value";
 key2 = ; // invalid
@@ -70,10 +71,9 @@ key_4 = "value";
 name = "Jasper";
 name = "Young"; // invalid
 
-(section1)
-{
+map1 = {
     name = "jasper1378"; // valid
-}
+};
 ```
 
 ## Strings
@@ -177,8 +177,7 @@ flt17 = -nan;
 - libconfigfile does not support booleans. If `0` and `1` is good enough for C programmers, it's good enough for us.
 
 ## Arrays
-- Arrays are square brackets with values inside. Elements are separated by
-  commas.
+- Arrays are square brackets with values inside. Elements are separated by commas.
 - Arrays can contain values of the same data types allowed in key-value pairs. Values of different types may be mixed. Nested arrays are allowed.
 - Arrays can span multiple lines. A trailing comma after the last value of the array is permitted. Whitespace between array values and commas is ignored.
 ```
@@ -201,52 +200,41 @@ integers3 = [
 ]
 ```
 
-## Sections
-- Sections are collections of key-value pairs. They are defined by a name enclosed by round brackets, followed by the associated key-value pairs and/or nested sections enclosed by curly brackets.
-- Anything between the curly brackets is considered to be within the scope of the section.
-- Sections may be nested.
-- Keys/sections may not share names with other keys/sections in the same direct scope.
-- Naming rules for sections are the same as for keys.
-- Section names must appear completely on one line.
-- Whitespace between the opening/closing round bracket and the section name is allowed and will be ignored.
-- Empty sections are allowed and simply have no key-value pairs and/or sections within them.
-- Empty section names are not permitted.
-- The ordering of objects within a section is not preserved (for performance reasons).
-- The top-level section, also called the root section, starts at the beginning of the document and ends at end-of-file, encompassing everything else in its scope. Unlike other sections, it is nameless.
+## Maps
+- Maps are collections of key-value pairs, enclosed by curly brackets.
+- Anything between the curly brackets is considered to be within the scope of the map.
+- Maps may be nested.
+- Keys may not share names with other keys in the same direct scope.
+- Empty maps are allowed and simply have no key-value pairs within them.
+- The ordering of objects within a map is not preserved (for performance reasons).
+- The top-level map, also called the root map, starts at the beginning of the document and ends at end-of-file, encompassing everything else in its scope. Unlike other maps, it is nameless.
 ```
-(section)
-{
-}
+map = {};
 
-(section_1)
-{
+map_1 = {
     key1 = "some string";
     key2 = 123;
-}
+};
 
-(section_2) {
+map_2 = {
     key1 = "another string";
     key2 = 456;
-}
+};
 
-(parent)
-{
+parent = {
     key = 1;
-    (child)
-    {
+    child = {
         key = 2;
-    }
-}
+    };
+};
 
-(section_3)
-{
+map_3 = {
     key = "value";
-}
+};
 
-(section_3) // invalid
-{
+map_3 = { // invalid
     key = "value";
-}
+};
 ```
 
 ## Directives
@@ -295,19 +283,17 @@ key1 = "value";
 key2 = "value";
 
 // another_file.conf
-(section)
-{
+map = {
     key1 = "value";
     key2 = "value";
-}
+};
 
 // result
 key1 = "value"
-(section)
-{
+map = {
     key1 = "value";
     key2 = "value";
-}
+};
 key2 = "value"
 ```
 

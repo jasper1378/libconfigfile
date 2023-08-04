@@ -17,11 +17,19 @@ static constexpr std::string g_k_comment_cpp{"//"};
 static constexpr std::string g_k_comment_c_start{"/*"};
 static constexpr std::string g_k_comment_c_end{"*/"};
 
+static constexpr char g_k_key_value_assign{'='};
+static constexpr char g_k_key_value_terminate{';'};
+static const std::string g_k_valid_name_chars{
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"};
+
 static constexpr char g_k_directive_leader{'@'};
 static constexpr std::string g_k_version_directive_name{"version"};
 static constexpr std::string g_k_include_directive_name{"include"};
 static constexpr int g_k_max_directive_name_length{std::max(
     g_k_version_directive_name.size(), g_k_include_directive_name.size())};
+
+static constexpr char g_k_map_opening_delimiter{'{'};
+static constexpr char g_k_map_closing_delimiter{'}'};
 
 static constexpr char g_k_array_opening_delimiter{'['};
 static constexpr char g_k_array_closing_delimiter{']'};
@@ -36,17 +44,6 @@ static const std::unordered_map<char, char> g_k_basic_escape_chars{
 static constexpr char g_k_hex_escape_char{'x'};
 static constexpr int g_k_ascii_start{0x00};
 static constexpr int g_k_ascii_end{0x7F};
-
-static const std::string g_k_valid_name_chars{
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"};
-
-static constexpr char g_k_section_name_opening_delimiter{'('};
-static constexpr char g_k_section_name_closing_delimiter{')'};
-static constexpr char g_k_section_body_opening_delimiter{'{'};
-static constexpr char g_k_section_body_closing_delimiter{'}'};
-
-static constexpr char g_k_key_value_assign{'='};
-static constexpr char g_k_key_value_terminate{';'};
 
 static constexpr char g_k_num_digit_separator{'_'};
 static constexpr char g_k_num_positive_sign{'+'};
