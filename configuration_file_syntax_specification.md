@@ -239,6 +239,7 @@ map_3 = { // invalid
 
 ## Directives
 - Directives are defined by an `@` character followed by the name of the directive, and optionally (depending on the specific directive), arguments.
+- Directives may only be found in the root map.
 - The entire directive must appear on one line. A directive and its arguments must not be followed by any other text on the same line.
 - If arguments are present, at least one whitespace characters is required between the end of the directive name and the start of the arguments. All other whitespace between the directive name and the arguments is ignored.
 - Arguments are formatted and delimited according to the rules of the specific directive.

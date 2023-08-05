@@ -49,8 +49,8 @@ bool libconfigfile::integer_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::integer_node::print(std::ostream &out) const {
-
+std::ostream &libconfigfile::integer_node::print(
+    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
   const std::ostreambuf_iterator<char> out_iter{out};
 
   switch (m_num_sys->base) {

@@ -48,28 +48,35 @@ bool libconfigfile::map_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::map_node::print(std::ostream &out) const {
-  for (auto p{this->begin()}; p != this->end(); ++p) {
-
-    switch ((*p).second->get_node_type()) {
-
-    case libconfigfile::node_type::MAP: {
-      out << character_constants::g_k_section_name_opening_delimiter
-          << (*p).first
-          << character_constants::g_k_section_name_closing_delimiter << '\n';
-      out << character_constants::g_k_section_body_opening_delimiter << '\n';
-      out << (*p).second;
-      out << character_constants ::g_k_section_body_closing_delimiter << '\n';
-    } break;
-
-    default: {
-      out << (*p).first << character_constants::g_k_key_value_assign
-          << (*p).second << character_constants::g_k_key_value_terminate
-          << '\n';
-    } break;
-    }
+std::ostream &libconfigfile::map_node::print(std::ostream &out,
+                                             int indent_level /*= 0*/) const {
+  if (m_is_root_map == false) {
+    out << character_constants::g_k_map_opening_delimiter
+        << character_constants::g_k_newline;
   }
+
+  for (auto p{this->begin()}; p != this->end(); ++p) {
+    for (int i{0}; i < indent_level; ++i) {
+      out << character_constants::g_k_indent_str;
+    }
+
+    out << (*p).first << character_constants::g_k_key_value_assign;
+    (*p).second->print(out, (indent_level + 1));
+    out << character_constants::g_k_key_value_terminate
+        << character_constants::g_k_newline;
+  }
+
+  if (m_is_root_map == false) {
+    out << character_constants::g_k_map_closing_delimiter;
+  }
+
   return out;
+}
+
+bool libconfigfile::map_node::get_is_root_map() const { return m_is_root_map; }
+
+void libconfigfile::map_node::set_is_root_map(const bool is_root_map) {
+  m_is_root_map = is_root_map;
 }
 
 libconfigfile::map_node &

@@ -46,6 +46,7 @@ namespace error_messages {
   static const std::string err_msg_1_4_6 {"/error/syntax/integer: negative sign does not appear at start of integer"};
   static const std::string err_msg_1_4_7 {"/error/syntax/integer: numeral system prefix does not appear before integer digits"};
   static const std::string err_msg_1_4_8 {"/error/syntax/integer: positive sign does not appear at start of integer"};
+  static const std::string err_msg_1_4_9 {"/error/syntax/integer: extraneous character(s) appear(s) after integer"};
 
   static const std::string err_msg_1_5_1 {"/error/syntax/float: float contains invalid character(s)"};
   static const std::string err_msg_1_5_2 {"/error/syntax/float: float contains more than one decimal point"};
@@ -59,14 +60,15 @@ namespace error_messages {
   static const std::string err_msg_1_5_10 {"/error/syntax/float: float value in too large"};
   static const std::string err_msg_1_5_11 {"/error/syntax/float: negative sign does not appear at start of integer or exponent part of float"};
   static const std::string err_msg_1_5_12 {"/error/syntax/float: positive sign does not appear at start of integer or exponent part of float"};
+  static const std::string err_msg_1_5_13 {"/error/syntax/float: extraneous character(s) appear(s) after float"};
 
   static const std::string err_msg_1_6_1 {"/error/syntax/array: array opening delimiter is missing"};
   static const std::string err_msg_1_6_2 {"/error/syntax/array: array closing delimiter is missing"};
-  static const std::string err_msg_1_6_3 {"/error/syntax/array: extraneous character(s) appear after array"};
+  static const std::string err_msg_1_6_3 {"/error/syntax/array: extraneous character(s) appear(s) after array"};
 
   static const std::string err_msg_1_7_1 {"/error/syntax/map: map opening delimiter is missing"};
   static const std::string err_msg_1_7_2 {"/error/syntax/map: map closing delimiter is missing"};
-  static const std::string err_msg_1_7_3 {"/error/syntax/map: extranous character(s) appear after map"};
+  static const std::string err_msg_1_7_3 {"/error/syntax/map: extraneous character(s) appear(s) after map"};
 
   static const std::string err_msg_1_8_1 {"/error/syntax/directive: directive is invalid"};
   static const std::string err_msg_1_8_2 {"/error/syntax/directive: directive is split by newline(s)"};

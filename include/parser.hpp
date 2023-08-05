@@ -49,9 +49,14 @@ node_ptr<map_node> parse(const std::string &identifier,
                          std::istream &input_stream,
                          const bool identifier_is_file_path = false);
 
-std::pair<std::string, node_ptr<node>> parse_key_value(context &ctx);
+std::pair<std::string, node_ptr<node>>
+parse_key_value(context &ctx, const std::string &possible_terminating_chars,
+                char *actual_terminating_char = nullptr);
 std::string parse_key_value_key(context &ctx);
-node_ptr<node> parse_key_value_value(context &ctx);
+node_ptr<node>
+parse_key_value_value(context &ctx,
+                      const std::string &possible_terminating_chars,
+                      char *actual_terminating_char = nullptr);
 
 node_ptr<string_node>
 parse_string_value(context &ctx, const std::string &possible_terminating_chars,

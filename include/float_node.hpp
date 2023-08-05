@@ -36,7 +36,9 @@ public:
   virtual float_node *create_clone() const override;
   virtual libconfigfile::node_type get_node_type() const override final;
   virtual bool polymorphic_value_compare(const node *other) const override;
-  virtual std::ostream &print(std::ostream &out) const override;
+  virtual std::ostream &
+  print(std::ostream &out,
+        [[maybe_unused]] const int indent_level = 0) const override;
 
 public:
   value_t get() const;

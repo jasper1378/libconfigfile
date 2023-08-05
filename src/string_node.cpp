@@ -46,7 +46,8 @@ bool libconfigfile::string_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::string_node::print(std::ostream &out) const {
+std::ostream &libconfigfile::string_node::print(
+    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
   static constexpr std::string escaped_string_delimiter{
       character_constants::g_k_escape_leader +
       character_constants::g_k_string_delimiter};

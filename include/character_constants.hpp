@@ -10,7 +10,10 @@
 namespace libconfigfile {
 namespace character_constants {
 static constexpr char g_k_newline{'\n'};
-static constexpr std::string g_k_whitespace_chars{' ', '\t'};
+static constexpr char g_k_space{' '};
+static constexpr char g_k_tab{'\t'};
+static constexpr std::string g_k_whitespace_chars{g_k_space, g_k_tab};
+static constexpr std::string g_k_indent_str(2, g_k_space);
 
 static constexpr char g_k_comment_script{'#'};
 static constexpr std::string g_k_comment_cpp{"//"};

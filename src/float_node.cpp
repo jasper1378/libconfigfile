@@ -1,5 +1,6 @@
 #include "float_node.hpp"
 
+#include "character_constants.hpp"
 #include "node.hpp"
 #include "node_types.hpp"
 
@@ -41,7 +42,8 @@ bool libconfigfile::float_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::float_node::print(std::ostream &out) const {
+std::ostream &libconfigfile::float_node::print(
+    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
   out << m_value;
   return out;
 }

@@ -47,11 +47,11 @@ bool libconfigfile::array_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::array_node::print(std::ostream &out) const {
+std::ostream &libconfigfile::array_node::print(
+    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
   out << character_constants::g_k_array_opening_delimiter;
-
   for (auto p{this->begin()}; p != this->end(); ++p) {
-    out << (*p);
+    (*p)->print(out);
 
     if ((p + 1) != this->end()) {
       out << character_constants::g_k_array_element_separator;
