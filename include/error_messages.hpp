@@ -60,12 +60,13 @@ namespace error_messages {
   static const std::string err_msg_1_5_11 {"/error/syntax/float: negative sign does not appear at start of integer or exponent part of float"};
   static const std::string err_msg_1_5_12 {"/error/syntax/float: positive sign does not appear at start of integer or exponent part of float"};
 
-  static const std::string err_msg_1_6_1{"/error/syntax/array: array opening delimiter is missing"};
-  static const std::string err_msg_1_6_2{"/error/syntax/array: array closing delimiter is missing"};
-  static const std::string err_msg_1_6_3{"/error/syntax/array: extraneous character(s) appear after array"};
+  static const std::string err_msg_1_6_1 {"/error/syntax/array: array opening delimiter is missing"};
+  static const std::string err_msg_1_6_2 {"/error/syntax/array: array closing delimiter is missing"};
+  static const std::string err_msg_1_6_3 {"/error/syntax/array: extraneous character(s) appear after array"};
 
-  static const std::string err_msg_1_7_2{"/error/syntax/map: map closing delimiter is missing"};
-  static const std::string err_msg_1_7_3{"/error/syntax/map: extranous character(s) appear after map"};
+  static const std::string err_msg_1_7_1 {"/error/syntax/map: map opening delimiter is missing"};
+  static const std::string err_msg_1_7_2 {"/error/syntax/map: map closing delimiter is missing"};
+  static const std::string err_msg_1_7_3 {"/error/syntax/map: extranous character(s) appear after map"};
 
   static const std::string err_msg_1_8_1 {"/error/syntax/directive: directive is invalid"};
   static const std::string err_msg_1_8_2 {"/error/syntax/directive: directive is split by newline(s)"};
@@ -73,7 +74,7 @@ namespace error_messages {
   static const std::string err_msg_1_8_4 {"/error/syntax/directive: directive name is split by comment(s)"};
   static const std::string err_msg_1_8_5 {"/error/syntax/directive: escape sequence in include directive file path argument is invalid"};
   static const std::string err_msg_1_8_6 {"/error/syntax/directive: include directive file path argument is empty"};
-  static const std::string err_msg_1_8_7 {"/error/syntax/directive: include directive file path argument is missing" "include directive requires file path argument"};
+  static const std::string err_msg_1_8_7 {"/error/syntax/directive: include directive file path argument is missing"};
   static const std::string err_msg_1_8_8 {"/error/syntax/directive: include directive file path argument is unterminated"};
   static const std::string err_msg_1_8_9 {"/error/syntax/directive: include directive given excess arguments"};
   static const std::string err_msg_1_8_10 {"/error/syntax/directive: parser and configuration file version are incompatible"};
@@ -81,6 +82,8 @@ namespace error_messages {
   static const std::string err_msg_1_8_12 {"/error/syntax/directive: version directive version argument is empty"};
   static const std::string err_msg_1_8_13 {"/error/syntax/directive: version directive version argument is missing"};
   static const std::string err_msg_1_8_14 {"/error/syntax/directive: version directive version argument is unterminated"};
+  static const std::string err_msg_1_8_15 {"/error/syntax/directive: directive does not appear directly in root map"};
+  static const std::string err_msg_1_8_16 {"/error/syntax/directive: directive does not appear on a line by itself"};
 
   static const std::string err_msg_1_9_1 {"/error/syntax/misc: escape sequence is incomplete"};
   static const std::string err_msg_1_9_2 {"/error/syntax/misc: escape sequence is invalid"};

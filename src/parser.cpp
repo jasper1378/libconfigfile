@@ -1358,6 +1358,56 @@ libconfigfile::parser::impl::parse_map_value(
                                 ? (char_type::opening_delimiter)
                                 : (char_type::leading_whitespace))};
 
+  decltype(ctx.line_count) last_non_whitespace_char_line_pos_count{};
+
+  const auto handle_directive{[is_root_map,
+                               &last_non_whitespace_char_line_pos_count, &ctx,
+                               &ret_val]() {
+    if (is_root_map == false) {
+      throw syntax_error::generate_formatted_error(
+          error_messages::err_msg_1_8_15, ctx.identifier, ctx.line_count,
+          ctx.char_count);
+    } else if (last_non_whitespace_char_line_pos_count == ctx.line_count) {
+      throw syntax_error::generate_formatted_error(
+          error_messages::err_msg_1_8_16, ctx.identifier, ctx.line_count,
+          ctx.char_count);
+    } else {
+
+      const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+          start_pos_count;
+      ctx.input_stream.unget();
+      --ctx.char_count;
+      std::pair<directive, std::optional<node_ptr<map_node>>> dir_res{
+          parse_directive(ctx)};
+
+      switch (dir_res.first) {
+      case directive::null: {
+        throw std::runtime_error{"impossible!"};
+      } break;
+
+      case directive::version: {
+        ;
+      } break;
+
+      case directive::include: {
+        assert(dir_res.second);
+        for (auto i{dir_res.second.value()->begin()};
+             i != dir_res.second.value()->end(); ++i) {
+          if (ret_val->contains(i->first)) {
+            throw syntax_error::generate_formatted_error(
+                error_messages::err_msg_1_9_5, ctx.identifier,
+                start_pos_count.first, start_pos_count.second);
+          }
+        }
+
+        ret_val->insert(
+            std::make_move_iterator(dir_res.second.value()->begin()),
+            std::make_move_iterator(dir_res.second.value()->end()));
+      } break;
+      }
+    }
+  }};
+
   for (;;) {
     char cur_char{};
     bool eof{false};
@@ -1393,6 +1443,11 @@ libconfigfile::parser::impl::parse_map_value(
     } else if (is_whitespace(cur_char)) {
       continue;
     } else {
+      if ((is_root_map == true) &&
+          (cur_char == character_constants::g_k_directive_leader)) {
+        last_non_whitespace_char_line_pos_count = ctx.line_count;
+      }
+
       switch (last_char_type) {
 
       case char_type::leading_whitespace: {
@@ -1413,6 +1468,8 @@ libconfigfile::parser::impl::parse_map_value(
           throw syntax_error::generate_formatted_error(
               error_messages::err_msg_1_2_7, ctx.identifier, ctx.line_count,
               ctx.char_count);
+        } else if (cur_char == character_constants::g_k_directive_leader) {
+          handle_directive();
         } else {
           const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
               start_pos_count{ctx.line_count, ctx.char_count};
@@ -1441,6 +1498,8 @@ libconfigfile::parser::impl::parse_map_value(
           throw syntax_error::generate_formatted_error(
               error_messages::err_msg_1_2_7, ctx.identifier, ctx.line_count,
               ctx.char_count);
+        } else if (cur_char == character_constants::g_k_directive_leader) {
+          handle_directive();
         } else {
           const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
               start_pos_count{ctx.line_count, ctx.char_count};
