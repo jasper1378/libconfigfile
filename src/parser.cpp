@@ -1,20 +1,18 @@
 #include "parser.hpp"
 
-#include "array_value_node.hpp"
+#include "array_node.hpp"
 #include "character_constants.hpp"
 #include "constexpr_tolower_toupper.hpp"
-#include "end_value_node.hpp"
 #include "error_messages.hpp"
-#include "float_end_value_node.hpp"
-#include "integer_end_value_node.hpp"
+#include "float_node.hpp"
+#include "integer_node.hpp"
+#include "map_node.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
 #include "numeral_system.hpp"
-#include "section_node.hpp"
-#include "string_end_value_node.hpp"
+#include "string_node.hpp"
 #include "syntax_error.hpp"
-#include "value_node.hpp"
 #include "version.hpp"
 
 #include <algorithm>
@@ -35,20 +33,20 @@
 #include <variant>
 #include <vector>
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::parse(const std::string &identifier,
                              std::istream &input_stream,
                              const bool identifier_is_file_path /*= false*/) {
   return impl::parse(identifier, input_stream, identifier_is_file_path);
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::parse_file(const std::filesystem::path &file_path) {
   std::ifstream input_stream{file_path};
   return impl::parse(file_path, input_stream, true);
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::impl::parse(
     const std::string &identifier, std::istream &input_stream,
     const bool identifier_is_file_path /*= false*/) {
@@ -62,387 +60,21 @@ libconfigfile::parser::impl::parse(
         "\" could not be opened for "
         "reading"};
   } else {
-    return parse_section(ctx, true).second;
+    node_ptr<map_node> ret_val{parse_map_value(ctx, "", nullptr, true)};
+    ret_val->set_is_root_map(true);
+    return ret_val;
   }
 }
 
-std::pair<std::string, libconfigfile::node_ptr<libconfigfile::section_node>>
-libconfigfile::parser::impl::parse_section(context &ctx,
-                                           const bool is_root_section) {
-  std::pair<std::string, node_ptr<section_node>> ret_val{
-      "", make_node_ptr<section_node>()};
-
-  if (is_root_section == true) {
-    const typename std::istream::int_type first_char{ctx.input_stream.peek()};
-    if (first_char == std::istream::traits_type::eof()) {
-      return ret_val;
-    }
-  }
-
-  if (is_root_section == false) {
-
-    enum class name_location {
-      opening_delimiter,
-      leading_whitespace,
-      name_proper,
-      trailing_whitespace,
-      closing_delimiter,
-    };
-
-    std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-        start_of_name_proper_pos_count{};
-
-    bool first_loop{true};
-
-    for (name_location last_state{name_location::opening_delimiter};
-         last_state != name_location::closing_delimiter; first_loop = false) {
-
-      char cur_char{};
-      bool eof{false};
-      bool handled_comment_in_name_proper{};
-      std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-          pos_count_before_handled_comment_in_name_proper{};
-      while (true) {
-        if (last_state == name_location::name_proper) {
-          pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
-                                                             ctx.char_count};
-          handled_comment_in_name_proper = handle_comments(ctx);
-        } else {
-          handle_comments(ctx);
-        }
-        ctx.input_stream.get(cur_char);
-        if (ctx.input_stream.eof() == true) {
-          eof = true;
-          break;
-        } else if (cur_char == character_constants::g_k_newline) {
-          ++ctx.line_count;
-          ctx.char_count = 0;
-          continue;
-        } else {
-          ++ctx.char_count;
-          break;
-        }
-      }
-
-      switch (last_state) {
-      case name_location::opening_delimiter: {
-        if (eof == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_7_6, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        } else {
-          if (is_whitespace(cur_char) == true) {
-            last_state = name_location::leading_whitespace;
-          } else {
-            if ((first_loop == true) &&
-                (cur_char ==
-                 character_constants::g_k_section_name_opening_delimiter)) {
-              ;
-            } else {
-              if (cur_char ==
-                  character_constants::g_k_section_name_closing_delimiter) {
-                last_state = name_location::closing_delimiter;
-
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_7_6, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
-              } else {
-                last_state = name_location::name_proper;
-                start_of_name_proper_pos_count = {ctx.line_count,
-                                                  ctx.char_count};
-
-                if (is_invalid_character_valid_provided(
-                        cur_char, character_constants::g_k_valid_name_chars) ==
-                    true) {
-                  throw syntax_error::generate_formatted_error(
-                      error_messages::err_msg_1_7_5, ctx.identifier,
-                      ctx.line_count, ctx.char_count);
-                } else {
-                  ret_val.first.push_back(cur_char);
-                }
-              }
-            }
-          }
-        }
-      } break;
-
-      case name_location::leading_whitespace: {
-        if (eof == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_7_6, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        } else {
-          if (is_whitespace(cur_char) == true) {
-            ;
-          } else {
-            if (cur_char ==
-                character_constants::g_k_section_name_closing_delimiter) {
-              last_state = name_location::closing_delimiter;
-
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_7_6, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
-            } else {
-              last_state = name_location::name_proper;
-              start_of_name_proper_pos_count = {ctx.line_count, ctx.char_count};
-
-              if (is_invalid_character_valid_provided(
-                      cur_char, character_constants::g_k_valid_name_chars) ==
-                  true) {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_7_5, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
-              } else {
-                ret_val.first.push_back(cur_char);
-              }
-            }
-          }
-        }
-      } break;
-
-      case name_location::name_proper: {
-        if (eof == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_7_9, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        } else {
-          if (is_whitespace(cur_char) == true) {
-            last_state = name_location::trailing_whitespace;
-          } else {
-            if (cur_char ==
-                character_constants::g_k_section_name_closing_delimiter) {
-              last_state = name_location::closing_delimiter;
-            } else {
-              if (start_of_name_proper_pos_count.first != ctx.line_count) {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_7_8, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
-              } else if (handled_comment_in_name_proper == true) {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_7_7, ctx.identifier,
-                    pos_count_before_handled_comment_in_name_proper.first,
-                    pos_count_before_handled_comment_in_name_proper.second);
-              } else {
-                if (is_invalid_character_valid_provided(
-                        cur_char, character_constants::g_k_valid_name_chars) ==
-                    true) {
-                  throw syntax_error::generate_formatted_error(
-                      error_messages::err_msg_1_7_5, ctx.identifier,
-                      ctx.line_count, ctx.char_count);
-                } else {
-                  ret_val.first.push_back(cur_char);
-                }
-              }
-            }
-          }
-        }
-      } break;
-
-      case name_location::trailing_whitespace: {
-        if (eof == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_7_9, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        } else {
-          if (is_whitespace(cur_char) == true) {
-            ;
-          } else {
-            if (cur_char ==
-                character_constants::g_k_section_name_closing_delimiter) {
-              last_state = name_location::closing_delimiter;
-            } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_7_1, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
-            }
-          }
-        }
-      } break;
-
-      case name_location::closing_delimiter: {
-        throw std::runtime_error{"impossible!"};
-      } break;
-      }
-    }
-  } else {
-    ret_val.first = "";
-  }
-
-  if (is_root_section == false) {
-
-    enum class name_body_gap_location {
-      separating_whitespace,
-      opening_body_delimiter,
-    };
-
-    for (name_body_gap_location last_state{
-             name_body_gap_location::separating_whitespace};
-         last_state != name_body_gap_location::opening_body_delimiter;) {
-
-      char cur_char{};
-      bool eof{false};
-      while (true) {
-        handle_comments(ctx);
-        ctx.input_stream.get(cur_char);
-        if (ctx.input_stream.eof() == true) {
-          eof = true;
-          break;
-        } else if (cur_char == character_constants::g_k_newline) {
-          ++ctx.line_count;
-          ctx.char_count = 0;
-          continue;
-        } else {
-          ++ctx.char_count;
-          break;
-        }
-      }
-
-      switch (last_state) {
-
-      case name_body_gap_location::separating_whitespace: {
-        if (eof == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_7_3, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        } else {
-          if (is_whitespace(cur_char) == true) {
-            ;
-          } else if (cur_char ==
-                     character_constants::g_k_section_body_opening_delimiter) {
-            last_state = name_body_gap_location::opening_body_delimiter;
-          } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_7_4, ctx.identifier, ctx.line_count,
-                ctx.char_count);
-          }
-        }
-      } break;
-
-      case name_body_gap_location::opening_body_delimiter: {
-        throw std::runtime_error{"impossible!"};
-      } break;
-      }
-    }
-  }
-
-  {
-    bool ended_on_body_closing_delimiter{false};
-    for (;;) {
-
-      char cur_char{};
-      bool eof{false};
-      while (true) {
-        handle_comments(ctx);
-        ctx.input_stream.get(cur_char);
-        if (ctx.input_stream.eof() == true) {
-          eof = true;
-          break;
-        } else if (cur_char == character_constants::g_k_newline) {
-          ++ctx.line_count;
-          ctx.char_count = 0;
-          continue;
-        } else {
-          ++ctx.char_count;
-          break;
-        }
-      }
-
-      if (eof == true) {
-        break;
-      } else {
-        if (is_whitespace(cur_char)) {
-          ;
-        } else if (cur_char ==
-                   character_constants::g_k_section_body_closing_delimiter) {
-          ended_on_body_closing_delimiter = true;
-          break;
-        } else if (cur_char ==
-                   character_constants::g_k_section_name_opening_delimiter) {
-          ctx.input_stream.unget();
-          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              start_pos_count{ctx.line_count, ctx.char_count};
-          --ctx.char_count;
-
-          std::pair<std::string, node_ptr<section_node>> new_section{
-              parse_section(ctx, false)};
-
-          if (ret_val.second->contains(new_section.first) == true) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_9_5, ctx.identifier,
-                start_pos_count.first, start_pos_count.second);
-          } else {
-            ret_val.second->insert({std::move(new_section)});
-          }
-        } else if (cur_char == character_constants::g_k_directive_leader) {
-          ctx.input_stream.unget();
-          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              start_pos_count{ctx.line_count, ctx.char_count};
-          --ctx.char_count;
-          std::pair<directive, std::optional<node_ptr<section_node>>> dir_res{
-              parse_directive(ctx)};
-
-          switch (dir_res.first) {
-          case directive::null: {
-            throw std::runtime_error{"impossible!"};
-          } break;
-
-          case directive::version: {
-            ;
-          } break;
-
-          case directive::include: {
-            assert(dir_res.second);
-            for (auto i{dir_res.second.value()->begin()};
-                 i != dir_res.second.value()->end(); ++i) {
-              if (ret_val.second->contains(i->first)) {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_9_5, ctx.identifier,
-                    start_pos_count.first, start_pos_count.second);
-              }
-            }
-
-            ret_val.second->insert(
-                std::make_move_iterator(dir_res.second.value()->begin()),
-                std::make_move_iterator(dir_res.second.value()->end()));
-          } break;
-          }
-        } else {
-          ctx.input_stream.unget();
-          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-              start_pos_count{ctx.line_count, ctx.char_count};
-          --ctx.char_count;
-
-          std::pair<std::string, node_ptr<value_node>> new_key_value{
-              parse_key_value(ctx)};
-
-          if (ret_val.second->contains(new_key_value.first) == true) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_9_5, ctx.identifier,
-                start_pos_count.first, start_pos_count.second);
-          } else {
-            ret_val.second->insert({std::move(new_key_value)});
-          }
-        }
-      }
-    }
-
-    if ((ended_on_body_closing_delimiter == false) &&
-        (is_root_section == false)) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_7_2, ctx.identifier, ctx.line_count,
-          ctx.char_count);
-    }
-  }
-
-  return ret_val;
-}
-
-std::pair<std::string, libconfigfile::node_ptr<libconfigfile::value_node>>
-libconfigfile::parser::impl::parse_key_value(context &ctx) {
-  std::pair<std::string, node_ptr<value_node>> ret_val{};
+std::pair<std::string, libconfigfile::node_ptr<libconfigfile::node>>
+libconfigfile::parser::impl::parse_key_value(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
+  std::pair<std::string, node_ptr<node>> ret_val{};
 
   ret_val.first = parse_key_value_key(ctx);
-  ret_val.second = parse_key_value_value(ctx);
+  ret_val.second = parse_key_value_value(ctx, possible_terminating_chars,
+                                         actual_terminating_char);
 
   return ret_val;
 }
@@ -495,7 +127,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     case key_name_location::leading_whitespace: {
       if (eof == true) {
         throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
+            error_messages::err_msg_1_2_4, ctx.identifier, ctx.line_count,
             ctx.char_count);
       } else {
         if (is_whitespace(cur_char)) {
@@ -511,19 +143,19 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
 
             case character_constants::g_k_key_value_assign: {
               throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
+                  error_messages::err_msg_1_2_4, ctx.identifier, ctx.line_count,
                   ctx.char_count);
             } break;
 
             case character_constants::g_k_key_value_terminate: {
               throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_2, ctx.identifier, ctx.line_count,
+                  error_messages::err_msg_1_2_4, ctx.identifier, ctx.line_count,
                   ctx.char_count);
             } break;
 
             default: {
               throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_4, ctx.identifier, ctx.line_count,
+                  error_messages::err_msg_1_2_1, ctx.identifier, ctx.line_count,
                   ctx.char_count);
             } break;
             }
@@ -538,7 +170,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     case key_name_location::name_proper: {
       if (eof == true) {
         throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_8, ctx.identifier, ctx.line_count,
+            error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
             ctx.char_count);
       } else {
         if (is_whitespace(cur_char) == true) {
@@ -548,16 +180,16 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
             last_state = key_name_location::equal_sign;
           } else if (cur_char == character_constants::g_k_key_value_terminate) {
             throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_2_8, ctx.identifier, ctx.line_count,
+                error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
                 ctx.char_count);
           } else {
             if (start_of_name_proper_pos_count.first != ctx.line_count) {
               throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_7, ctx.identifier, ctx.line_count,
+                  error_messages::err_msg_1_2_3, ctx.identifier, ctx.line_count,
                   ctx.char_count);
             } else if (handled_comment_in_name_proper == true) {
               throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_6, ctx.identifier,
+                  error_messages::err_msg_1_2_2, ctx.identifier,
                   pos_count_before_handled_comment_in_name_proper.first,
                   pos_count_before_handled_comment_in_name_proper.second);
             } else {
@@ -565,7 +197,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
                       cur_char, character_constants::g_k_valid_name_chars) ==
                   true) {
                 throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_2_4, ctx.identifier,
+                    error_messages::err_msg_1_2_1, ctx.identifier,
                     ctx.line_count, ctx.char_count);
               } else {
                 key_name.push_back(cur_char);
@@ -579,7 +211,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     case key_name_location::trailing_whitespace: {
       if (eof == true) {
         throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_8, ctx.identifier, ctx.line_count,
+            error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
             ctx.char_count);
       } else {
         if (is_whitespace(cur_char) == true) {
@@ -590,11 +222,11 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
           } else {
             if (cur_char == character_constants::g_k_key_value_terminate) {
               throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_8, ctx.identifier, ctx.line_count,
+                  error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
                   ctx.char_count);
             } else {
               throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_1, ctx.identifier, ctx.line_count,
+                  error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
                   ctx.char_count);
             }
           }
@@ -611,8 +243,10 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
   return key_name;
 }
 
-libconfigfile::node_ptr<libconfigfile::value_node>
-libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
+libconfigfile::node_ptr<libconfigfile::node>
+libconfigfile::parser::impl::parse_key_value_value(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/) {
   bool first_loop{true};
   char cur_char{};
 
@@ -637,53 +271,48 @@ libconfigfile::parser::impl::parse_key_value_value(context &ctx) {
 
     if (eof == true) {
       throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_8, ctx.identifier, ctx.line_count,
+          error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
           ctx.char_count);
     } else if (is_whitespace(cur_char) == true) {
       continue;
     } else if ((cur_char == character_constants::g_k_key_value_assign) &&
                (first_loop == true)) {
       continue;
-    } else if (cur_char == character_constants::g_k_key_value_terminate) {
+      // } else if (cur_char == character_constants::g_k_key_value_terminate) {
+    } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
+      if (actual_terminating_char != nullptr) {
+        *actual_terminating_char = cur_char;
+      };
       throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_8, ctx.identifier, ctx.line_count,
+          error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
           ctx.char_count);
     } else {
       ctx.input_stream.unget();
       --ctx.char_count;
-      return call_appropriate_value_parse_func(
-          ctx, std::string{std::string{} +
-                           character_constants::g_k_key_value_terminate});
+      return call_appropriate_value_parse_func(ctx, possible_terminating_chars,
+                                               actual_terminating_char);
     }
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::array_value_node>
-libconfigfile::parser::impl::parse_array_value(
+libconfigfile::node_ptr<libconfigfile::string_node>
+libconfigfile::parser::impl::parse_string_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
-  node_ptr<libconfigfile::array_value_node> ret_val{
-      make_node_ptr<array_value_node>()};
+  bool in_string{false};
 
-  static const std::string possible_terminating_chars_for_elements{
-      std::string{} + character_constants::g_k_array_element_separator +
-      character_constants::g_k_array_closing_delimiter};
+  std::string string_contents{};
 
-  enum class char_type {
-    leading_whitespace,
-    opening_delimiter,
-    element_separator,
-    closing_delimiter,
-  };
-
-  char_type last_char_type{char_type::leading_whitespace};
-
-  char cur_char{};
+  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+      last_opening_delimiter_pos_count{};
 
   for (;;) {
+    char cur_char{};
     bool eof{false};
     while (true) {
-      handle_comments(ctx);
+      if (in_string == false) {
+        handle_comments(ctx);
+      }
       ctx.input_stream.get(cur_char);
       if (ctx.input_stream.eof() == true) {
         eof = true;
@@ -699,101 +328,63 @@ libconfigfile::parser::impl::parse_array_value(
     }
 
     if (eof == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_3, ctx.identifier, ctx.line_count,
-          ctx.char_count);
-    } else if ((possible_terminating_chars.find(cur_char) !=
-                std::string::npos) &&
-               (last_char_type == char_type::closing_delimiter)) {
-      if (actual_terminating_char != nullptr) {
-        *actual_terminating_char = cur_char;
-      };
-      break;
-    } else if (is_whitespace(cur_char)) {
-      continue;
-    } else {
-      switch (last_char_type) {
-
-      case char_type::leading_whitespace: {
-        if (cur_char == character_constants::g_k_array_opening_delimiter) {
-          last_char_type = char_type::opening_delimiter;
-        } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_6_3, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        }
-      } break;
-
-      case char_type::opening_delimiter: {
-        if (cur_char == character_constants::g_k_array_closing_delimiter) {
-          last_char_type = char_type::closing_delimiter;
-        } else if (cur_char ==
-                   character_constants::g_k_array_element_separator) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_6_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        } else {
-          --ctx.char_count;
-          ctx.input_stream.unget();
-          char element_actual_terminating_char{};
-          ret_val->push_back(call_appropriate_value_parse_func(
-              ctx, possible_terminating_chars_for_elements,
-              &element_actual_terminating_char));
-          switch (element_actual_terminating_char) {
-          case character_constants::g_k_array_element_separator: {
-            last_char_type = char_type::element_separator;
-          } break;
-          case character_constants::g_k_array_closing_delimiter: {
-            last_char_type = char_type::closing_delimiter;
-          } break;
-          default: {
-            throw std::runtime_error{"impossible!"};
-          } break;
-          }
-        }
-      } break;
-
-      case char_type::element_separator: {
-        if (cur_char == character_constants::g_k_array_closing_delimiter) {
-          last_char_type = char_type::closing_delimiter;
-        } else if (cur_char ==
-                   character_constants::g_k_array_element_separator) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_6_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
-        } else {
-          --ctx.char_count;
-          ctx.input_stream.unget();
-          char element_actual_terminating_char{};
-          ret_val->push_back(call_appropriate_value_parse_func(
-              ctx, possible_terminating_chars_for_elements,
-              &element_actual_terminating_char));
-          switch (element_actual_terminating_char) {
-          case character_constants::g_k_array_element_separator: {
-            last_char_type = char_type::element_separator;
-          } break;
-          case character_constants::g_k_array_closing_delimiter: {
-            last_char_type = char_type::closing_delimiter;
-          } break;
-          default: {
-            throw std::runtime_error{"impossible!"};
-          } break;
-          }
-        }
-      } break;
-
-      case char_type::closing_delimiter: {
+      if (in_string == true) {
         throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_6_4, ctx.identifier, ctx.line_count,
+            error_messages::err_msg_1_3_3, ctx.identifier, ctx.line_count,
             ctx.char_count);
-      } break;
+      } else {
+        throw syntax_error::generate_formatted_error(
+            error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
+            ctx.char_count);
+      }
+    } else {
+      if (in_string == true) {
+        if (last_opening_delimiter_pos_count.first != ctx.line_count) {
+          throw syntax_error::generate_formatted_error(
+              error_messages::err_msg_1_3_2, ctx.identifier, ctx.line_count,
+              ctx.char_count);
+        } else {
+          if (cur_char == character_constants::g_k_string_delimiter) {
+            in_string = false;
+          } else if (cur_char == character_constants::g_k_escape_leader) {
+            ctx.input_stream.unget();
+            --ctx.char_count;
+            string_contents.push_back(handle_escape_sequence(ctx));
+          } else {
+            string_contents.push_back(cur_char);
+          }
+        }
+      } else {
+        if (possible_terminating_chars.find(cur_char) != std::string::npos) {
+          if (actual_terminating_char != nullptr) {
+            *actual_terminating_char = cur_char;
+          };
+          break;
+        } else if (is_whitespace(cur_char,
+                                 character_constants::g_k_whitespace_chars) ==
+                   true) {
+        } else if (cur_char == character_constants::g_k_string_delimiter) {
+          in_string = true;
+          last_opening_delimiter_pos_count = {ctx.line_count, ctx.char_count};
+        } else {
+          throw syntax_error::generate_formatted_error(
+              error_messages::err_msg_1_3_1, ctx.identifier, ctx.line_count,
+              ctx.char_count);
+        }
       }
     }
   }
-  return ret_val;
+
+  if (in_string == true) {
+    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_3_3,
+                                                 ctx.identifier, ctx.line_count,
+                                                 ctx.char_count);
+  } else {
+    return make_node_ptr<string_node>(std::move(string_contents));
+  }
 }
 
-libconfigfile::node_ptr<libconfigfile::integer_end_value_node>
+libconfigfile::node_ptr<libconfigfile::integer_node>
 libconfigfile::parser::impl::parse_integer_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -810,6 +401,7 @@ libconfigfile::parser::impl::parse_integer_value(
   bool any_digits_so_far{false};
   bool last_char_was_leading_zero{false};
   size_t num_of_leading_zeroes{0};
+  bool in_trailing_whitespace{false};
 
   char cur_char{};
 
@@ -859,7 +451,7 @@ libconfigfile::parser::impl::parse_integer_value(
 
     if (eof == true) {
       throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_3, ctx.identifier, ctx.line_count,
+          error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
           ctx.char_count);
     } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
       if (actual_terminating_char != nullptr) {
@@ -875,8 +467,15 @@ libconfigfile::parser::impl::parse_integer_value(
           error_messages::err_msg_1_4_3, ctx.identifier,
           pos_count_before_handled_comment.first,
           pos_count_before_handled_comment.second);
+    } else if ((is_whitespace(cur_char) == true) &&
+               (in_trailing_whitespace == false)) {
+      in_trailing_whitespace = true;
+    } else if ((is_whitespace(cur_char) == false) &&
+               (in_trailing_whitespace == true)) {
+      throw syntax_error::generate_formatted_error(
+          error_messages::err_msg_1_4_9, ctx.identifier, ctx.line_count,
+          ctx.char_count);
     } else {
-
       switch (cur_char) {
       case character_constants::g_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
@@ -1032,25 +631,25 @@ libconfigfile::parser::impl::parse_integer_value(
     num_sys = &numeral_system_decimal;
   }
 
-  node_ptr<integer_end_value_node> ret_val{nullptr};
+  node_ptr<integer_node> ret_val{nullptr};
 
-  static_assert((sizeof(decltype(std::stoll(""))) >=
-                 sizeof(integer_end_value_node_data_t)),
-                "no string-to-int conversion function (std::stoi(), "
-                "std::stol(), std::stoll()) with return type large enough for "
-                "integer_end_value_node_t");
+  static_assert(
+      (sizeof(decltype(std::stoll(""))) >= sizeof(integer_node_data_t)),
+      "no string-to-int conversion function (std::stoi(), "
+      "std::stol(), std::stoll()) with return type large enough for "
+      "integer_end_value_node_t");
 
   try {
     if constexpr ((sizeof(decltype(std::stoi("")))) >=
-                  (sizeof(integer_end_value_node_data_t))) {
-      ret_val = make_node_ptr<integer_end_value_node>(
+                  (sizeof(integer_node_data_t))) {
+      ret_val = make_node_ptr<integer_node>(
           std::stoi(actual_digits, nullptr, num_sys->base), num_sys);
     } else if constexpr ((sizeof(decltype(std::stol("")))) >=
-                         (sizeof(integer_end_value_node_data_t))) {
-      ret_val = make_node_ptr<integer_end_value_node>(
+                         (sizeof(integer_node_data_t))) {
+      ret_val = make_node_ptr<integer_node>(
           std::stol(actual_digits, nullptr, num_sys->base), num_sys);
     } else {
-      ret_val = make_node_ptr<integer_end_value_node>(
+      ret_val = make_node_ptr<integer_node>(
           std::stoll(actual_digits, nullptr, num_sys->base), num_sys);
     }
   } catch (const std::out_of_range &ex) {
@@ -1066,7 +665,7 @@ libconfigfile::parser::impl::parse_integer_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::float_end_value_node>
+libconfigfile::node_ptr<libconfigfile::float_node>
 libconfigfile::parser::impl::parse_float_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -1075,7 +674,7 @@ libconfigfile::parser::impl::parse_float_value(
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       pos_count_at_start{ctx.line_count, ctx.char_count};
 
-  static const std::unordered_map<std::string, float_end_value_node_data_t>
+  static const std::unordered_map<std::string, float_node_data_t>
       special_floats{{character_constants::g_k_float_infinity.second,
                       character_constants::g_k_float_infinity.first},
                      {(character_constants::g_k_num_positive_sign +
@@ -1113,6 +712,8 @@ libconfigfile::parser::impl::parse_float_value(
 
   num_location cur_location{num_location::integer};
 
+  bool in_trailing_whitespace{false};
+
   for (;;) {
     char cur_char{};
     bool eof{false};
@@ -1138,7 +739,7 @@ libconfigfile::parser::impl::parse_float_value(
 
     if (eof == true) {
       throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_3, ctx.identifier, ctx.line_count,
+          error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
           ctx.char_count);
     } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
       if (actual_terminating_char != nullptr) {
@@ -1154,6 +755,14 @@ libconfigfile::parser::impl::parse_float_value(
           error_messages::err_msg_1_5_8, ctx.identifier,
           pos_count_before_handled_comment.first,
           pos_count_before_handled_comment.second);
+    } else if ((is_whitespace(cur_char) == true) &&
+               (in_trailing_whitespace == false)) {
+      in_trailing_whitespace = true;
+    } else if ((is_whitespace(cur_char) == false) &&
+               (in_trailing_whitespace == true)) {
+      throw syntax_error::generate_formatted_error(
+          error_messages::err_msg_1_5_13, ctx.identifier, ctx.line_count,
+          ctx.char_count);
     } else {
 
       switch (cur_location) {
@@ -1195,7 +804,7 @@ libconfigfile::parser::impl::parse_float_value(
               }
               if (eof == true) {
                 throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_2_3, ctx.identifier,
+                    error_messages::err_msg_1_2_6, ctx.identifier,
                     ctx.line_count, ctx.char_count);
               } else if (possible_terminating_chars.find(cur_char) !=
                          std::string::npos) {
@@ -1211,13 +820,13 @@ libconfigfile::parser::impl::parse_float_value(
             if (case_insensitive_string_compare(
                     special_float_string,
                     character_constants::g_k_float_infinity.second) == true) {
-              node_ptr<float_end_value_node> ret_val{nullptr};
+              node_ptr<float_node> ret_val{nullptr};
 
               if (last_char == char_type::negative) {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     -(character_constants::g_k_float_infinity.first));
               } else {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     character_constants::g_k_float_infinity.first);
               }
 
@@ -1270,7 +879,7 @@ libconfigfile::parser::impl::parse_float_value(
               }
               if (eof == true) {
                 throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_2_3, ctx.identifier,
+                    error_messages::err_msg_1_2_6, ctx.identifier,
                     ctx.line_count, ctx.char_count);
               } else if (possible_terminating_chars.find(cur_char) !=
                          std::string::npos) {
@@ -1287,13 +896,13 @@ libconfigfile::parser::impl::parse_float_value(
                     special_float_string,
                     character_constants::g_k_float_not_a_number.second) ==
                 true) {
-              node_ptr<float_end_value_node> ret_val{nullptr};
+              node_ptr<float_node> ret_val{nullptr};
 
               if (last_char == char_type::negative) {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     -(character_constants::g_k_float_not_a_number.first));
               } else {
-                ret_val = make_node_ptr<float_end_value_node>(
+                ret_val = make_node_ptr<float_node>(
                     character_constants::g_k_float_not_a_number.first);
               }
 
@@ -1553,25 +1162,22 @@ libconfigfile::parser::impl::parse_float_value(
     sanitized_string = "0";
   }
 
-  node_ptr<float_end_value_node> ret_val{nullptr};
+  node_ptr<float_node> ret_val{nullptr};
 
-  static_assert(
-      (sizeof(decltype(std::stold(""))) >= sizeof(float_end_value_node_data_t)),
-      "no string-to-float conversion function with return type "
-      "large enough for float_end_value_node_t");
+  static_assert((sizeof(decltype(std::stold(""))) >= sizeof(float_node)),
+                "no string-to-float conversion function with return type "
+                "large enough for float_node_t");
 
   try {
     if constexpr ((sizeof(decltype(std::stof("")))) >=
-                  (sizeof(float_end_value_node_data_t))) {
-      ret_val = make_node_ptr<float_end_value_node>(
-          std::stof(sanitized_string, nullptr));
+                  (sizeof(float_node_data_t))) {
+      ret_val = make_node_ptr<float_node>(std::stof(sanitized_string, nullptr));
     } else if constexpr ((sizeof(decltype(std::stod("")))) >=
-                         (sizeof(float_end_value_node_data_t))) {
-      ret_val = make_node_ptr<float_end_value_node>(
-          std::stod(sanitized_string, nullptr));
+                         (sizeof(float_node_data_t))) {
+      ret_val = make_node_ptr<float_node>(std::stod(sanitized_string, nullptr));
     } else {
-      ret_val = make_node_ptr<float_end_value_node>(
-          std::stold(sanitized_string, nullptr));
+      ret_val =
+          make_node_ptr<float_node>(std::stold(sanitized_string, nullptr));
     }
 
   } catch (const std::out_of_range &ex) {
@@ -1583,24 +1189,31 @@ libconfigfile::parser::impl::parse_float_value(
   return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::string_end_value_node>
-libconfigfile::parser::impl::parse_string_value(
+libconfigfile::node_ptr<libconfigfile::array_node>
+libconfigfile::parser::impl::parse_array_value(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
-  bool in_string{false};
+  node_ptr<libconfigfile::array_node> ret_val{make_node_ptr<array_node>()};
 
-  std::string string_contents{};
+  static const std::string possible_terminating_chars_for_elements{
+      std::string{} + character_constants::g_k_array_element_separator +
+      character_constants::g_k_array_closing_delimiter};
 
-  std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
-      last_opening_delimiter_pos_count{};
+  enum class char_type {
+    leading_whitespace,
+    opening_delimiter,
+    element_separator,
+    closing_delimiter,
+  };
+
+  char_type last_char_type{char_type::leading_whitespace};
+
+  char cur_char{};
 
   for (;;) {
-    char cur_char{};
     bool eof{false};
     while (true) {
-      if (in_string == false) {
-        handle_comments(ctx);
-      }
+      handle_comments(ctx);
       ctx.input_stream.get(cur_char);
       if (ctx.input_stream.eof() == true) {
         eof = true;
@@ -1616,125 +1229,340 @@ libconfigfile::parser::impl::parse_string_value(
     }
 
     if (eof == true) {
-      if (in_string == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_3_3, ctx.identifier, ctx.line_count,
-            ctx.char_count);
-      } else {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_3, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+      throw syntax_error::generate_formatted_error(
+          error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
+          ctx.char_count);
+    } else if ((possible_terminating_chars.find(cur_char) !=
+                std::string::npos) &&
+               (last_char_type == char_type::closing_delimiter)) {
+      if (actual_terminating_char != nullptr) {
+        *actual_terminating_char = cur_char;
       }
+      break;
+    } else if (is_whitespace(cur_char)) {
+      continue;
     } else {
-      if (in_string == true) {
-        if (last_opening_delimiter_pos_count.first != ctx.line_count) {
+      switch (last_char_type) {
+
+      case char_type::leading_whitespace: {
+        if (cur_char == character_constants::g_k_array_opening_delimiter) {
+          last_char_type = char_type::opening_delimiter;
+        } else {
           throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_3_2, ctx.identifier, ctx.line_count,
+              error_messages::err_msg_1_6_1, ctx.identifier, ctx.line_count,
+              ctx.char_count);
+        }
+      } break;
+
+      case char_type::opening_delimiter: {
+        if (cur_char == character_constants::g_k_array_closing_delimiter) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char ==
+                   character_constants::g_k_array_element_separator) {
+          throw syntax_error::generate_formatted_error(
+              error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
               ctx.char_count);
         } else {
-          if (cur_char == character_constants::g_k_string_delimiter) {
-            in_string = false;
-          } else if (cur_char == character_constants::g_k_escape_leader) {
-            ctx.input_stream.unget();
-            --ctx.char_count;
-            string_contents.push_back(handle_escape_sequence(ctx));
-          } else {
-            string_contents.push_back(cur_char);
+          --ctx.char_count;
+          ctx.input_stream.unget();
+          char element_actual_terminating_char{};
+          ret_val->push_back(call_appropriate_value_parse_func(
+              ctx, possible_terminating_chars_for_elements,
+              &element_actual_terminating_char));
+          switch (element_actual_terminating_char) {
+          case character_constants::g_k_array_element_separator: {
+            last_char_type = char_type::element_separator;
+          } break;
+          case character_constants::g_k_array_closing_delimiter: {
+            last_char_type = char_type::closing_delimiter;
+          } break;
+          default: {
+            throw std::runtime_error{"impossible!"};
+          } break;
           }
         }
-      } else {
-        if (possible_terminating_chars.find(cur_char) != std::string::npos) {
-          if (actual_terminating_char != nullptr) {
-            *actual_terminating_char = cur_char;
-          };
-          break;
-        } else if (is_whitespace(cur_char,
-                                 character_constants::g_k_whitespace_chars) ==
-                   true) {
-        } else if (cur_char == character_constants::g_k_string_delimiter) {
-          in_string = true;
-          last_opening_delimiter_pos_count = {ctx.line_count, ctx.char_count};
-        } else {
+      } break;
+
+      case char_type::element_separator: {
+        if (cur_char == character_constants::g_k_array_closing_delimiter) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char ==
+                   character_constants::g_k_array_element_separator) {
           throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_3_1, ctx.identifier, ctx.line_count,
+              error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
               ctx.char_count);
+        } else {
+          --ctx.char_count;
+          ctx.input_stream.unget();
+          char element_actual_terminating_char{};
+          ret_val->push_back(call_appropriate_value_parse_func(
+              ctx, possible_terminating_chars_for_elements,
+              &element_actual_terminating_char));
+          switch (element_actual_terminating_char) {
+          case character_constants::g_k_array_element_separator: {
+            last_char_type = char_type::element_separator;
+          } break;
+          case character_constants::g_k_array_closing_delimiter: {
+            last_char_type = char_type::closing_delimiter;
+          } break;
+          default: {
+            throw std::runtime_error{"impossible!"};
+          } break;
+          }
         }
+      } break;
+
+      case char_type::closing_delimiter: {
+        throw syntax_error::generate_formatted_error(
+            error_messages::err_msg_1_6_3, ctx.identifier, ctx.line_count,
+            ctx.char_count);
+      } break;
       }
     }
   }
-
-  if (in_string == true) {
-    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_3_3,
-                                                 ctx.identifier, ctx.line_count,
-                                                 ctx.char_count);
-  } else {
-    return make_node_ptr<string_end_value_node>(std::move(string_contents));
-  }
+  return ret_val;
 }
 
-libconfigfile::node_ptr<libconfigfile::value_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
+libconfigfile::parser::impl::parse_map_value(
+    context &ctx, const std::string &possible_terminating_chars,
+    char *actual_terminating_char /*= nullptr*/,
+    const bool is_root_map /*= false*/) {
+  node_ptr<map_node> ret_val{make_node_ptr<map_node>()};
+
+  if (is_root_map == true) {
+    const typename std::istream::int_type first_char{ctx.input_stream.peek()};
+    if (first_char == std::istream::traits_type::eof()) {
+      return ret_val;
+    }
+  }
+
+  enum class char_type {
+    leading_whitespace,
+    opening_delimiter,
+    member_separator,
+    closing_delimiter,
+  };
+
+  char_type last_char_type{((is_root_map == true)
+                                ? (char_type::opening_delimiter)
+                                : (char_type::leading_whitespace))};
+
+  decltype(ctx.line_count) last_non_whitespace_char_line_pos_count{};
+
+  const auto handle_directive{[is_root_map,
+                               &last_non_whitespace_char_line_pos_count, &ctx,
+                               &ret_val]() {
+    if (is_root_map == false) {
+      throw syntax_error::generate_formatted_error(
+          error_messages::err_msg_1_8_15, ctx.identifier, ctx.line_count,
+          ctx.char_count);
+    } else if (last_non_whitespace_char_line_pos_count == ctx.line_count) {
+      throw syntax_error::generate_formatted_error(
+          error_messages::err_msg_1_8_16, ctx.identifier, ctx.line_count,
+          ctx.char_count);
+    } else {
+
+      const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+          start_pos_count;
+      ctx.input_stream.unget();
+      --ctx.char_count;
+      std::pair<directive, std::optional<node_ptr<map_node>>> dir_res{
+          parse_directive(ctx)};
+
+      switch (dir_res.first) {
+      case directive::null: {
+        throw std::runtime_error{"impossible!"};
+      } break;
+
+      case directive::version: {
+        ;
+      } break;
+
+      case directive::include: {
+        assert(dir_res.second);
+        for (auto i{dir_res.second.value()->begin()};
+             i != dir_res.second.value()->end(); ++i) {
+          if (ret_val->contains(i->first)) {
+            throw syntax_error::generate_formatted_error(
+                error_messages::err_msg_1_9_5, ctx.identifier,
+                start_pos_count.first, start_pos_count.second);
+          }
+        }
+
+        ret_val->insert(
+            std::make_move_iterator(dir_res.second.value()->begin()),
+            std::make_move_iterator(dir_res.second.value()->end()));
+      } break;
+      }
+    }
+  }};
+
+  for (;;) {
+    char cur_char{};
+    bool eof{false};
+    while (true) {
+      handle_comments(ctx);
+      ctx.input_stream.get(cur_char);
+      if (ctx.input_stream.eof() == true) {
+        eof = true;
+        break;
+      } else if (cur_char == character_constants::g_k_newline) {
+        ++ctx.line_count;
+        ctx.char_count = 0;
+        continue;
+      } else {
+        ++ctx.char_count;
+        break;
+      }
+    }
+
+    if (eof == true) {
+      if (is_root_map == true) {
+        break;
+      } else {
+        throw syntax_error::generate_formatted_error(
+            error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
+            ctx.char_count);
+      }
+    } else if ((possible_terminating_chars.find(cur_char)) !=
+               (std::string::npos)) {
+      if (actual_terminating_char != nullptr) {
+        *actual_terminating_char = cur_char;
+      }
+      break;
+    } else if (is_whitespace(cur_char)) {
+      continue;
+    } else {
+      if ((is_root_map == true) &&
+          (cur_char == character_constants::g_k_directive_leader)) {
+        last_non_whitespace_char_line_pos_count = ctx.line_count;
+      }
+
+      switch (last_char_type) {
+
+      case char_type::leading_whitespace: {
+        if (cur_char == character_constants::g_k_map_opening_delimiter) {
+          last_char_type = char_type::opening_delimiter;
+        } else {
+          throw syntax_error::generate_formatted_error(
+              error_messages::err_msg_1_7_1, ctx.identifier, ctx.line_count,
+              ctx.char_count);
+        }
+      } break;
+
+      case char_type::opening_delimiter: {
+        if ((cur_char == character_constants::g_k_map_closing_delimiter) &&
+            (is_root_map == false)) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char == character_constants::g_k_key_value_terminate) {
+          throw syntax_error::generate_formatted_error(
+              error_messages::err_msg_1_2_7, ctx.identifier, ctx.line_count,
+              ctx.char_count);
+        } else if (cur_char == character_constants::g_k_directive_leader) {
+          handle_directive();
+        } else {
+          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos_count{ctx.line_count, ctx.char_count};
+          ctx.input_stream.unget();
+          --ctx.char_count;
+
+          std::pair<std::string, node_ptr<node>> new_key_value{parse_key_value(
+              ctx, std::string{character_constants::g_k_key_value_terminate})};
+
+          if (ret_val->contains(new_key_value.first) == true) {
+            throw syntax_error::generate_formatted_error(
+                error_messages::err_msg_1_9_5, ctx.identifier,
+                start_pos_count.first, start_pos_count.second);
+          } else {
+            ret_val->insert({std::move(new_key_value)});
+          }
+          last_char_type = char_type::member_separator;
+        }
+      } break;
+
+      case char_type::member_separator: {
+        if ((cur_char == character_constants::g_k_map_closing_delimiter) &&
+            (is_root_map == false)) {
+          last_char_type = char_type::closing_delimiter;
+        } else if (cur_char == character_constants::g_k_key_value_terminate) {
+          throw syntax_error::generate_formatted_error(
+              error_messages::err_msg_1_2_7, ctx.identifier, ctx.line_count,
+              ctx.char_count);
+        } else if (cur_char == character_constants::g_k_directive_leader) {
+          handle_directive();
+        } else {
+          const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
+              start_pos_count{ctx.line_count, ctx.char_count};
+          ctx.input_stream.unget();
+          --ctx.char_count;
+
+          std::pair<std::string, node_ptr<node>> new_key_value{parse_key_value(
+              ctx, std::string{character_constants::g_k_key_value_terminate})};
+
+          if (ret_val->contains(new_key_value.first) == true) {
+            throw syntax_error::generate_formatted_error(
+                error_messages::err_msg_1_9_5, ctx.identifier,
+                start_pos_count.first, start_pos_count.second);
+          } else {
+            ret_val->insert({std::move(new_key_value)});
+          }
+          last_char_type = char_type::member_separator;
+        }
+      } break;
+
+      case char_type::closing_delimiter: {
+        throw syntax_error::generate_formatted_error(
+            error_messages::err_msg_1_7_3, ctx.identifier, ctx.line_count,
+            ctx.char_count);
+      } break;
+      }
+    }
+  }
+  return ret_val;
+}
+libconfigfile::node_ptr<libconfigfile::node>
 libconfigfile::parser::impl::call_appropriate_value_parse_func(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
 
-  std::variant<value_node_type, end_value_node_type> value_type_variant{
-      identify_key_value_value_type(ctx, possible_terminating_chars,
-                                    actual_terminating_char)};
+  node_type value_type{identify_key_value_value_type(
+      ctx, possible_terminating_chars, actual_terminating_char)};
 
-  switch (value_type_variant.index()) {
-
-  case 0: {
-    const value_node_type value_type_extracted{std::get<0>(value_type_variant)};
-
-    switch (value_type_extracted) {
-
-    case value_node_type::ARRAY: {
-      return node_ptr_cast<value_node>(parse_array_value(
-          ctx, possible_terminating_chars, actual_terminating_char));
-    } break;
-
-    default: {
-      throw std::runtime_error{"invalid value type returned by "
-                               "identify_key_value_value_type()"};
-    } break;
-    }
+  switch (value_type) {
+  case node_type::MAP: {
+    return node_ptr_cast<node>(parse_map_value(ctx, possible_terminating_chars,
+                                               actual_terminating_char));
   } break;
 
-  case 1: {
-    const end_value_node_type value_type_extracted{
-        std::get<1>(value_type_variant)};
+  case node_type::ARRAY: {
+    return node_ptr_cast<node>(parse_array_value(
+        ctx, possible_terminating_chars, actual_terminating_char));
+  } break;
 
-    switch (value_type_extracted) {
+  case node_type::STRING: {
+    return node_ptr_cast<node>(parse_string_value(
+        ctx, possible_terminating_chars, actual_terminating_char));
+  } break;
 
-    case end_value_node_type::STRING: {
-      return node_ptr_cast<value_node>(parse_string_value(
-          ctx, possible_terminating_chars, actual_terminating_char));
-    } break;
+  case node_type::INTEGER: {
+    return node_ptr_cast<node>(parse_integer_value(
+        ctx, possible_terminating_chars, actual_terminating_char));
+  } break;
 
-    case end_value_node_type::INTEGER: {
-      return node_ptr_cast<value_node>(parse_integer_value(
-          ctx, possible_terminating_chars, actual_terminating_char));
-    } break;
-
-    case end_value_node_type::FLOAT: {
-      return node_ptr_cast<value_node>(parse_float_value(
-          ctx, possible_terminating_chars, actual_terminating_char));
-    } break;
-
-    default: {
-      throw std::runtime_error{"impossible!"};
-    } break;
-    }
+  case node_type::FLOAT: {
+    return node_ptr_cast<node>(parse_float_value(
+        ctx, possible_terminating_chars, actual_terminating_char));
   } break;
 
   default: {
-    throw std::runtime_error{"impossible"};
+    throw std::runtime_error{"impossible!"};
   } break;
   }
 }
 
 std::pair<libconfigfile::parser::impl::directive,
-          std::optional<libconfigfile::node_ptr<libconfigfile::section_node>>>
+          std::optional<libconfigfile::node_ptr<libconfigfile::map_node>>>
 libconfigfile::parser::impl::parse_directive(context &ctx) {
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_pos_count{ctx.line_count, ctx.char_count};
@@ -1762,9 +1590,8 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
         pos_count_before_handled_comment_in_name_proper = {ctx.line_count,
                                                            ctx.char_count};
         handled_comment_in_name_proper = handle_comments(ctx);
-      }
-      {
-        handle_comments(ctx); // TODO
+      } else {
+        handle_comments(ctx); // TODO // TODO: why is there a TODO here?
       }
       ctx.input_stream.get(cur_char);
       if (ctx.input_stream.eof() == true) {
@@ -2063,7 +1890,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   }
 }
 
-libconfigfile::node_ptr<libconfigfile::section_node>
+libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       start_pos_count{ctx.line_count, ctx.char_count};
@@ -2455,7 +2282,7 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
   }
 }
 
-std::variant<libconfigfile::value_node_type, libconfigfile::end_value_node_type>
+libconfigfile::node_type
 libconfigfile::parser::impl::identify_key_value_value_type(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -2501,7 +2328,7 @@ libconfigfile::parser::impl::identify_key_value_value_type(
       reset_context();
 
       throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_2, ctx.identifier, ctx.line_count,
+          error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
           ctx.char_count);
     } else {
       gotten_chars.push_back(cur_char);
@@ -2515,18 +2342,22 @@ libconfigfile::parser::impl::identify_key_value_value_type(
         reset_context();
 
         throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_2, ctx.identifier,
+            error_messages::err_msg_1_2_5, ctx.identifier,
             pos_count_at_start.first, pos_count_at_error.second);
       } else {
         reset_context();
 
         switch (cur_char) {
+        case character_constants::g_k_map_opening_delimiter: {
+          return node_type::MAP;
+        } break;
+
         case character_constants::g_k_array_opening_delimiter: {
-          return value_node_type::ARRAY;
+          return node_type::ARRAY;
         } break;
 
         case character_constants::g_k_string_delimiter: {
-          return end_value_node_type::STRING;
+          return node_type::STRING;
         } break;
 
         default: {
@@ -2539,7 +2370,7 @@ libconfigfile::parser::impl::identify_key_value_value_type(
   }
 }
 
-libconfigfile::end_value_node_type
+libconfigfile::node_type
 libconfigfile::parser::impl::identify_key_value_numeric_value_type(
     context &ctx, const std::string &possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
@@ -2581,11 +2412,10 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
     ctx.char_count = pos_count_at_start.second;
   }};
 
-  const auto cleanup_and_return{
-      [&reset_context](const end_value_node_type ret_val) {
-        reset_context();
-        return ret_val;
-      }};
+  const auto cleanup_and_return{[&reset_context](const node_type ret_val) {
+    reset_context();
+    return ret_val;
+  }};
 
   if ((case_insensitive_string_find(
            gotten_chars, character_constants::g_k_float_infinity.second) !=
@@ -2593,11 +2423,11 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
       (case_insensitive_string_find(
            gotten_chars, character_constants::g_k_float_not_a_number.second) !=
        (std::string::npos))) {
-    return cleanup_and_return(end_value_node_type::FLOAT);
+    return cleanup_and_return(node_type::FLOAT);
   } else {
     if ((gotten_chars.find(character_constants::g_k_float_decimal_point)) !=
         (std::string::npos)) {
-      return cleanup_and_return(end_value_node_type::FLOAT);
+      return cleanup_and_return(node_type::FLOAT);
     } else {
       if (((gotten_chars.find(
                character_constants::g_k_float_exponent_sign_lower)) !=
@@ -2609,12 +2439,12 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
              (std::string::npos)) ||
             ((gotten_chars.find(numeral_system_hexadecimal.prefix_alt)) !=
              (std::string::npos))) {
-          return cleanup_and_return(end_value_node_type::INTEGER);
+          return cleanup_and_return(node_type::INTEGER);
         } else {
-          return cleanup_and_return(end_value_node_type::FLOAT);
+          return cleanup_and_return(node_type::FLOAT);
         }
       } else {
-        return cleanup_and_return(end_value_node_type::INTEGER);
+        return cleanup_and_return(node_type::INTEGER);
       }
     }
   }
