@@ -23,7 +23,7 @@ static constexpr std::string g_k_comment_c_end{"*/"};
 static constexpr char g_k_key_value_assign{'='};
 static constexpr char g_k_key_value_terminate{';'};
 static const std::string g_k_valid_name_chars{
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"};
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"};
 
 static constexpr char g_k_directive_leader{'@'};
 static constexpr std::string g_k_version_directive_name{"version"};
@@ -42,8 +42,9 @@ static constexpr char g_k_string_delimiter{'"'};
 
 static constexpr char g_k_escape_leader{'\\'};
 static const std::unordered_map<char, char> g_k_basic_escape_chars{
-    {'a', 0x07}, {'b', 0x08}, {'f', 0x0C},  {'n', 0x0A},  {'r', 0x0D},
-    {'t', 0x09}, {'v', 0x0B}, {'\\', 0x5C}, {'\'', 0x27}, {'"', 0x22}};
+    {'"', 0x22}, {'\\', 0x5c}, {'/', 0x2f}, {'b', 0x08},
+    {'f', 0x0c}, {'n', 0x0a},  {'r', 0x0d}, {'t', 0x09},
+};
 static constexpr char g_k_hex_escape_char{'x'};
 static constexpr int g_k_ascii_start{0x00};
 static constexpr int g_k_ascii_end{0x7F};
