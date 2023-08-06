@@ -13,6 +13,7 @@ static constexpr char g_k_newline{'\n'};
 static constexpr char g_k_space{' '};
 static constexpr char g_k_tab{'\t'};
 static constexpr std::string g_k_whitespace_chars{g_k_space, g_k_tab};
+
 static constexpr std::string g_k_indent_str(2, g_k_space);
 
 static constexpr char g_k_comment_script{'#'};
@@ -47,6 +48,19 @@ static const std::unordered_map<char, char> g_k_basic_escape_chars{
 static constexpr char g_k_hex_escape_char{'x'};
 static constexpr int g_k_ascii_start{0x00};
 static constexpr int g_k_ascii_end{0x7F};
+
+static const std::string g_k_control_chars{
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+    0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
+    0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
+static const std::unordered_map<char, std::string> g_k_control_chars_codes{
+    {0x00, "x00"}, {0x01, "x01"}, {0x02, "x02"}, {0x03, "x03"}, {0x04, "x04"},
+    {0x05, "x05"}, {0x06, "x06"}, {0x07, "x07"}, {0x08, "b"},   {0x09, "t"},
+    {0x0a, "n"},   {0x0b, "x0b"}, {0x0c, "f"},   {0x0d, "r"},   {0x0e, "x0e"},
+    {0x0f, "x0f"}, {0x10, "x10"}, {0x11, "x11"}, {0x12, "x12"}, {0x13, "x13"},
+    {0x14, "x14"}, {0x15, "x15"}, {0x16, "x16"}, {0x17, "x17"}, {0x18, "x18"},
+    {0x19, "x19"}, {0x1a, "x1a"}, {0x1b, "x1b"}, {0x1c, "x1c"}, {0x1d, "x1d"},
+    {0x1e, "x1e"}, {0x1f, "x1f"}};
 
 static constexpr char g_k_num_digit_separator{'_'};
 static constexpr char g_k_num_positive_sign{'+'};
