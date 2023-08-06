@@ -49,19 +49,39 @@ bool libconfigfile::string_node::polymorphic_value_compare(
 std::ostream &libconfigfile::string_node::print(
     std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
   static constexpr std::string escaped_string_delimiter{
-      character_constants::g_k_escape_leader +
+      character_constants::g_k_escape_leader,
       character_constants::g_k_string_delimiter};
+  static constexpr std::string escaped_escape_leader{
+      character_constants::g_k_escape_leader,
+      character_constants::g_k_escape_leader};
+
+  static constexpr std::string need_to_replace{
+      character_constants::g_k_string_delimiter,
+      character_constants::g_k_escape_leader};
+
   out << character_constants::g_k_string_delimiter;
 
   std::string::size_type pos{0};
   std::string::size_type pos_prev{0};
   while (true) {
-    pos = this->find(character_constants::g_k_string_delimiter, pos_prev);
+    pos = this->find_first_of(need_to_replace, pos_prev);
     if (pos == std::string::npos) {
       break;
     } else {
       out << this->substr(pos_prev, (pos - pos_prev));
-      out << escaped_string_delimiter;
+      switch (this->operator[](pos)) {
+      case character_constants::g_k_string_delimiter: {
+        out << escaped_string_delimiter;
+      } break;
+
+      case character_constants::g_k_escape_leader: {
+        out << escaped_escape_leader;
+      } break;
+
+      default: {
+        throw std::runtime_error{"impossible!"};
+      } break;
+      }
       pos_prev = pos + 1;
     }
   }
