@@ -1,6 +1,6 @@
 # Configuration File Syntax Specification
 
-Version: 0
+Version: 1
 
 ## Contents
 - [Spec](#spec)
