@@ -69,6 +69,8 @@ The following four cases all produce the same result:
 - "\/"
 - "/"
 
+Adjacent strings separated only by whitespace will be concatenated.
+
 ## Integers
 
 An integer is a sequence of decimal, binary, octal, or hexadecimal digits. It may have a preceeding minus sign (0x2d) or plus sign (0x2b). Decimal integers are not prefixed; the digits are the characters 0x30 through 0x39. Binary integers must be prefixed by '0b' or '0B'; the digits are the characters 0x30 through 0x31. Octal integers must be prefixed by '0o' or '0O'; the digits are the characters 0x30 through 0x37. Hexadecimal integers must be prefixed by '0x' or '0X'; the digts are the characters 0x30 through 0x39, 0x61 through 0x66, and 0x41 through 46. The digits may be separated by an underscore (0x5f). Integers are stored as signed 64-bit integers.
