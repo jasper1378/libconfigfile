@@ -10,7 +10,7 @@
 
 namespace libconfigfile {
 
-class string_node : public node, std::string {
+class string_node : public node, public std::string {
 private:
   using base_t = std::string;
 
