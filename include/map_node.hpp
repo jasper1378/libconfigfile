@@ -13,8 +13,10 @@
 namespace libconfigfile {
 class map_node : public node,
                  public std::unordered_map<std::string, node_ptr<node, true>> {
-private:
+public:
   using base_t = std::unordered_map<std::string, node_ptr<node, true>>;
+
+private:
   bool m_is_root_map{false};
 
 public:
@@ -51,9 +53,15 @@ public:
 
 public:
   friend std::ostream &operator<<(std::ostream &out, const map_node &n);
+
+  friend map_node::base_t node_to_base(const map_node &node);
+  friend map_node::base_t node_to_base(map_node &&node);
 };
 
 std::ostream &operator<<(std::ostream &out, const map_node &n);
+
+map_node::base_t node_to_base(const map_node &node); // TODO
+map_node::base_t node_to_base(map_node &&node);      // TODO
 } // namespace libconfigfile
 
 #endif

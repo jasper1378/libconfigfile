@@ -15,7 +15,7 @@ libconfigfile::integer_node::integer_node()
     : m_value{}, m_num_sys{&numeral_system_decimal} {}
 
 libconfigfile::integer_node::integer_node(
-    const value_t value,
+    const base_t value,
     const numeral_system *num_sys /*= &character_constants::g_k_dec_num_sys*/)
     : m_value{value}, m_num_sys{num_sys} {}
 
@@ -23,7 +23,7 @@ libconfigfile::integer_node::integer_node(const integer_node &other)
     : m_value{other.m_value}, m_num_sys{other.m_num_sys} {}
 
 libconfigfile::integer_node::integer_node(integer_node &&other) noexcept(
-    std::is_nothrow_move_constructible_v<value_t>)
+    std::is_nothrow_move_constructible_v<base_t>)
     : m_value{other.m_value}, m_num_sys{other.m_num_sys} {}
 
 libconfigfile::integer_node::~integer_node() {}
@@ -80,11 +80,11 @@ std::ostream &libconfigfile::integer_node::print(
   return out;
 }
 
-libconfigfile::integer_node::value_t libconfigfile::integer_node::get() const {
+libconfigfile::integer_node::base_t libconfigfile::integer_node::get() const {
   return m_value;
 }
 
-void libconfigfile::integer_node::set(const value_t value) { m_value = value; }
+void libconfigfile::integer_node::set(const base_t value) { m_value = value; }
 
 const libconfigfile::numeral_system *
 libconfigfile::integer_node::get_num_sys() const {
@@ -95,14 +95,14 @@ void libconfigfile::integer_node::set_num_sys(const numeral_system *num_sys) {
   m_num_sys = num_sys;
 }
 
-std::pair<libconfigfile::integer_node::value_t,
+std::pair<libconfigfile::integer_node::base_t,
           const libconfigfile::numeral_system *>
 libconfigfile::integer_node::get_both() const {
   return {m_value, m_num_sys};
 }
 
 void libconfigfile::integer_node::set_both(
-    const std::pair<value_t, const libconfigfile::numeral_system *> &both) {
+    const std::pair<base_t, const libconfigfile::numeral_system *> &both) {
   m_value = both.first;
   m_num_sys = both.second;
 }
@@ -115,20 +115,20 @@ libconfigfile::integer_node::operator=(const integer_node &other) {
 }
 
 libconfigfile::integer_node &libconfigfile::integer_node::operator=(
-    integer_node &&other) noexcept(std::is_nothrow_move_assignable_v<value_t>) {
+    integer_node &&other) noexcept(std::is_nothrow_move_assignable_v<base_t>) {
   m_value = other.m_value;
   m_num_sys = other.m_num_sys;
   return *this;
 }
 
 libconfigfile::integer_node &
-libconfigfile::integer_node::operator=(const value_t value) {
+libconfigfile::integer_node::operator=(const base_t value) {
   m_value = value;
   return *this;
 }
 
 libconfigfile::integer_node &libconfigfile::integer_node::operator=(
-    const std::pair<value_t, const libconfigfile::numeral_system *> &both) {
+    const std::pair<base_t, const libconfigfile::numeral_system *> &both) {
   m_value = both.first;
   m_num_sys = both.second;
   return *this;
@@ -146,4 +146,14 @@ bool libconfigfile::operator!=(const integer_node &x, const integer_node &y) {
 std::ostream &libconfigfile::operator<<(std::ostream &out,
                                         const integer_node &n) {
   return n.print(out);
+}
+
+libconfigfile::integer_node::base_t
+libconfigfile::node_to_base(const integer_node &node) {
+  return integer_node::base_t{node.m_value};
+}
+
+libconfigfile::integer_node::base_t
+libconfigfile::node_to_base(integer_node &&node) {
+  return integer_node::base_t{std::move(node.m_value)};
 }

@@ -120,3 +120,13 @@ std::ostream &libconfigfile::operator<<(std::ostream &out,
                                         const string_node &n) {
   return n.print(out);
 }
+
+libconfigfile::string_node::base_t
+libconfigfile::node_to_base(const string_node &node) {
+  return string_node::base_t{node};
+}
+
+libconfigfile::string_node::base_t
+libconfigfile::node_to_base(string_node &&node) {
+  return string_node::base_t{std::move(node)};
+}

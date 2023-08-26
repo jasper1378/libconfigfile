@@ -106,3 +106,12 @@ libconfigfile::map_node &libconfigfile::map_node::operator=(
 std::ostream &libconfigfile::operator<<(std::ostream &out, const map_node &n) {
   return n.print(out);
 }
+
+libconfigfile::map_node::base_t
+libconfigfile::node_to_base(const map_node &node) {
+  return map_node::base_t{node};
+}
+
+libconfigfile::map_node::base_t libconfigfile::node_to_base(map_node &&node) {
+  return map_node::base_t{std::move(node)};
+}
