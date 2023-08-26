@@ -1,6 +1,6 @@
 # Configuration File Syntax Specification
 
-Version: 4
+Version: 5
 
 ## Contents
 - [Introduction](#introduction)
