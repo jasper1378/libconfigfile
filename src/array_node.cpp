@@ -91,3 +91,13 @@ std::ostream &libconfigfile::operator<<(std::ostream &out,
                                         const array_node &n) {
   return n.print(out);
 }
+
+libconfigfile::array_node::base_t
+libconfigfile::node_to_base(const array_node &node) {
+  return array_node::base_t{node};
+}
+
+libconfigfile::array_node::base_t
+libconfigfile::node_to_base(array_node &&node) {
+  return array_node::base_t{std::move(node)};
+}

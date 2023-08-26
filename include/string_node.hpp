@@ -11,7 +11,7 @@
 namespace libconfigfile {
 
 class string_node : public node, public std::string {
-private:
+public:
   using base_t = std::string;
 
 public:
@@ -45,9 +45,15 @@ public:
 
 public:
   friend std::ostream &operator<<(std::ostream &out, const string_node &n);
+
+  friend string_node::base_t node_to_base(const string_node &node);
+  friend string_node::base_t node_to_base(string_node &&node);
 };
 
 std::ostream &operator<<(std::ostream &out, const string_node &n);
+
+string_node::base_t node_to_base(const string_node &node);
+string_node::base_t node_to_base(string_node &&node);
 } // namespace libconfigfile
 
 #endif

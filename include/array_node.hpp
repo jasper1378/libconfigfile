@@ -11,7 +11,7 @@
 
 namespace libconfigfile {
 class array_node : public node, public std::vector<node_ptr<node, true>> {
-private:
+public:
   using base_t = std::vector<node_ptr<node, true>>;
 
 public:
@@ -45,9 +45,15 @@ public:
 
 public:
   friend std::ostream &operator<<(std::ostream &out, const array_node &n);
+
+  friend array_node::base_t node_to_base(const array_node &node);
+  friend array_node::base_t node_to_base(array_node &&node);
 };
 
 std::ostream &operator<<(std::ostream &out, const array_node &n);
+
+array_node::base_t node_to_base(const array_node &node);
+array_node::base_t node_to_base(array_node &&node);
 } // namespace libconfigfile
 
 #endif

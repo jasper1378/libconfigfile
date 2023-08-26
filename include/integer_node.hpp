@@ -13,24 +13,24 @@
 
 namespace libconfigfile {
 
-using integer_node_data_t = int64_t;
-
 class integer_node : public node {
 public:
-  using value_t = integer_node_data_t;
-  static_assert(std::is_integral_v<value_t>);
+  using base_t = int64_t;
 
 private:
-  value_t m_value;
+  static_assert(std::is_integral_v<base_t>);
+
+private:
+  base_t m_value;
   const numeral_system *m_num_sys;
 
 public:
   integer_node();
-  integer_node(const value_t value,
+  integer_node(const base_t value,
                const numeral_system *num_sys = &numeral_system_decimal);
   integer_node(const integer_node &other);
   integer_node(integer_node &&other) noexcept(
-      std::is_nothrow_move_constructible_v<value_t>);
+      std::is_nothrow_move_constructible_v<base_t>);
 
   virtual ~integer_node() override;
 
@@ -44,33 +44,39 @@ public:
         [[maybe_unused]] const int indent_level = 0) const override;
 
 public:
-  value_t get() const;
-  void set(const value_t value);
+  base_t get() const;
+  void set(const base_t value);
 
   const numeral_system *get_num_sys() const;
   void set_num_sys(const numeral_system *num_sys);
 
-  std::pair<value_t, const numeral_system *> get_both() const;
-  void set_both(const std::pair<value_t, const numeral_system *> &both);
+  std::pair<base_t, const numeral_system *> get_both() const;
+  void set_both(const std::pair<base_t, const numeral_system *> &both);
 
   integer_node &operator=(const integer_node &other);
   integer_node &operator=(integer_node &&other) noexcept(
-      std::is_nothrow_move_assignable_v<value_t>);
-  integer_node &operator=(const value_t value);
+      std::is_nothrow_move_assignable_v<base_t>);
+  integer_node &operator=(const base_t value);
   integer_node &
-  operator=(const std::pair<value_t, const numeral_system *> &both);
+  operator=(const std::pair<base_t, const numeral_system *> &both);
 
 public:
   friend bool operator==(const integer_node &x, const integer_node &y);
   friend bool operator!=(const integer_node &x, const integer_node &y);
 
   friend std::ostream &operator<<(std::ostream &out, const integer_node &n);
+
+  friend integer_node::base_t node_to_base(const integer_node &node);
+  friend integer_node::base_t node_to_base(integer_node &&node);
 };
 
 bool operator==(const integer_node &x, const integer_node &y);
 bool operator!=(const integer_node &x, const integer_node &y);
 
 std::ostream &operator<<(std::ostream &out, const integer_node &n);
+
+integer_node::base_t node_to_base(const integer_node &node);
+integer_node::base_t node_to_base(integer_node &&node);
 } // namespace libconfigfile
 
 #endif
