@@ -42,7 +42,7 @@ All syntactical constructs (with the exception of directives and comments) withi
 └── map_node
 ```
 
-Concrete classes (`string_node`, `integer_node`, `float_node`, `array_node`, `map_node`) correspond to the actual types of information found within a config file. Many of these concrete classes provide interfaces similar to familiar standard library classes (`string_end_value_node`: `std::string`, `array_value_node`: `std::vector`, `map_node` : `std::unordered_map`). Others provide a simple get/set interface (`integer_end_value_node`, `float_end_value_node`).
+Concrete classes (`string_node`, `integer_node`, `float_node`, `array_node`, `map_node`) correspond to the actual types of information found within a config file. Many of these concrete classes inherit from familiar standard library classes (`string_end_value_node`: `std::string`, `array_value_node`: `std::vector`, `map_node` : `std::unordered_map`). Others provide a simple get/set interface for a built-in type (`integer_end_value_node`: `int64_t`, `float_end_value_node`: `double`). Node classes can be converted to their base type by calling `node_to_base()`.
 
 The hierarchy is designed in such a way as to promote polymorphic usage. The actual, pointed-to type of a polymorphic pointer can be identified by calling the `get_node_type()` member function, which returns an `enum` value corresponding to the appropriate concrete child class (`node_type::STRING`, `node_type::INTEGER`, `node_type::FLOAT`, `node_type::ARRAY`, `node_type::MAP`).
 
