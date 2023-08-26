@@ -634,18 +634,18 @@ libconfigfile::parser::impl::parse_integer_value(
   node_ptr<integer_node> ret_val{nullptr};
 
   static_assert(
-      (sizeof(decltype(std::stoll(""))) >= sizeof(integer_node_data_t)),
+      (sizeof(decltype(std::stoll(""))) >= sizeof(integer_node::base_t)),
       "no string-to-int conversion function (std::stoi(), "
       "std::stol(), std::stoll()) with return type large enough for "
       "integer_end_value_node_t");
 
   try {
     if constexpr ((sizeof(decltype(std::stoi("")))) >=
-                  (sizeof(integer_node_data_t))) {
+                  (sizeof(integer_node::base_t))) {
       ret_val = make_node_ptr<integer_node>(
           std::stoi(actual_digits, nullptr, num_sys->base), num_sys);
     } else if constexpr ((sizeof(decltype(std::stol("")))) >=
-                         (sizeof(integer_node_data_t))) {
+                         (sizeof(integer_node::base_t))) {
       ret_val = make_node_ptr<integer_node>(
           std::stol(actual_digits, nullptr, num_sys->base), num_sys);
     } else {
@@ -674,7 +674,7 @@ libconfigfile::parser::impl::parse_float_value(
   const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
       pos_count_at_start{ctx.line_count, ctx.char_count};
 
-  static const std::unordered_map<std::string, float_node_data_t>
+  static const std::unordered_map<std::string, float_node::base_t>
       special_floats{{character_constants::g_k_float_infinity.second,
                       character_constants::g_k_float_infinity.first},
                      {(character_constants::g_k_num_positive_sign +
@@ -1170,10 +1170,10 @@ libconfigfile::parser::impl::parse_float_value(
 
   try {
     if constexpr ((sizeof(decltype(std::stof("")))) >=
-                  (sizeof(float_node_data_t))) {
+                  (sizeof(float_node::base_t))) {
       ret_val = make_node_ptr<float_node>(std::stof(sanitized_string, nullptr));
     } else if constexpr ((sizeof(decltype(std::stod("")))) >=
-                         (sizeof(float_node_data_t))) {
+                         (sizeof(float_node::base_t))) {
       ret_val = make_node_ptr<float_node>(std::stod(sanitized_string, nullptr));
     } else {
       ret_val =

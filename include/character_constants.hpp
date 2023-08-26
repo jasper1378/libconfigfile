@@ -72,10 +72,10 @@ static constexpr char g_k_num_sys_prefix_leader{'0'};
 static constexpr char g_k_float_decimal_point{'.'};
 static constexpr char g_k_float_exponent_sign_lower{'e'};
 static constexpr char g_k_float_exponent_sign_upper{'E'};
-static constexpr std::pair<float_node_data_t, std::string> g_k_float_infinity{
-    std::numeric_limits<float_node_data_t>::infinity(), "inf"};
-static constexpr std::pair<float_node_data_t, std::string>
-    g_k_float_not_a_number{std::numeric_limits<float_node_data_t>::quiet_NaN(),
+static constexpr std::pair<float_node::base_t, std::string> g_k_float_infinity{
+    std::numeric_limits<float_node::base_t>::infinity(), "inf"};
+static constexpr std::pair<float_node::base_t, std::string>
+    g_k_float_not_a_number{std::numeric_limits<float_node::base_t>::quiet_NaN(),
                            "nan"};
 } // namespace character_constants
 } // namespace libconfigfile
