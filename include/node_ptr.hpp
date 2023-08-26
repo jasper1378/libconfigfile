@@ -100,7 +100,7 @@ public:
 
   explicit operator bool() const { return m_ptr != nullptr; }
 
-  t_node operator*() const { return *get(); };
+  t_node &operator*() const { return *get(); };
 
   t_ptr operator->() const { return get(); }
 
