@@ -1591,7 +1591,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
                                                            ctx.char_count};
         handled_comment_in_name_proper = handle_comments(ctx);
       } else {
-        handle_comments(ctx); // TODO // TODO: why is there a TODO here?
+        handle_comments(ctx);
       }
       ctx.input_stream.get(cur_char);
       if (ctx.input_stream.eof() == true) {

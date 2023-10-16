@@ -60,8 +60,8 @@ public:
 
 std::ostream &operator<<(std::ostream &out, const map_node &n);
 
-map_node::base_t node_to_base(const map_node &node); // TODO
-map_node::base_t node_to_base(map_node &&node);      // TODO
+map_node::base_t node_to_base(const map_node &node);
+map_node::base_t node_to_base(map_node &&node);
 } // namespace libconfigfile
 
 #endif
