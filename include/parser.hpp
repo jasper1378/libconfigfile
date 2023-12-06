@@ -27,6 +27,8 @@ namespace parser {
 node_ptr<map_node> parse(const std::string &identifier,
                          std::istream &input_stream,
                          const bool identifier_is_file_path = false);
+node_ptr<map_node> parse_file(const char *file_path);
+node_ptr<map_node> parse_file(const std::string &file_path);
 node_ptr<map_node> parse_file(const std::filesystem::path &file_path);
 
 namespace impl {
