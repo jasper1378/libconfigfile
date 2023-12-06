@@ -41,9 +41,21 @@ libconfigfile::parser::parse(const std::string &identifier,
 }
 
 libconfigfile::node_ptr<libconfigfile::map_node>
-libconfigfile::parser::parse_file(const std::filesystem::path &file_path) {
+libconfigfile::parser::parse_file(const char *file_path) {
   std::ifstream input_stream{file_path};
   return impl::parse(file_path, input_stream, true);
+}
+
+libconfigfile::node_ptr<libconfigfile::map_node>
+libconfigfile::parser::parse_file(const std::string &file_path) {
+  std::ifstream input_stream{file_path};
+  return impl::parse(file_path, input_stream, true);
+}
+
+libconfigfile::node_ptr<libconfigfile::map_node>
+libconfigfile::parser::parse_file(const std::filesystem::path &file_path) {
+  std::ifstream input_stream{file_path};
+  return impl::parse(file_path.string(), input_stream, true);
 }
 
 libconfigfile::node_ptr<libconfigfile::map_node>
