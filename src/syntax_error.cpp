@@ -5,50 +5,48 @@
 #include <string>
 #include <utility>
 
-libconfigfile::syntax_error::syntax_error(const std::string &what_arg)
-    : std::runtime_error{what_arg} {}
+libconfigfile::syntax_error::syntax_error(const std::string &message,
+                                          const std::string &category,
+                                          const std::string &file_path,
+                                          const long long pos_line,
+                                          const long long pos_char)
+    : base_t{file_path + m_k_separator_char + std::to_string(pos_line) +
+             m_k_separator_char + std::to_string(pos_char) +
+             m_k_separator_char + m_k_whitespace_char + category +
+             m_k_separator_char + m_k_whitespace_char + message},
+      m_message{message}, m_category{category}, m_file_path{file_path},
+      m_pos_line{pos_line}, m_pos_char{pos_char} {}
 
-libconfigfile::syntax_error::syntax_error(const char *what_arg)
-    : std::runtime_error{what_arg} {}
-
-libconfigfile::syntax_error::syntax_error(const syntax_error &other) noexcept
+libconfigfile::syntax_error::syntax_error(const syntax_error &other)
     : std::runtime_error{other} {}
 
-libconfigfile::syntax_error::syntax_error(syntax_error &&other) noexcept
-    : std::runtime_error{std::move(other)} {}
-
 libconfigfile::syntax_error::~syntax_error() {}
+
+libconfigfile::syntax_error &
+libconfigfile::syntax_error::operator=(const syntax_error &other) {
+  if (this != &other) {
+    std::runtime_error::operator=(other);
+    m_message = other.m_message;
+    m_category = other.m_category;
+    m_file_path = other.m_file_path;
+    m_pos_line = other.m_pos_line;
+    m_pos_char = other.m_pos_char;
+  }
+  return *this;
+}
 
 const char *libconfigfile::syntax_error::what() const noexcept {
   return std::runtime_error::what();
 }
 
-libconfigfile::syntax_error &
-libconfigfile::syntax_error::operator=(const syntax_error &other) noexcept {
-  std::runtime_error::operator=(other);
+std::string libconfigfile::syntax_error::message() const { return m_message; }
 
-  return *this;
+std::string libconfigfile::syntax_error::category() const { return m_category; }
+
+std::string libconfigfile::syntax_error::file_path() const {
+  return m_file_path;
 }
 
-libconfigfile::syntax_error &
-libconfigfile::syntax_error::operator=(syntax_error &&other) noexcept {
-  std::runtime_error::operator=(std::move(other));
+long long libconfigfile::syntax_error::pos_line() const { return m_pos_line; }
 
-  return *this;
-}
-
-libconfigfile::syntax_error
-libconfigfile::syntax_error::generate_formatted_error(
-    const std::string &what_arg, const std::filesystem::path &file_path,
-    const size_t pos_line, const size_t pos_char) {
-  return syntax_error{file_path.string() + ':' + std::to_string(pos_line) +
-                      ':' + std::to_string(pos_char) + ": " + what_arg};
-}
-
-libconfigfile::syntax_error
-libconfigfile::syntax_error::generate_formatted_error(
-    const std::string &what_arg, const std::string &file_path,
-    const size_t pos_line, const size_t pos_char) {
-  return syntax_error{file_path + ':' + std::to_string(pos_line) + ':' +
-                      std::to_string(pos_char) + ": " + what_arg};
-}
+long long libconfigfile::syntax_error::pos_char() const { return m_pos_char; }
