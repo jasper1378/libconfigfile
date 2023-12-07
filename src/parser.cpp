@@ -138,9 +138,9 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
 
     case key_name_location::leading_whitespace: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_4, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_2_4.message,
+                           error_messages::err_msg_1_2_4.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char)) {
           ;
@@ -154,21 +154,24 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
             switch (cur_char) {
 
             case character_constants::g_k_key_value_assign: {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_4, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_2_4.message,
+                                 error_messages::err_msg_1_2_4.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             } break;
 
             case character_constants::g_k_key_value_terminate: {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_4, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_2_4.message,
+                                 error_messages::err_msg_1_2_4.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             } break;
 
             default: {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_1, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_2_1.message,
+                                 error_messages::err_msg_1_2_1.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             } break;
             }
 
@@ -181,9 +184,9 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
 
     case key_name_location::name_proper: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_2_5.message,
+                           error_messages::err_msg_1_2_5.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char) == true) {
           last_state = key_name_location::trailing_whitespace;
@@ -191,26 +194,29 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
           if (cur_char == character_constants::g_k_key_value_assign) {
             last_state = key_name_location::equal_sign;
           } else if (cur_char == character_constants::g_k_key_value_terminate) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_2_5.message,
+                               error_messages::err_msg_1_2_5.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           } else {
             if (start_of_name_proper_pos_count.first != ctx.line_count) {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_3, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_2_3.message,
+                                 error_messages::err_msg_1_2_3.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             } else if (handled_comment_in_name_proper == true) {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_2, ctx.identifier,
+              throw syntax_error{
+                  error_messages::err_msg_1_2_2.message,
+                  error_messages::err_msg_1_2_2.category, ctx.identifier,
                   pos_count_before_handled_comment_in_name_proper.first,
-                  pos_count_before_handled_comment_in_name_proper.second);
+                  pos_count_before_handled_comment_in_name_proper.second};
             } else {
               if (is_invalid_character_valid_provided(
                       cur_char, character_constants::g_k_valid_name_chars) ==
                   true) {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_2_1, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
+                throw syntax_error{error_messages::err_msg_1_2_1.message,
+                                   error_messages::err_msg_1_2_1.category,
+                                   ctx.identifier, ctx.line_count,
+                                   ctx.char_count};
               } else {
                 key_name.push_back(cur_char);
               }
@@ -222,9 +228,9 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
 
     case key_name_location::trailing_whitespace: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_2_5.message,
+                           error_messages::err_msg_1_2_5.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char) == true) {
           ;
@@ -233,13 +239,15 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
             last_state = key_name_location::equal_sign;
           } else {
             if (cur_char == character_constants::g_k_key_value_terminate) {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_2_5.message,
+                                 error_messages::err_msg_1_2_5.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_2_5.message,
+                                 error_messages::err_msg_1_2_5.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           }
         }
@@ -282,9 +290,9 @@ libconfigfile::parser::impl::parse_key_value_value(
     }
 
     if (eof == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_2_5.message,
+                         error_messages::err_msg_1_2_5.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else if (is_whitespace(cur_char) == true) {
       continue;
     } else if ((cur_char == character_constants::g_k_key_value_assign) &&
@@ -295,9 +303,9 @@ libconfigfile::parser::impl::parse_key_value_value(
       if (actual_terminating_char != nullptr) {
         *actual_terminating_char = cur_char;
       };
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_2_5.message,
+                         error_messages::err_msg_1_2_5.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else {
       ctx.input_stream.unget();
       --ctx.char_count;
@@ -341,20 +349,20 @@ libconfigfile::parser::impl::parse_string_value(
 
     if (eof == true) {
       if (in_string == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_3_3, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_3_3.message,
+                           error_messages::err_msg_1_3_3.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_2_6.message,
+                           error_messages::err_msg_1_2_6.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       }
     } else {
       if (in_string == true) {
         if (last_opening_delimiter_pos_count.first != ctx.line_count) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_3_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_3_2.message,
+                             error_messages::err_msg_1_3_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             in_string = false;
@@ -379,18 +387,18 @@ libconfigfile::parser::impl::parse_string_value(
           in_string = true;
           last_opening_delimiter_pos_count = {ctx.line_count, ctx.char_count};
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_3_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_3_1.message,
+                             error_messages::err_msg_1_3_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       }
     }
   }
 
   if (in_string == true) {
-    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_3_3,
-                                                 ctx.identifier, ctx.line_count,
-                                                 ctx.char_count);
+    throw syntax_error{error_messages::err_msg_1_3_3.message,
+                       error_messages::err_msg_1_3_3.category, ctx.identifier,
+                       ctx.line_count, ctx.char_count};
   } else {
     return make_node_ptr<string_node>(std::move(string_contents));
   }
@@ -432,9 +440,9 @@ libconfigfile::parser::impl::parse_integer_value(
         } else {
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_4_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_4_1.message,
+                             error_messages::err_msg_1_4_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       }};
 
@@ -462,39 +470,39 @@ libconfigfile::parser::impl::parse_integer_value(
     }
 
     if (eof == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_2_6.message,
+                         error_messages::err_msg_1_2_6.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
       if (actual_terminating_char != nullptr) {
         *actual_terminating_char = cur_char;
       };
       break;
     } else if (pos_count_at_start.first != ctx.line_count) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_4_4, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_4_4.message,
+                         error_messages::err_msg_1_4_4.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else if (handled_comment == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_4_3, ctx.identifier,
-          pos_count_before_handled_comment.first,
-          pos_count_before_handled_comment.second);
+      throw syntax_error{error_messages::err_msg_1_4_3.message,
+                         error_messages::err_msg_1_4_3.category, ctx.identifier,
+                         pos_count_before_handled_comment.first,
+                         pos_count_before_handled_comment.second};
     } else if ((is_whitespace(cur_char) == true) &&
                (in_trailing_whitespace == false)) {
       in_trailing_whitespace = true;
     } else if ((is_whitespace(cur_char) == false) &&
                (in_trailing_whitespace == true)) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_4_9, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_4_9.message,
+                         error_messages::err_msg_1_4_9.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else {
       switch (cur_char) {
       case character_constants::g_k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
             (ctx.input_stream.peek() == std::istream::traits_type::eof())) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_4_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_4_2.message,
+                             error_messages::err_msg_1_4_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
@@ -507,9 +515,9 @@ libconfigfile::parser::impl::parse_integer_value(
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_4_8, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_4_8.message,
+                             error_messages::err_msg_1_4_8.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       } break;
 
@@ -519,9 +527,9 @@ libconfigfile::parser::impl::parse_integer_value(
           last_char_was_digit = false;
           last_char_was_leading_zero = false;
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_4_6, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_4_6.message,
+                             error_messages::err_msg_1_4_6.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       } break;
 
@@ -549,19 +557,21 @@ libconfigfile::parser::impl::parse_integer_value(
 
                 num_sys = &numeral_system_binary;
               } else {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_4_7, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
+                throw syntax_error{error_messages::err_msg_1_4_7.message,
+                                   error_messages::err_msg_1_4_7.category,
+                                   ctx.identifier, ctx.line_count,
+                                   ctx.char_count};
               }
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_4_1, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_4_1.message,
+                                 error_messages::err_msg_1_4_1.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_4_7, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_4_7.message,
+                               error_messages::err_msg_1_4_7.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } else {
           default_char_behavior();
@@ -579,19 +589,21 @@ libconfigfile::parser::impl::parse_integer_value(
 
                 num_sys = &numeral_system_octal;
               } else {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_4_7, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
+                throw syntax_error{error_messages::err_msg_1_4_7.message,
+                                   error_messages::err_msg_1_4_7.category,
+                                   ctx.identifier, ctx.line_count,
+                                   ctx.char_count};
               }
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_4_1, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_4_1.message,
+                                 error_messages::err_msg_1_4_1.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_4_7, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_4_7.message,
+                               error_messages::err_msg_1_4_7.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } else {
           default_char_behavior();
@@ -609,19 +621,21 @@ libconfigfile::parser::impl::parse_integer_value(
 
                 num_sys = &numeral_system_hexadecimal;
               } else {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_4_7, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
+                throw syntax_error{error_messages::err_msg_1_4_7.message,
+                                   error_messages::err_msg_1_4_7.category,
+                                   ctx.identifier, ctx.line_count,
+                                   ctx.char_count};
               }
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_4_1, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_4_1.message,
+                                 error_messages::err_msg_1_4_1.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_4_7, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_4_7.message,
+                               error_messages::err_msg_1_4_7.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } else {
           default_char_behavior();
@@ -665,9 +679,9 @@ libconfigfile::parser::impl::parse_integer_value(
           std::stoll(actual_digits, nullptr, num_sys->base), num_sys);
     }
   } catch (const std::out_of_range &ex) {
-    throw syntax_error::generate_formatted_error(
-        error_messages::err_msg_1_4_5, ctx.identifier, pos_count_at_start.first,
-        pos_count_at_start.second);
+    throw syntax_error{error_messages::err_msg_1_4_5.message,
+                       error_messages::err_msg_1_4_5.category, ctx.identifier,
+                       pos_count_at_start.first, pos_count_at_start.second};
   }
 
   if (is_negative == true) {
@@ -750,31 +764,31 @@ libconfigfile::parser::impl::parse_float_value(
     }
 
     if (eof == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_2_6.message,
+                         error_messages::err_msg_1_2_6.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
       if (actual_terminating_char != nullptr) {
         *actual_terminating_char = cur_char;
       };
       break;
     } else if (pos_count_at_start.first != ctx.line_count) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_5_9, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_5_9.message,
+                         error_messages::err_msg_1_5_9.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else if (handled_comment == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_5_8, ctx.identifier,
-          pos_count_before_handled_comment.first,
-          pos_count_before_handled_comment.second);
+      throw syntax_error{error_messages::err_msg_1_5_8.message,
+                         error_messages::err_msg_1_5_8.category, ctx.identifier,
+                         pos_count_before_handled_comment.first,
+                         pos_count_before_handled_comment.second};
     } else if ((is_whitespace(cur_char) == true) &&
                (in_trailing_whitespace == false)) {
       in_trailing_whitespace = true;
     } else if ((is_whitespace(cur_char) == false) &&
                (in_trailing_whitespace == true)) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_5_13, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_5_13.message,
+                         error_messages::err_msg_1_5_13.category,
+                         ctx.identifier, ctx.line_count, ctx.char_count};
     } else {
 
       switch (cur_location) {
@@ -815,9 +829,10 @@ libconfigfile::parser::impl::parse_float_value(
                 }
               }
               if (eof == true) {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_2_6, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
+                throw syntax_error{error_messages::err_msg_1_2_6.message,
+                                   error_messages::err_msg_1_2_6.category,
+                                   ctx.identifier, ctx.line_count,
+                                   ctx.char_count};
               } else if (possible_terminating_chars.find(cur_char) !=
                          std::string::npos) {
                 if (actual_terminating_char != nullptr) {
@@ -844,16 +859,18 @@ libconfigfile::parser::impl::parse_float_value(
 
               return ret_val;
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_1, ctx.identifier,
-                  pos_count_at_start_of_special_float.first,
-                  pos_count_at_start_of_special_float.second);
+              throw syntax_error{error_messages::err_msg_1_5_1.message,
+                                 error_messages::err_msg_1_5_1.category,
+                                 ctx.identifier,
+                                 pos_count_at_start_of_special_float.first,
+                                 pos_count_at_start_of_special_float.second};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_1, ctx.identifier,
-                pos_count_at_start_of_special_float.first,
-                pos_count_at_start_of_special_float.second);
+            throw syntax_error{error_messages::err_msg_1_5_1.message,
+                               error_messages::err_msg_1_5_1.category,
+                               ctx.identifier,
+                               pos_count_at_start_of_special_float.first,
+                               pos_count_at_start_of_special_float.second};
           }
         } break;
 
@@ -890,9 +907,10 @@ libconfigfile::parser::impl::parse_float_value(
                 }
               }
               if (eof == true) {
-                throw syntax_error::generate_formatted_error(
-                    error_messages::err_msg_1_2_6, ctx.identifier,
-                    ctx.line_count, ctx.char_count);
+                throw syntax_error{error_messages::err_msg_1_2_6.message,
+                                   error_messages::err_msg_1_2_6.category,
+                                   ctx.identifier, ctx.line_count,
+                                   ctx.char_count};
               } else if (possible_terminating_chars.find(cur_char) !=
                          std::string::npos) {
                 if (actual_terminating_char != nullptr) {
@@ -920,16 +938,18 @@ libconfigfile::parser::impl::parse_float_value(
 
               return ret_val;
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_1, ctx.identifier,
-                  pos_count_at_start_of_special_float.first,
-                  pos_count_at_start_of_special_float.second);
+              throw syntax_error{error_messages::err_msg_1_5_1.message,
+                                 error_messages::err_msg_1_5_1.category,
+                                 ctx.identifier,
+                                 pos_count_at_start_of_special_float.first,
+                                 pos_count_at_start_of_special_float.second};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_1, ctx.identifier,
-                pos_count_at_start_of_special_float.first,
-                pos_count_at_start_of_special_float.second);
+            throw syntax_error{error_messages::err_msg_1_5_1.message,
+                               error_messages::err_msg_1_5_1.category,
+                               ctx.identifier,
+                               pos_count_at_start_of_special_float.first,
+                               pos_count_at_start_of_special_float.second};
           }
         } break;
 
@@ -938,9 +958,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_12, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_12.message,
+                               error_messages::err_msg_1_5_12.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -949,9 +969,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::negative;
             sanitized_string.push_back(cur_char);
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_11, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_11.message,
+                               error_messages::err_msg_1_5_11.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -961,14 +981,15 @@ libconfigfile::parser::impl::parse_float_value(
                          numeral_system_decimal) == true) {
               last_char = char_type::separator;
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_6, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_5_6.message,
+                                 error_messages::err_msg_1_5_6.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_6, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_6.message,
+                               error_messages::err_msg_1_5_6.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -980,14 +1001,15 @@ libconfigfile::parser::impl::parse_float_value(
               cur_location = num_location::fractional;
               sanitized_string.push_back(cur_char);
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_5, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_5_5.message,
+                                 error_messages::err_msg_1_5_5.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_5, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_5.message,
+                               error_messages::err_msg_1_5_5.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -1002,14 +1024,15 @@ libconfigfile::parser::impl::parse_float_value(
               cur_location = num_location::exponent;
               sanitized_string.push_back(cur_char);
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_7, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_5_7.message,
+                                 error_messages::err_msg_1_5_7.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_7, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_7.message,
+                               error_messages::err_msg_1_5_7.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -1018,9 +1041,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::digit;
             sanitized_string.push_back(cur_char);
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_1, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_1.message,
+                               error_messages::err_msg_1_5_1.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
         }
@@ -1030,15 +1053,15 @@ libconfigfile::parser::impl::parse_float_value(
         switch (cur_char) {
 
         case character_constants::g_k_num_positive_sign: {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_5_12, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_5_12.message,
+                             error_messages::err_msg_1_5_12.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
         case character_constants::g_k_num_negative_sign: {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_5_11, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_5_11.message,
+                             error_messages::err_msg_1_5_11.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
         case character_constants::g_k_num_digit_separator: {
@@ -1047,21 +1070,22 @@ libconfigfile::parser::impl::parse_float_value(
                          numeral_system_decimal) == true) {
               last_char = char_type::separator;
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_6, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_5_6.message,
+                                 error_messages::err_msg_1_5_6.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_6, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_6.message,
+                               error_messages::err_msg_1_5_6.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
         case character_constants::g_k_float_decimal_point: {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_5_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_5_2.message,
+                             error_messages::err_msg_1_5_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
         case character_constants::g_k_float_exponent_sign_lower:
@@ -1075,14 +1099,15 @@ libconfigfile::parser::impl::parse_float_value(
               cur_location = num_location::exponent;
               sanitized_string.push_back(cur_char);
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_7, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_5_7.message,
+                                 error_messages::err_msg_1_5_7.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_7, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_7.message,
+                               error_messages::err_msg_1_5_7.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -1091,9 +1116,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::digit;
             sanitized_string.push_back(cur_char);
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_1, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_1.message,
+                               error_messages::err_msg_1_5_1.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
         }
@@ -1107,9 +1132,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_12, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_12.message,
+                               error_messages::err_msg_1_5_12.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -1118,9 +1143,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_11, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_11.message,
+                               error_messages::err_msg_1_5_11.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
@@ -1130,28 +1155,29 @@ libconfigfile::parser::impl::parse_float_value(
                          numeral_system_decimal) == true) {
               last_char = char_type::separator;
             } else {
-              throw syntax_error::generate_formatted_error(
-                  error_messages::err_msg_1_5_6, ctx.identifier, ctx.line_count,
-                  ctx.char_count);
+              throw syntax_error{error_messages::err_msg_1_5_6.message,
+                                 error_messages::err_msg_1_5_6.category,
+                                 ctx.identifier, ctx.line_count,
+                                 ctx.char_count};
             }
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_6, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_6.message,
+                               error_messages::err_msg_1_5_6.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
 
         case character_constants::g_k_float_decimal_point: {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_5_4, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_5_4.message,
+                             error_messages::err_msg_1_5_4.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
         case character_constants::g_k_float_exponent_sign_lower:
         case character_constants::g_k_float_exponent_sign_upper: {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_5_3, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_5_3.message,
+                             error_messages::err_msg_1_5_3.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
         default: {
@@ -1159,9 +1185,9 @@ libconfigfile::parser::impl::parse_float_value(
             last_char = char_type::digit;
             sanitized_string.push_back(cur_char);
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_5_1, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_5_1.message,
+                               error_messages::err_msg_1_5_1.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         } break;
         }
@@ -1193,9 +1219,9 @@ libconfigfile::parser::impl::parse_float_value(
     }
 
   } catch (const std::out_of_range &ex) {
-    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_5_10,
-                                                 ctx.identifier, ctx.line_count,
-                                                 ctx.char_count);
+    throw syntax_error{error_messages::err_msg_1_5_10.message,
+                       error_messages::err_msg_1_5_10.category, ctx.identifier,
+                       ctx.line_count, ctx.char_count};
   }
 
   return ret_val;
@@ -1241,9 +1267,9 @@ libconfigfile::parser::impl::parse_array_value(
     }
 
     if (eof == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_2_6.message,
+                         error_messages::err_msg_1_2_6.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else if ((possible_terminating_chars.find(cur_char) !=
                 std::string::npos) &&
                (last_char_type == char_type::closing_delimiter)) {
@@ -1260,9 +1286,9 @@ libconfigfile::parser::impl::parse_array_value(
         if (cur_char == character_constants::g_k_array_opening_delimiter) {
           last_char_type = char_type::opening_delimiter;
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_6_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_6_1.message,
+                             error_messages::err_msg_1_6_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       } break;
 
@@ -1271,9 +1297,9 @@ libconfigfile::parser::impl::parse_array_value(
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char ==
                    character_constants::g_k_array_element_separator) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_2_5.message,
+                             error_messages::err_msg_1_2_5.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           --ctx.char_count;
           ctx.input_stream.unget();
@@ -1300,9 +1326,9 @@ libconfigfile::parser::impl::parse_array_value(
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char ==
                    character_constants::g_k_array_element_separator) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_2_5.message,
+                             error_messages::err_msg_1_2_5.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           --ctx.char_count;
           ctx.input_stream.unget();
@@ -1325,9 +1351,9 @@ libconfigfile::parser::impl::parse_array_value(
       } break;
 
       case char_type::closing_delimiter: {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_6_3, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_6_3.message,
+                           error_messages::err_msg_1_6_3.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } break;
       }
     }
@@ -1366,13 +1392,13 @@ libconfigfile::parser::impl::parse_map_value(
                                &last_non_whitespace_char_line_pos_count, &ctx,
                                &ret_val]() {
     if (is_root_map == false) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_8_15, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_8_15.message,
+                         error_messages::err_msg_1_8_15.category,
+                         ctx.identifier, ctx.line_count, ctx.char_count};
     } else if (last_non_whitespace_char_line_pos_count == ctx.line_count) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_8_16, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_8_16.message,
+                         error_messages::err_msg_1_8_16.category,
+                         ctx.identifier, ctx.line_count, ctx.char_count};
     } else {
 
       const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
@@ -1396,9 +1422,10 @@ libconfigfile::parser::impl::parse_map_value(
         for (auto i{dir_res.second.value()->begin()};
              i != dir_res.second.value()->end(); ++i) {
           if (ret_val->contains(i->first)) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_9_5, ctx.identifier,
-                start_pos_count.first, start_pos_count.second);
+            throw syntax_error{error_messages::err_msg_1_9_5.message,
+                               error_messages::err_msg_1_9_5.category,
+                               ctx.identifier, start_pos_count.first,
+                               start_pos_count.second};
           }
         }
 
@@ -1433,9 +1460,9 @@ libconfigfile::parser::impl::parse_map_value(
       if (is_root_map == true) {
         break;
       } else {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_6, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_2_6.message,
+                           error_messages::err_msg_1_2_6.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       }
     } else if ((possible_terminating_chars.find(cur_char)) !=
                (std::string::npos)) {
@@ -1457,9 +1484,9 @@ libconfigfile::parser::impl::parse_map_value(
         if (cur_char == character_constants::g_k_map_opening_delimiter) {
           last_char_type = char_type::opening_delimiter;
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_7_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_7_1.message,
+                             error_messages::err_msg_1_7_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       } break;
 
@@ -1468,9 +1495,9 @@ libconfigfile::parser::impl::parse_map_value(
             (is_root_map == false)) {
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char == character_constants::g_k_key_value_terminate) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_2_7, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_2_7.message,
+                             error_messages::err_msg_1_2_7.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else if (cur_char == character_constants::g_k_directive_leader) {
           handle_directive();
         } else {
@@ -1483,9 +1510,10 @@ libconfigfile::parser::impl::parse_map_value(
               ctx, std::string{character_constants::g_k_key_value_terminate})};
 
           if (ret_val->contains(new_key_value.first) == true) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_9_5, ctx.identifier,
-                start_pos_count.first, start_pos_count.second);
+            throw syntax_error{error_messages::err_msg_1_9_5.message,
+                               error_messages::err_msg_1_9_5.category,
+                               ctx.identifier, start_pos_count.first,
+                               start_pos_count.second};
           } else {
             ret_val->insert({std::move(new_key_value)});
           }
@@ -1498,9 +1526,9 @@ libconfigfile::parser::impl::parse_map_value(
             (is_root_map == false)) {
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char == character_constants::g_k_key_value_terminate) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_2_7, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_2_7.message,
+                             error_messages::err_msg_1_2_7.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else if (cur_char == character_constants::g_k_directive_leader) {
           handle_directive();
         } else {
@@ -1513,9 +1541,10 @@ libconfigfile::parser::impl::parse_map_value(
               ctx, std::string{character_constants::g_k_key_value_terminate})};
 
           if (ret_val->contains(new_key_value.first) == true) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_9_5, ctx.identifier,
-                start_pos_count.first, start_pos_count.second);
+            throw syntax_error{error_messages::err_msg_1_9_5.message,
+                               error_messages::err_msg_1_9_5.category,
+                               ctx.identifier, start_pos_count.first,
+                               start_pos_count.second};
           } else {
             ret_val->insert({std::move(new_key_value)});
           }
@@ -1524,9 +1553,9 @@ libconfigfile::parser::impl::parse_map_value(
       } break;
 
       case char_type::closing_delimiter: {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_7_3, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_7_3.message,
+                           error_messages::err_msg_1_7_3.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } break;
       }
     }
@@ -1623,9 +1652,9 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 
     case name_location::directive_leader: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_3, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_3.message,
+                           error_messages::err_msg_1_8_3.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (cur_char == character_constants::g_k_directive_leader) {
           ;
@@ -1636,9 +1665,9 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
           ;
         } else {
           if (ctx.line_count != start_pos_count.first) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_2.message,
+                               error_messages::err_msg_1_8_2.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           } else {
             last_state = name_location::name_proper;
             name.push_back(cur_char);
@@ -1649,18 +1678,18 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 
     case name_location::leading_whitespace: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_3, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_3.message,
+                           error_messages::err_msg_1_8_3.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char,
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else {
           if (ctx.line_count != start_pos_count.first) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_2.message,
+                               error_messages::err_msg_1_8_2.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           } else {
             last_state = name_location::name_proper;
             name.push_back(cur_char);
@@ -1678,14 +1707,15 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
           last_state = name_location::done;
         } else {
           if (ctx.line_count != start_pos_count.first) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_2.message,
+                               error_messages::err_msg_1_8_2.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           } else if (handled_comment_in_name_proper == true) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_4, ctx.identifier,
+            throw syntax_error{
+                error_messages::err_msg_1_8_4.message,
+                error_messages::err_msg_1_8_4.category, ctx.identifier,
                 pos_count_before_handled_comment_in_name_proper.first,
-                pos_count_before_handled_comment_in_name_proper.second);
+                pos_count_before_handled_comment_in_name_proper.second};
           } else {
             name.push_back(cur_char);
           }
@@ -1706,9 +1736,9 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
   } else if (name == character_constants::g_k_include_directive_name) {
     directive_func_to_call = directive::include;
   } else {
-    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_8_1,
-                                                 ctx.identifier, ctx.line_count,
-                                                 ctx.char_count);
+    throw syntax_error{error_messages::err_msg_1_8_1.message,
+                       error_messages::err_msg_1_8_1.category, ctx.identifier,
+                       ctx.line_count, ctx.char_count};
   }
 
   switch (directive_func_to_call) {
@@ -1770,39 +1800,39 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
 
     case args_location::leading_whitespace: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_13, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_13.message,
+                           error_messages::err_msg_1_8_13.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char,
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_2.message,
+                               error_messages::err_msg_1_8_2.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           } else {
             last_state = args_location::opening_delimiter;
           }
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_8_13, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_8_13.message,
+                             error_messages::err_msg_1_8_13.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       }
     } break;
 
     case args_location::opening_delimiter: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_14, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_14.message,
+                           error_messages::err_msg_1_8_14.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (start_pos_count.first != ctx.line_count) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_8_2.message,
+                             error_messages::err_msg_1_8_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
@@ -1818,14 +1848,14 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
 
     case args_location::version_str: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_14, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_14.message,
+                           error_messages::err_msg_1_8_14.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (start_pos_count.first != ctx.line_count) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_8_2.message,
+                             error_messages::err_msg_1_8_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
@@ -1850,9 +1880,9 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
               true) {
             last_state = args_location::trailing_whitespace;
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_11, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_11.message,
+                               error_messages::err_msg_1_8_11.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         }
       }
@@ -1872,9 +1902,9 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
               true) {
             ;
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_11, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_11.message,
+                               error_messages::err_msg_1_8_11.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         }
       }
@@ -1887,17 +1917,17 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
   }
 
   if (version_str.empty() == true) {
-    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_8_12,
-                                                 ctx.identifier, ctx.line_count,
-                                                 ctx.char_count);
+    throw syntax_error{error_messages::err_msg_1_8_12.message,
+                       error_messages::err_msg_1_8_12.category, ctx.identifier,
+                       ctx.line_count, ctx.char_count};
   } else {
     if (version_str == g_k_version) {
       return;
     } else {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_8_10, ctx.identifier,
-          start_of_version_str_pos_count.first,
-          start_of_version_str_pos_count.second);
+      throw syntax_error{error_messages::err_msg_1_8_10.message,
+                         error_messages::err_msg_1_8_10.category,
+                         ctx.identifier, start_of_version_str_pos_count.first,
+                         start_of_version_str_pos_count.second};
     }
   }
 }
@@ -1951,39 +1981,39 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
 
     case args_location::leading_whitespace: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_7, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_7.message,
+                           error_messages::err_msg_1_8_7.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char,
                           character_constants::g_k_whitespace_chars) == true) {
           ;
         } else if (cur_char == character_constants::g_k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_2.message,
+                               error_messages::err_msg_1_8_2.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           } else {
             last_state = args_location::opening_delimiter;
           }
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_8_7, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_8_7.message,
+                             error_messages::err_msg_1_8_7.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       }
     } break;
 
     case args_location::opening_delimiter: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_8, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_8.message,
+                           error_messages::err_msg_1_8_8.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (start_pos_count.first != ctx.line_count) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_8_2.message,
+                             error_messages::err_msg_1_8_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             last_state = args_location::closing_delimiter;
@@ -2004,14 +2034,14 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
 
     case args_location::file_path: {
       if (eof == true) {
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_8_8, ctx.identifier, ctx.line_count,
-            ctx.char_count);
+        throw syntax_error{error_messages::err_msg_1_8_8.message,
+                           error_messages::err_msg_1_8_8.category,
+                           ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (start_pos_count.first != ctx.line_count) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_8_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_8_2.message,
+                             error_messages::err_msg_1_8_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           if (cur_char == character_constants::g_k_string_delimiter) {
             if (last_char_was_escape_leader == true) {
@@ -2044,9 +2074,9 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
               true) {
             last_state = args_location::trailing_whitespace;
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_9, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_9.message,
+                               error_messages::err_msg_1_8_9.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         }
       }
@@ -2066,9 +2096,9 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
               true) {
             ;
           } else {
-            throw syntax_error::generate_formatted_error(
-                error_messages::err_msg_1_8_9, ctx.identifier, ctx.line_count,
-                ctx.char_count);
+            throw syntax_error{error_messages::err_msg_1_8_9.message,
+                               error_messages::err_msg_1_8_9.category,
+                               ctx.identifier, ctx.line_count, ctx.char_count};
           }
         }
       }
@@ -2081,9 +2111,9 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
   }
 
   if (file_path_str.empty() == true) {
-    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_8_6,
-                                                 ctx.identifier, ctx.line_count,
-                                                 ctx.char_count);
+    throw syntax_error{error_messages::err_msg_1_8_6.message,
+                       error_messages::err_msg_1_8_6.category, ctx.identifier,
+                       ctx.line_count, ctx.char_count};
   } else {
     std::variant<std::string, std::string::size_type> file_path_escaped{
         replace_escape_sequences(file_path_str)};
@@ -2110,10 +2140,10 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
                   start_of_file_path_str_pos_count.second +
                   std::get<std::string::size_type>(file_path_escaped))};
 
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_8_5, ctx.identifier,
-          invalid_escape_sequence_pos_count.first,
-          invalid_escape_sequence_pos_count.second);
+      throw syntax_error{error_messages::err_msg_1_8_5.message,
+                         error_messages::err_msg_1_8_5.category, ctx.identifier,
+                         invalid_escape_sequence_pos_count.first,
+                         invalid_escape_sequence_pos_count.second};
     } break;
 
     default: {
@@ -2183,9 +2213,9 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
         ctx.input_stream.get(cur_char);
         ++ctx.char_count;
         if (ctx.input_stream.eof() == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_1_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_1_1.message,
+                             error_messages::err_msg_1_1_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else if (cur_char == character_constants::g_k_newline) {
           ++ctx.line_count;
           ctx.char_count = 0;
@@ -2226,13 +2256,13 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
     ctx.input_stream.get(escape_char_1);
 
     if (ctx.input_stream.eof() == true) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_9_1, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_9_1.message,
+                         error_messages::err_msg_1_9_1.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else if (escape_char_1 == character_constants::g_k_newline) {
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_9_1, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_9_1.message,
+                         error_messages::err_msg_1_9_1.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else {
       ++ctx.char_count;
 
@@ -2240,13 +2270,13 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
         char hex_digit_1{};
         ctx.input_stream.get(hex_digit_1);
         if (ctx.input_stream.eof() == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_9_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_9_1.message,
+                             error_messages::err_msg_1_9_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else if (hex_digit_1 == character_constants::g_k_newline) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_9_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_9_1.message,
+                             error_messages::err_msg_1_9_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           ++ctx.char_count;
         }
@@ -2254,13 +2284,13 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
         char hex_digit_2{};
         ctx.input_stream.get(hex_digit_2);
         if (ctx.input_stream.eof() == true) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_9_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_9_1.message,
+                             error_messages::err_msg_1_9_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else if (hex_digit_2 == character_constants::g_k_newline) {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_9_1, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_9_1.message,
+                             error_messages::err_msg_1_9_1.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
           ++ctx.char_count;
         }
@@ -2272,25 +2302,25 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
           return static_cast<char>(
               std::stoi(hex_string, nullptr, numeral_system_hexadecimal.base));
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_9_4, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_9_4.message,
+                             error_messages::err_msg_1_9_4.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       } else {
         if (character_constants::g_k_basic_escape_chars.contains(
                 escape_char_1)) {
           return character_constants::g_k_basic_escape_chars.at(escape_char_1);
         } else {
-          throw syntax_error::generate_formatted_error(
-              error_messages::err_msg_1_9_2, ctx.identifier, ctx.line_count,
-              ctx.char_count);
+          throw syntax_error{error_messages::err_msg_1_9_2.message,
+                             error_messages::err_msg_1_9_2.category,
+                             ctx.identifier, ctx.line_count, ctx.char_count};
         }
       }
     }
   } else {
-    throw syntax_error::generate_formatted_error(error_messages::err_msg_1_9_3,
-                                                 ctx.identifier, ctx.line_count,
-                                                 ctx.char_count);
+    throw syntax_error{error_messages::err_msg_1_9_3.message,
+                       error_messages::err_msg_1_9_3.category, ctx.identifier,
+                       ctx.line_count, ctx.char_count};
   }
 }
 
@@ -2339,9 +2369,9 @@ libconfigfile::parser::impl::identify_key_value_value_type(
 
       reset_context();
 
-      throw syntax_error::generate_formatted_error(
-          error_messages::err_msg_1_2_5, ctx.identifier, ctx.line_count,
-          ctx.char_count);
+      throw syntax_error{error_messages::err_msg_1_2_5.message,
+                         error_messages::err_msg_1_2_5.category, ctx.identifier,
+                         ctx.line_count, ctx.char_count};
     } else {
       gotten_chars.push_back(cur_char);
 
@@ -2353,9 +2383,10 @@ libconfigfile::parser::impl::identify_key_value_value_type(
 
         reset_context();
 
-        throw syntax_error::generate_formatted_error(
-            error_messages::err_msg_1_2_5, ctx.identifier,
-            pos_count_at_start.first, pos_count_at_error.second);
+        throw syntax_error{error_messages::err_msg_1_2_5.message,
+                           error_messages::err_msg_1_2_5.category,
+                           ctx.identifier, pos_count_at_start.first,
+                           pos_count_at_error.second};
       } else {
         reset_context();
 
