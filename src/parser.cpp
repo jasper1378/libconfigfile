@@ -1571,27 +1571,27 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
       ctx, possible_terminating_chars, actual_terminating_char)};
 
   switch (value_type) {
-  case node_type::MAP: {
+  case node_type::Map: {
     return node_ptr_cast<node>(parse_map_value(ctx, possible_terminating_chars,
                                                actual_terminating_char));
   } break;
 
-  case node_type::ARRAY: {
+  case node_type::Array: {
     return node_ptr_cast<node>(parse_array_value(
         ctx, possible_terminating_chars, actual_terminating_char));
   } break;
 
-  case node_type::STRING: {
+  case node_type::String: {
     return node_ptr_cast<node>(parse_string_value(
         ctx, possible_terminating_chars, actual_terminating_char));
   } break;
 
-  case node_type::INTEGER: {
+  case node_type::Integer: {
     return node_ptr_cast<node>(parse_integer_value(
         ctx, possible_terminating_chars, actual_terminating_char));
   } break;
 
-  case node_type::FLOAT: {
+  case node_type::Float: {
     return node_ptr_cast<node>(parse_float_value(
         ctx, possible_terminating_chars, actual_terminating_char));
   } break;
@@ -2392,15 +2392,15 @@ libconfigfile::parser::impl::identify_key_value_value_type(
 
         switch (cur_char) {
         case character_constants::g_k_map_opening_delimiter: {
-          return node_type::MAP;
+          return node_type::Map;
         } break;
 
         case character_constants::g_k_array_opening_delimiter: {
-          return node_type::ARRAY;
+          return node_type::Array;
         } break;
 
         case character_constants::g_k_string_delimiter: {
-          return node_type::STRING;
+          return node_type::String;
         } break;
 
         default: {
@@ -2466,11 +2466,11 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
       (case_insensitive_string_find(
            gotten_chars, character_constants::g_k_float_not_a_number.second) !=
        (std::string::npos))) {
-    return cleanup_and_return(node_type::FLOAT);
+    return cleanup_and_return(node_type::Float);
   } else {
     if ((gotten_chars.find(character_constants::g_k_float_decimal_point)) !=
         (std::string::npos)) {
-      return cleanup_and_return(node_type::FLOAT);
+      return cleanup_and_return(node_type::Float);
     } else {
       if (((gotten_chars.find(
                character_constants::g_k_float_exponent_sign_lower)) !=
@@ -2482,12 +2482,12 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
              (std::string::npos)) ||
             ((gotten_chars.find(numeral_system_hexadecimal.prefix_alt)) !=
              (std::string::npos))) {
-          return cleanup_and_return(node_type::INTEGER);
+          return cleanup_and_return(node_type::Integer);
         } else {
-          return cleanup_and_return(node_type::FLOAT);
+          return cleanup_and_return(node_type::Float);
         }
       } else {
-        return cleanup_and_return(node_type::INTEGER);
+        return cleanup_and_return(node_type::Integer);
       }
     }
   }

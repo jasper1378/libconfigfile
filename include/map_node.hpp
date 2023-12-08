@@ -1,5 +1,5 @@
-#ifndef LIBCONFIGFILE_MAP_NODE_HPP
-#define LIBCONFIGFILE_MAP_NODE_HPP
+#ifndef LIBCONFIGFILE_Map_NODE_HPP
+#define LIBCONFIGFILE_Map_NODE_HPP
 
 #include "node.hpp"
 #include "node_ptr.hpp"
