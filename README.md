@@ -50,7 +50,7 @@ To avoid the hassle of dealing with a bare polymorphic `node` (or child) pointer
 
 ### Error handling
 
-While calling `libconfigfile::parser()`, errors resulting in the parser itself (such as being unable to open a file) with be thrown as `std::runtime_error`. If the parser detects a violation of the syntax specification (see above) a `libconfigfile::syntax_error` will be thrown. This class is derived from `std::runtime_error` and behaves similarily. Its `what_arg` will be a string containing the line and char position of the error, as well as a brief description of what went wrong. This string is suitable for displaying to the end user.
+While calling `libconfigfile::parse()`, errors resulting in the parser itself (such as being unable to open a file) with be thrown as `std::runtime_error`. If the parser detects a violation of the syntax specification (see above) a `libconfigfile::syntax_error` will be thrown. This class is derived from `std::runtime_error` and behaves similarily. Its `what_arg` will be a string containing the file path, the line and character positions of the error, as well as a brief description of what went wrong. This string is suitable for displaying to the end user. If you wish to reformulate the error message to follow to the conventions used in your program, the various components (file path, line number, character number, actual message) can be extracted separately via member functions.
 
 ## Future improvement
 
