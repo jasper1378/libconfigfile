@@ -34,12 +34,12 @@ libconfigfile::string_node *libconfigfile::string_node::create_clone() const {
 }
 
 libconfigfile::node_type libconfigfile::string_node::get_node_type() const {
-  return node_type::STRING;
+  return node_type::String;
 }
 
 bool libconfigfile::string_node::polymorphic_value_compare(
     const node *other) const {
-  if ((other->get_node_type()) == (node_type::STRING)) {
+  if ((other->get_node_type()) == (node_type::String)) {
     return ((*(dynamic_cast<const string_node *>(other))) == (*this));
   } else {
     return false;

@@ -36,12 +36,12 @@ libconfigfile::map_node *libconfigfile::map_node::create_clone() const {
 }
 
 libconfigfile::node_type libconfigfile::map_node::get_node_type() const {
-  return libconfigfile::node_type::MAP;
+  return libconfigfile::node_type::Map;
 }
 
 bool libconfigfile::map_node::polymorphic_value_compare(
     const node *other) const {
-  if ((other->get_node_type()) == (libconfigfile::node_type::MAP)) {
+  if ((other->get_node_type()) == (libconfigfile::node_type::Map)) {
     return ((*(dynamic_cast<const map_node *>(other))) == (*this));
   } else {
     return false;

@@ -30,12 +30,12 @@ libconfigfile::float_node *libconfigfile::float_node::create_clone() const {
 }
 
 libconfigfile::node_type libconfigfile::float_node::get_node_type() const {
-  return node_type::FLOAT;
+  return node_type::Float;
 }
 
 bool libconfigfile::float_node::polymorphic_value_compare(
     const node *other) const {
-  if ((other->get_node_type()) == (node_type::FLOAT)) {
+  if ((other->get_node_type()) == (node_type::Float)) {
     return ((*(dynamic_cast<const float_node *>(other))) == (*this));
   } else {
     return false;

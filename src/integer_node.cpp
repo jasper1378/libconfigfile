@@ -37,12 +37,12 @@ libconfigfile::integer_node *libconfigfile::integer_node::create_clone() const {
 }
 
 libconfigfile::node_type libconfigfile::integer_node::get_node_type() const {
-  return node_type::INTEGER;
+  return node_type::Integer;
 }
 
 bool libconfigfile::integer_node::polymorphic_value_compare(
     const node *other) const {
-  if ((other->get_node_type()) == (node_type::INTEGER)) {
+  if ((other->get_node_type()) == (node_type::Integer)) {
     return ((*(dynamic_cast<const integer_node *>(other))) == (*this));
   } else {
     return false;

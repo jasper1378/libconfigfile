@@ -35,12 +35,12 @@ libconfigfile::array_node *libconfigfile::array_node::create_clone() const {
 }
 
 libconfigfile::node_type libconfigfile::array_node::get_node_type() const {
-  return node_type::ARRAY;
+  return node_type::Array;
 }
 
 bool libconfigfile::array_node::polymorphic_value_compare(
     const node *other) const {
-  if ((other->get_node_type()) == (node_type::ARRAY)) {
+  if ((other->get_node_type()) == (node_type::Array)) {
     return ((*(dynamic_cast<const array_node *>(other))) == (*this));
   } else {
     return false;

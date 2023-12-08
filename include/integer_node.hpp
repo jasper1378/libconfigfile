@@ -1,5 +1,5 @@
-#ifndef LIBCONFIGFILE_INTEGER_NODE
-#define LIBCONFIGFILE_INTEGER_NODE
+#ifndef LIBCONFIGFILE_Integer_NODE
+#define LIBCONFIGFILE_Integer_NODE
 
 #include "character_constants.hpp"
 #include "node.hpp"
