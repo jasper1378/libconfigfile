@@ -52,14 +52,5 @@ To avoid the hassle of dealing with a bare polymorphic `node` (or child) pointer
 
 While calling `libconfigfile::parse()`, errors resulting in the parser itself (such as being unable to open a file) with be thrown as `std::runtime_error`. If the parser detects a violation of the syntax specification (see above) a `libconfigfile::syntax_error` will be thrown. This class is derived from `std::runtime_error` and behaves similarily. Its `what_arg` will be a string containing the file path, the line and character positions of the error, as well as a brief description of what went wrong. This string is suitable for displaying to the end user. If you wish to reformulate the error message to follow to the conventions used in your program, the various components (file path, line number, character number, actual message) can be extracted separately via member functions.
 
-## Future improvement
-
-The following are a few of the improvements that I would like to implement in libconfigfile sometime in the future.
-
-- Provide a "snapshot" into file at the location of a syntax error (see GCC for an example)
-- Functionality to verify semantic correctness of config file (would rely on another file provided by the application developer specifying which options should be set and what data types they should be)
-- Unicode support for strings
-- Booleans (maybe)
-
 ## License
 See [LICENSE.md](LICENSE.md) for details.
