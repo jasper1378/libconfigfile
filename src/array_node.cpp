@@ -47,19 +47,26 @@ bool libconfigfile::array_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::array_node::print(
-    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
-  out << character_constants::g_k_array_opening_delimiter;
+std::string libconfigfile::array_node::serialize(
+    [[maybe_unused]] int indent_level /*=0*/) const {
+  std::string ret_val;
+  ret_val += character_constants::g_k_array_opening_delimiter;
   for (auto p{this->begin()}; p != this->end(); ++p) {
-    (*p)->print(out);
+    ret_val += (*p)->serialize();
 
     if ((p + 1) != this->end()) {
-      out << character_constants::g_k_array_element_separator;
+      ret_val += character_constants::g_k_array_element_separator;
     }
   }
 
-  out << character_constants::g_k_array_closing_delimiter;
+  ret_val += character_constants::g_k_array_closing_delimiter;
 
+  return ret_val;
+}
+
+std::ostream &libconfigfile::array_node::print(
+    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
+  out << serialize();
   return out;
 }
 

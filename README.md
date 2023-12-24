@@ -1,7 +1,7 @@
 # libconfigfile
 
 ## About
-libconfigfile is a C++ configuration file parsing library. 
+libconfigfile is a C++ configuration file parsing library.
 
 ## Installation
 Acquire the sources
@@ -47,6 +47,10 @@ Concrete classes (`string_node`, `integer_node`, `float_node`, `array_node`, `ma
 The hierarchy is designed in such a way as to promote polymorphic usage. The actual, pointed-to type of a polymorphic pointer can be identified by calling the `get_node_type()` member function, which returns an `enum` value corresponding to the appropriate concrete child class (`node_type::String`, `node_type::Integer`, `node_type::Float`, `node_type::Array`, `node_type::Map`).
 
 To avoid the hassle of dealing with a bare polymorphic `node` (or child) pointer (memory leaks, checking success of `dynamic_cast`, etc,), the smart pointer class `node_ptr` can be used. In order to maintain a degree of harmony with the library interfaces, `node`-derived classes should always be used and managed through a `node_ptr`. This class is similar to `std::unique_ptr` in that it is responsible for deallocating any resources associated with the pointer when it goes out of scope. However, its specialized nature (will always be used with a `node`-derived class, usually polymorphically) means that it can offer additional featues. `node_ptr` is designed in such a way that the pointer component is completely abstracted and the object obtains value semantics. `node_ptr` is a templated class taking two parameters. The first is a type parameter that specificies which `node`-derived the `node_ptr` is pointing to; this is enforced using concepts. The second is a boolean parameter specifying whether two `node_ptr`s should be compared by address or by pointed-to value, this defaults to comparing by address as that is the behaviour of `std::unique_ptr`. `node_ptr` supports all of the same options as `std::unique_ptr`. `node_ptr`s are both movable (transfers ownership of pointed-to resource) and copyable (copies pointed-to resource). `node_ptr`s can be easily constructed by calling the non-member function `make_node_ptr()` which behaves similarly to `std::make_unique`. This function requires the same template arguments as `node_ptr` and forwards its arguments to the constructor of the pointed-to resource. Two types of `node_ptr` are implicitly convertible to one another if: the type of the pointed-to `node` class of the "to" `node_ptr` is a base of the type of pointed-to `node` class of the "from" `node_ptr`; or, they point to the same type of `node` class and differ only in whether they are compared by address or value. One type of `node_ptr` can be explictly cast to another by calling the non-member function `node_ptr_cast`, which behaves similarly to a checked `dynamic_cast` between pointed-to resources. There exist variants of `node_ptr_cast` supporting both copy and move semantics. This function will throw if the cast is not possible. To avoid this, you can check whether the cast is possible by calling the non-member function `node_ptr_is_castable`. There exists a host of functions for explicitly comparing two `node_ptr`s by address or value regardless of the method specified by their template argument. Printing a `node_ptr` will print the pointed-to value rather than the address.
+
+### Serializing data structures
+
+All `node`-derived classes can be serialized to a `std::string` by calling the `serialize()` member function. They can also be serialized to an output stream using the overloaded `operator<<`;
 
 ### Error handling
 

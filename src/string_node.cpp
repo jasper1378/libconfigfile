@@ -46,15 +46,16 @@ bool libconfigfile::string_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::string_node::print(
-    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
-
+std::string libconfigfile::string_node::serialize(
+    [[maybe_unused]] int indent_level /*=0*/) const {
   static const std::string need_to_replace{
       character_constants::g_k_control_chars +
       character_constants::g_k_string_delimiter +
       character_constants::g_k_escape_leader};
 
-  out << character_constants::g_k_string_delimiter;
+  std::string ret_val;
+
+  ret_val += character_constants::g_k_string_delimiter;
 
   std::string::size_type pos{0};
   std::string::size_type pos_prev{0};
@@ -63,21 +64,21 @@ std::ostream &libconfigfile::string_node::print(
     if (pos == std::string::npos) {
       break;
     } else {
-      out << this->substr(pos_prev, (pos - pos_prev));
+      ret_val += this->substr(pos_prev, (pos - pos_prev));
 
-      out << character_constants::g_k_escape_leader;
+      ret_val += character_constants::g_k_escape_leader;
       switch (this->operator[](pos)) {
 
       case character_constants::g_k_string_delimiter: {
-        out << character_constants::g_k_string_delimiter;
+        ret_val += character_constants::g_k_string_delimiter;
       } break;
 
       case character_constants::g_k_escape_leader: {
-        out << character_constants::g_k_escape_leader;
+        ret_val += character_constants::g_k_escape_leader;
       } break;
 
       default: {
-        out << character_constants::g_k_control_chars_codes.at(
+        ret_val += character_constants::g_k_control_chars_codes.at(
             this->operator[](pos));
       } break;
       }
@@ -85,10 +86,16 @@ std::ostream &libconfigfile::string_node::print(
       pos_prev = pos + 1;
     }
   }
-  out << this->substr(pos_prev);
+  ret_val += this->substr(pos_prev);
 
-  out << character_constants::g_k_string_delimiter;
+  ret_val += character_constants::g_k_string_delimiter;
 
+  return ret_val;
+}
+
+std::ostream &libconfigfile::string_node::print(
+    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
+  out << serialize();
   return out;
 }
 

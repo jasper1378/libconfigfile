@@ -42,9 +42,14 @@ bool libconfigfile::float_node::polymorphic_value_compare(
   }
 }
 
+std::string libconfigfile::float_node::serialize(
+    [[maybe_unused]] int indent_level /*=0*/) const {
+  return std::to_string(m_value);
+}
+
 std::ostream &libconfigfile::float_node::print(
     std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
-  out << m_value;
+  out << serialize();
   return out;
 }
 
