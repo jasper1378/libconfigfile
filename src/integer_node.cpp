@@ -49,34 +49,40 @@ bool libconfigfile::integer_node::polymorphic_value_compare(
   }
 }
 
-std::ostream &libconfigfile::integer_node::print(
-    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
-  const std::ostreambuf_iterator<char> out_iter{out};
+std::string libconfigfile::integer_node::serialize(
+    [[maybe_unused]] int indent_level /*= 0*/) const {
+  std::string ret_val;
 
   switch (m_num_sys->base) {
   case numeral_system_decimal.base: {
-    std::format_to(out_iter, "{:d}", m_value);
+    ret_val += std::format("{:d}", m_value);
   } break;
 
   case numeral_system_binary.base: {
-    out << character_constants::g_k_num_sys_prefix_leader;
-    out << m_num_sys->prefix;
-    std::format_to(out_iter, "{:b}", m_value);
+    ret_val += character_constants::g_k_num_sys_prefix_leader;
+    ret_val += m_num_sys->prefix;
+    ret_val += std::format("{:b}", m_value);
   } break;
 
   case numeral_system_octal.base: {
-    out << character_constants::g_k_num_sys_prefix_leader;
-    out << m_num_sys->prefix;
-    std::format_to(out_iter, "{:o}", m_value);
+    ret_val += character_constants::g_k_num_sys_prefix_leader;
+    ret_val += m_num_sys->prefix;
+    ret_val += std::format("{:o}", m_value);
   } break;
 
   case numeral_system_hexadecimal.base: {
-    out << character_constants::g_k_num_sys_prefix_leader;
-    out << m_num_sys->prefix;
-    std::format_to(out_iter, "{:x}", m_value);
+    ret_val += character_constants::g_k_num_sys_prefix_leader;
+    ret_val += m_num_sys->prefix;
+    ret_val += std::format("{:x}", m_value);
   } break;
   }
 
+  return ret_val;
+}
+
+std::ostream &libconfigfile::integer_node::print(
+    std::ostream &out, [[maybe_unused]] const int indent_level /*= 0*/) const {
+  out << serialize();
   return out;
 }
 
