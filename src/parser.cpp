@@ -2285,8 +2285,11 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
             (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
           std::string const hex_string{std::string{} + hex_digit_1 +
                                        hex_digit_2};
-          return static_cast<char>(
-              std::stoi(hex_string, nullptr, numeral_system_hexadecimal.base));
+          int ret_val{};
+          std::from_chars(hex_string.data(),
+                          hex_string.data() + hex_string.size(), ret_val,
+                          numeral_system_hexadecimal.base);
+          return static_cast<char>(ret_val);
         } else {
           throw syntax_error{error_messages::err_msg_1_9_4.message,
                              error_messages::err_msg_1_9_4.category,
@@ -2503,8 +2506,11 @@ libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
                 (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
               std::string const hex_string{std::string{} + hex_digit_1 +
                                            hex_digit_2};
-              result.push_back(static_cast<char>(std::stoi(
-                  hex_string, nullptr, numeral_system_hexadecimal.base)));
+              int new_char{};
+              std::from_chars(hex_string.data(),
+                              hex_string.data() + hex_string.size(), new_char,
+                              numeral_system_hexadecimal.base);
+              result.push_back(static_cast<char>(new_char));
               cur_char = hex_digit_pos_count_2;
             } else {
               return cur_char;
