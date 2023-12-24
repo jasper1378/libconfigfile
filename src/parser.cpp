@@ -1457,7 +1457,7 @@ libconfigfile::parser::impl::parse_map_value(
       continue;
     } else {
       if ((is_root_map == true) &&
-          (cur_char == character_constants::g_k_directive_leader)) {
+          (cur_char != character_constants::g_k_directive_leader)) {
         last_non_whitespace_char_line_pos_count = ctx.line_count;
       }
 
