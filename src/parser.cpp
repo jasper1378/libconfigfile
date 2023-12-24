@@ -2031,12 +2031,15 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
               last_char_was_escape_leader = false;
               file_path_str.push_back(cur_char);
             } else {
+              last_char_was_escape_leader = false;
+              last_char_was_escape_leader = false;
               last_state = args_location::closing_delimiter;
             }
           } else if (cur_char == character_constants::g_k_escape_leader) {
             last_char_was_escape_leader = true;
             file_path_str.push_back(cur_char);
           } else {
+            last_char_was_escape_leader = false;
             file_path_str.push_back(cur_char);
           }
         }
