@@ -111,22 +111,9 @@ extract_strings(
     const std::string &whitespace_chars =
         character_constants::g_k_whitespace_chars);
 
-std::string
-get_substr_between_indices_inclusive(const std::string &str,
-                                     const std::string::size_type start,
-                                     const std::string::size_type end);
-std::string
-get_substr_between_indices_exclusive(const std ::string &str,
-                                     const std::string::size_type start,
-                                     const std::string::size_type end);
 bool is_whitespace(const char ch,
                    const std::string &whitespace_chars =
                        character_constants::g_k_whitespace_chars);
-std::string trim_whitespace(const std::string &str,
-                            const std::string &whitespace_chars =
-                                character_constants::g_k_whitespace_chars,
-                            const bool trim_leading = true,
-                            const bool trim_trailing = true);
 bool is_actual_delimiter(
     const std::string::size_type pos, const std::string &str,
     const char delimiter,

@@ -2601,69 +2601,11 @@ libconfigfile::parser::impl::extract_strings(
   }
 }
 
-std::string libconfigfile::parser::impl::get_substr_between_indices_inclusive(
-    const std::string &str, const std::string::size_type start,
-    const std::string::size_type end) {
-  if (start > end) {
-    return "";
-  } else if (start >= str.size()) {
-    return "";
-  } else {
-    return str.substr((start), ((end - start) + 1));
-  }
-}
-
-std::string libconfigfile::parser::impl::get_substr_between_indices_exclusive(
-    const std::string &str, const std::string::size_type start,
-    const std::string::size_type end) {
-
-  if (start > end) {
-    return "";
-  } else if (start >= str.size()) {
-    return "";
-  } else if ((end - start) <= 1) {
-    return "";
-  } else {
-    return str.substr((start + 1), (((end - 1) - (start + 1)) + 1));
-  }
-}
-
 bool libconfigfile::parser::impl::is_whitespace(
     const char ch,
     const std::string
         &whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
   return ((whitespace_chars.find(ch)) != (std::string::npos));
-}
-
-std::string libconfigfile::parser::impl::trim_whitespace(
-    const std::string &str,
-    const std::string &whitespace_chars /*=
-                  character_constants::g_k_whitespace_chars*/
-    ,
-    const bool trim_leading /*= true*/, const bool trim_trailing /*= true*/) {
-  if (str.empty() == true) {
-    return "";
-  } else {
-    std::string::size_type start_pos_count{0};
-    start_pos_count = str.find_first_not_of(whitespace_chars);
-
-    std::string::size_type end_pos_count{str.size() - 1};
-    end_pos_count = str.find_last_not_of(whitespace_chars);
-
-    if ((trim_leading == false) && (trim_trailing == false)) {
-      return str;
-    } else if ((trim_leading == true) && (trim_trailing == false)) {
-      return get_substr_between_indices_inclusive(str, start_pos_count,
-                                                  std::string::npos);
-    } else if ((trim_leading == false) && (trim_trailing == true)) {
-      return get_substr_between_indices_inclusive(str, 0, end_pos_count);
-    } else if ((trim_leading == true) && (trim_trailing == true)) {
-      return get_substr_between_indices_inclusive(str, start_pos_count,
-                                                  end_pos_count);
-    } else {
-      throw std::runtime_error{"impossible!"};
-    }
-  }
 }
 
 bool libconfigfile::parser::impl::is_actual_delimiter(
