@@ -2538,96 +2538,11 @@ libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
   return result;
 }
 
-std::variant<std::vector<std::vector<std::string>> /*result*/,
-             std::string::size_type /*unterminated_string_pos_count*/>
-libconfigfile::parser::impl::extract_strings(
-    const std::string &raw,
-    const char delimiter /*=
-               character_constants::g_k_string_delimiter*/
-    ,
-    const char delimiter_escape /*=
-               character_constants::g_k_escape_leader*/
-    ,
-    const std::string
-        &whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
-
-  bool in_string{false};
-  bool strings_are_adjacent{true};
-
-  std::string::size_type start_of_last_string{std::string::npos};
-
-  std::string cur_string{};
-  std::vector<std::string> cur_string_group{};
-  std::vector<std::vector<std::string>> all_strings{};
-
-  for (std::string::size_type cur_char{0}; cur_char < raw.size(); ++cur_char) {
-    if (in_string == true) {
-      if (is_actual_delimiter(cur_char, raw, delimiter, delimiter_escape) ==
-          true) {
-        in_string = false;
-        strings_are_adjacent = true;
-        if (cur_string.empty() == false) {
-          cur_string_group.push_back(std::move(cur_string));
-          cur_string.clear();
-        }
-      } else {
-        cur_string.push_back(raw[cur_char]);
-      }
-    } else {
-      if (is_actual_delimiter(cur_char, raw, delimiter, delimiter_escape) ==
-          true) {
-        in_string = true;
-        start_of_last_string = cur_char;
-        if (strings_are_adjacent == false) {
-          if (cur_string_group.empty() == false) {
-            all_strings.push_back(std::move(cur_string_group));
-            cur_string_group.clear();
-          }
-        } else {
-          if (is_whitespace(raw[cur_char], whitespace_chars) == false) {
-            strings_are_adjacent = false;
-          }
-        }
-      }
-    }
-  }
-  all_strings.push_back(std::move(cur_string_group));
-  cur_string_group.clear();
-
-  if (in_string == true) {
-    return start_of_last_string;
-  } else {
-    return all_strings;
-  }
-}
-
 bool libconfigfile::parser::impl::is_whitespace(
     const char ch,
     const std::string
         &whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
   return ((whitespace_chars.find(ch)) != (std::string::npos));
-}
-
-bool libconfigfile::parser::impl::is_actual_delimiter(
-    const std::string::size_type pos, const std::string &str,
-    const char delimiter,
-    const char
-        delimiter_escape /*= character_constants::g_k_delimiter_leader*/) {
-  if (pos < str.size()) {
-    if (str[pos] == delimiter) {
-      if (pos == 0) {
-        return true;
-      } else if (str[pos - 1] == delimiter_escape) {
-        return false;
-      } else {
-        return true;
-      }
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
 }
 
 bool libconfigfile::parser::impl::is_invalid_character_valid_provided(
@@ -2638,28 +2553,6 @@ bool libconfigfile::parser::impl::is_invalid_character_valid_provided(
 bool libconfigfile::parser::impl::is_invalid_character_invalid_provided(
     const char ch, const std::string &invalid_chars) {
   return (invalid_chars.find(ch) != std::string::npos);
-}
-
-std::pair<bool, std::string::size_type>
-libconfigfile::parser::impl::contains_invalid_character_valid_provided(
-    const std::string &str, const std::string &valid_chars) {
-  for (size_t i{0}; i < str.size(); ++i) {
-    if (is_invalid_character_valid_provided(str[i], valid_chars) == true) {
-      return {true, i};
-    }
-  }
-  return {false, std::string::npos};
-}
-
-std::pair<bool, std::string::size_type>
-libconfigfile::parser::impl::contains_invalid_character_invalid_provided(
-    const std::string &str, const std::string &invalid_chars) {
-  for (size_t i{0}; i < str.size(); ++i) {
-    if (is_invalid_character_invalid_provided(str[i], invalid_chars) == true) {
-      return {true, i};
-    }
-  }
-  return {false, std::string::npos};
 }
 
 bool libconfigfile::parser::impl::is_digit(
@@ -2700,40 +2593,4 @@ libconfigfile::parser::impl::case_insensitive_string_find(
   } else {
     return ((found_iter) - (str.begin()));
   }
-}
-
-bool libconfigfile::parser::impl::string_contains_only(
-    const std::string &str, const std::string &chars) {
-  return ((str.find_first_not_of(chars)) == (std::string::npos));
-}
-
-bool libconfigfile::parser::impl::string_contains_any_of(
-    const std::string &str, const std::string &chars) {
-  return ((str.find_first_of(chars)) != (std::string::npos));
-}
-
-std::string
-libconfigfile::parser::impl::string_to_upper(const std::string &str) {
-  std::string ret_val{};
-  ret_val.resize(str.size());
-
-  for (size_t i{0}; i < str.size(); ++i) {
-    ret_val[i] =
-        static_cast<char>(std::toupper(static_cast<unsigned char>(str[i])));
-  }
-
-  return ret_val;
-}
-
-std::string
-libconfigfile::parser::impl::string_to_lower(const std::string &str) {
-  std::string ret_val{};
-  ret_val.resize(str.size());
-
-  for (size_t i{0}; i < str.size(); ++i) {
-    ret_val[i] =
-        static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
-  }
-
-  return ret_val;
 }

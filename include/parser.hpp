@@ -102,32 +102,13 @@ std::variant<std::string /*result*/,
              std::string::size_type /*invalid_escape_sequence_pos*/>
 replace_escape_sequences(const std::string &str);
 
-std::variant<std::vector<std::vector<std::string>> /*result*/,
-             std::string::size_type /*unterminated_string_pos*/>
-extract_strings(
-    const std::string &raw,
-    const char delimiter = character_constants::g_k_string_delimiter,
-    const char delimiter_escape = character_constants::g_k_escape_leader,
-    const std::string &whitespace_chars =
-        character_constants::g_k_whitespace_chars);
-
 bool is_whitespace(const char ch,
                    const std::string &whitespace_chars =
                        character_constants::g_k_whitespace_chars);
-bool is_actual_delimiter(
-    const std::string::size_type pos, const std::string &str,
-    const char delimiter,
-    const char delimiter_escape = character_constants::g_k_escape_leader);
 bool is_invalid_character_valid_provided(const char ch,
                                          const std::string &valid_chars);
 bool is_invalid_character_invalid_provided(const char ch,
                                            const std::string &invalid_chars);
-std::pair<bool, std::string::size_type>
-contains_invalid_character_valid_provided(const std::string &str,
-                                          const std::string &valid_chars);
-std::pair<bool, std::string::size_type>
-contains_invalid_character_invalid_provided(const std::string &str,
-                                            const std::string &invalid_chars);
 
 bool is_digit(const char ch,
               const numeral_system &num_sys = numeral_system_decimal);
@@ -137,23 +118,6 @@ bool case_insensitive_string_compare(const std::string &str1,
                                      const std::string &str2);
 std::string::size_type case_insensitive_string_find(const std::string &str,
                                                     const std::string &to_find);
-
-template <std::floating_point T>
-bool compare_floats(const T a, const T b, const T abs_epsilon = T{1e-12},
-                    T rel_epsilon = T{1e-8}) {
-  T diff{std::abs(a - b)};
-  if (diff <= abs_epsilon) {
-    return true;
-  } else {
-    return (diff <= (std::max(std::abs(a), std::abs(b)) * rel_epsilon));
-  }
-}
-
-bool string_contains_only(const std::string &str, const std::string &chars);
-bool string_contains_any_of(const std::string &str, const std::string &chars);
-
-std::string string_to_upper(const std::string &str);
-std::string string_to_lower(const std::string &str);
 } // namespace impl
 } // namespace parser
 using parser::parse;
