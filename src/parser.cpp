@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cctype>
+#include <charconv>
 #include <concepts>
 #include <cstddef>
 #include <exception>
@@ -27,6 +28,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -659,29 +661,16 @@ libconfigfile::parser::impl::parse_integer_value(
 
   node_ptr<integer_node> ret_val{nullptr};
 
-  static_assert(
-      (sizeof(decltype(std::stoll(""))) >= sizeof(integer_node::base_t)),
-      "no string-to-int conversion function (std::stoi(), "
-      "std::stol(), std::stoll()) with return type large enough for "
-      "integer_end_value_node_t");
-
-  try {
-    if constexpr ((sizeof(decltype(std::stoi("")))) >=
-                  (sizeof(integer_node::base_t))) {
-      ret_val = make_node_ptr<integer_node>(
-          std::stoi(actual_digits, nullptr, num_sys->base), num_sys);
-    } else if constexpr ((sizeof(decltype(std::stol("")))) >=
-                         (sizeof(integer_node::base_t))) {
-      ret_val = make_node_ptr<integer_node>(
-          std::stol(actual_digits, nullptr, num_sys->base), num_sys);
-    } else {
-      ret_val = make_node_ptr<integer_node>(
-          std::stoll(actual_digits, nullptr, num_sys->base), num_sys);
-    }
-  } catch (const std::out_of_range &ex) {
+  integer_node::base_t ret_val_value_buf{};
+  if (std::from_chars(actual_digits.data(),
+                      actual_digits.data() + actual_digits.size(),
+                      ret_val_value_buf)
+          .ec == std::errc::result_out_of_range) {
     throw syntax_error{error_messages::err_msg_1_4_5.message,
                        error_messages::err_msg_1_4_5.category, ctx.identifier,
                        pos_count_at_start.first, pos_count_at_start.second};
+  } else {
+    ret_val = make_node_ptr<integer_node>(ret_val_value_buf, num_sys);
   }
 
   if (is_negative == true) {
@@ -1202,26 +1191,20 @@ libconfigfile::parser::impl::parse_float_value(
 
   node_ptr<float_node> ret_val{nullptr};
 
-  static_assert((sizeof(decltype(std::stold(""))) >= sizeof(float_node)),
-                "no string-to-float conversion function with return type "
-                "large enough for float_node_t");
-
-  try {
-    if constexpr ((sizeof(decltype(std::stof("")))) >=
-                  (sizeof(float_node::base_t))) {
-      ret_val = make_node_ptr<float_node>(std::stof(sanitized_string, nullptr));
-    } else if constexpr ((sizeof(decltype(std::stod("")))) >=
-                         (sizeof(float_node::base_t))) {
-      ret_val = make_node_ptr<float_node>(std::stod(sanitized_string, nullptr));
-    } else {
-      ret_val =
-          make_node_ptr<float_node>(std::stold(sanitized_string, nullptr));
-    }
-
-  } catch (const std::out_of_range &ex) {
+  float_node::base_t ret_val_value_buf{};
+  if (std::from_chars(((sanitized_string.front() ==
+                        character_constants::g_k_num_positive_sign)
+                           ? (sanitized_string.data() + 1)
+                           : (sanitized_string.data())),
+                      sanitized_string.data() + sanitized_string.size(),
+                      ret_val_value_buf)
+          .ec == std::errc::result_out_of_range) {
     throw syntax_error{error_messages::err_msg_1_5_10.message,
                        error_messages::err_msg_1_5_10.category, ctx.identifier,
                        ctx.line_count, ctx.char_count};
+
+  } else {
+    ret_val = make_node_ptr<float_node>(ret_val_value_buf);
   }
 
   return ret_val;
