@@ -110,9 +110,6 @@ bool is_invalid_character_valid_provided(const char ch,
 bool is_invalid_character_invalid_provided(const char ch,
                                            const std::string &invalid_chars);
 
-bool is_digit(const char ch,
-              const numeral_system &num_sys = numeral_system_decimal);
-
 bool case_insensitive_char_compare(const char ch1, const char ch2);
 bool case_insensitive_string_compare(const std::string &str1,
                                      const std::string &str2);
