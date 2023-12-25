@@ -434,7 +434,7 @@ libconfigfile::parser::impl::parse_integer_value(
           num_sys = &numeral_system_decimal;
         }
 
-        if (is_digit(cur_char, *num_sys)) {
+        if (num_sys->is_digit(cur_char)) {
           last_char_was_digit = true;
           any_digits_so_far = true;
           last_char_was_leading_zero = false;
@@ -966,8 +966,8 @@ libconfigfile::parser::impl::parse_float_value(
 
         case character_constants::g_k_num_digit_separator: {
           if (last_char == char_type::digit) {
-            if (is_digit(static_cast<char>(ctx.input_stream.peek()),
-                         numeral_system_decimal) == true) {
+            if (numeral_system_decimal.is_digit(
+                    static_cast<char>(ctx.input_stream.peek()))) {
               last_char = char_type::separator;
             } else {
               throw syntax_error{error_messages::err_msg_1_5_6.message,
@@ -984,8 +984,8 @@ libconfigfile::parser::impl::parse_float_value(
 
         case character_constants::g_k_float_decimal_point: {
           if (last_char == char_type::digit) {
-            if (is_digit(static_cast<char>(ctx.input_stream.peek()),
-                         numeral_system_decimal) == true) {
+            if (numeral_system_decimal.is_digit(
+                    static_cast<char>(ctx.input_stream.peek()))) {
               last_char = char_type::decimal;
               cur_location = num_location::fractional;
               sanitized_string.push_back(cur_char);
@@ -1006,7 +1006,7 @@ libconfigfile::parser::impl::parse_float_value(
         case character_constants::g_k_float_exponent_sign_upper: {
           if (last_char == char_type::digit) {
             const char next_char{static_cast<char>(ctx.input_stream.peek())};
-            if ((is_digit(next_char, numeral_system_decimal) == true) ||
+            if (((numeral_system_decimal.is_digit(next_char))) ||
                 (next_char == character_constants::g_k_num_positive_sign) ||
                 (next_char == character_constants::g_k_num_negative_sign)) {
               last_char = char_type::exponent;
@@ -1026,7 +1026,7 @@ libconfigfile::parser::impl::parse_float_value(
         } break;
 
         default: {
-          if (is_digit(cur_char, numeral_system_decimal) == true) {
+          if (numeral_system_decimal.is_digit(cur_char)) {
             last_char = char_type::digit;
             sanitized_string.push_back(cur_char);
           } else {
@@ -1055,8 +1055,8 @@ libconfigfile::parser::impl::parse_float_value(
 
         case character_constants::g_k_num_digit_separator: {
           if (last_char == char_type::digit) {
-            if (is_digit(static_cast<char>(ctx.input_stream.peek()),
-                         numeral_system_decimal) == true) {
+            if (numeral_system_decimal.is_digit(
+                    static_cast<char>(ctx.input_stream.peek()))) {
               last_char = char_type::separator;
             } else {
               throw syntax_error{error_messages::err_msg_1_5_6.message,
@@ -1081,7 +1081,7 @@ libconfigfile::parser::impl::parse_float_value(
         case character_constants::g_k_float_exponent_sign_upper: {
           if (last_char == char_type::digit) {
             const char next_char{static_cast<char>(ctx.input_stream.peek())};
-            if ((is_digit(next_char, numeral_system_decimal) == true) ||
+            if ((numeral_system_decimal.is_digit(next_char)) ||
                 (next_char == character_constants::g_k_num_positive_sign) ||
                 (next_char == character_constants::g_k_num_negative_sign)) {
               last_char = char_type::exponent;
@@ -1101,7 +1101,7 @@ libconfigfile::parser::impl::parse_float_value(
         } break;
 
         default: {
-          if (is_digit(cur_char, numeral_system_decimal) == true) {
+          if (numeral_system_decimal.is_digit(cur_char)) {
             last_char = char_type::digit;
             sanitized_string.push_back(cur_char);
           } else {
@@ -1140,8 +1140,8 @@ libconfigfile::parser::impl::parse_float_value(
 
         case character_constants::g_k_num_digit_separator: {
           if (last_char == char_type::digit) {
-            if (is_digit(static_cast<char>(ctx.input_stream.peek()),
-                         numeral_system_decimal) == true) {
+            if (numeral_system_decimal.is_digit(
+                    static_cast<char>(ctx.input_stream.peek()))) {
               last_char = char_type::separator;
             } else {
               throw syntax_error{error_messages::err_msg_1_5_6.message,
@@ -1170,7 +1170,7 @@ libconfigfile::parser::impl::parse_float_value(
         } break;
 
         default: {
-          if (is_digit(cur_char, numeral_system_decimal) == true) {
+          if (numeral_system_decimal.is_digit(cur_char)) {
             last_char = char_type::digit;
             sanitized_string.push_back(cur_char);
           } else {
@@ -2281,8 +2281,8 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
           ++ctx.char_count;
         }
 
-        if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
-            (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
+        if ((numeral_system_hexadecimal.is_digit(hex_digit_1)) &&
+            (numeral_system_hexadecimal.is_digit(hex_digit_2))) {
           std::string const hex_string{std::string{} + hex_digit_1 +
                                        hex_digit_2};
           int ret_val{};
@@ -2502,8 +2502,8 @@ libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
               (hex_digit_pos_count_2 < str.size())) {
             const char hex_digit_1{str[hex_digit_pos_count_1]};
             const char hex_digit_2{str[hex_digit_pos_count_2]};
-            if ((is_digit(hex_digit_1, numeral_system_hexadecimal)) &&
-                (is_digit(hex_digit_2, numeral_system_hexadecimal))) {
+            if ((numeral_system_hexadecimal.is_digit(hex_digit_1)) &&
+                (numeral_system_hexadecimal.is_digit(hex_digit_2))) {
               std::string const hex_string{std::string{} + hex_digit_1 +
                                            hex_digit_2};
               int new_char{};
@@ -2553,12 +2553,6 @@ bool libconfigfile::parser::impl::is_invalid_character_valid_provided(
 bool libconfigfile::parser::impl::is_invalid_character_invalid_provided(
     const char ch, const std::string &invalid_chars) {
   return (invalid_chars.find(ch) != std::string::npos);
-}
-
-bool libconfigfile::parser::impl::is_digit(
-    const char ch,
-    const numeral_system &num_sys /*= character_constants::g_k_dec_num_sys*/) {
-  return (num_sys.digits.find(ch) != std::string::npos);
 }
 
 bool libconfigfile::parser::impl::case_insensitive_char_compare(
