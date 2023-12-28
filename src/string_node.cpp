@@ -54,6 +54,7 @@ std::string libconfigfile::string_node::serialize(
       character_constants::g_k_escape_leader};
 
   std::string ret_val;
+  ret_val.reserve(this->size() + 2);
 
   ret_val += character_constants::g_k_string_delimiter;
 
@@ -65,18 +66,15 @@ std::string libconfigfile::string_node::serialize(
       break;
     } else {
       ret_val += this->substr(pos_prev, (pos - pos_prev));
-
       ret_val += character_constants::g_k_escape_leader;
-      switch (this->operator[](pos)) {
 
+      switch (this->operator[](pos)) {
       case character_constants::g_k_string_delimiter: {
         ret_val += character_constants::g_k_string_delimiter;
       } break;
-
       case character_constants::g_k_escape_leader: {
         ret_val += character_constants::g_k_escape_leader;
       } break;
-
       default: {
         ret_val += character_constants::g_k_control_chars_codes.at(
             this->operator[](pos));
