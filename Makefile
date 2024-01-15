@@ -1,21 +1,18 @@
-# Remember:
-# GNU make is a picky little bugger who doesn't like spaces in his file paths
-
 LIB_NAME := libconfigfile
 VERSION_MAJOR := 0
 VERSION_MINOR := 0
 CXX := g++
-COMPILE_FLAGS := -fPIC -std=c++20 -Wall -Wextra -g
+COMPILE_FLAGS := -std=c++20 -Wall -Wextra -g
 RELEASE_COMPILE_FLAGS := -O2 -DNDEBUG
 DEBUG_COMPILE_FLAGS := -Og -DDEBUG
 LINK_FLAGS :=
 RELEASE_LINK_FLAGS :=
 DEBUG_LINK_FLAGS :=
-SOURCE_DIRS := ./source
 SOURCE_FILE_EXT := .cpp
-SUBMODULE_DIR := ./submodules
-INCLUDE_DIRS := ./include
 HEADER_FILE_EXT := .hpp
+SOURCE_DIRS := ./source
+INCLUDE_DIRS := ./include
+SUBMODULE_DIR := ./submodules
 LIBRARIES :=
 INSTALL_PATH := /usr/local
 
@@ -77,22 +74,34 @@ $(BUILD_DIR)/%$(SOURCE_FILE_EXT).o: %$(SOURCE_FILE_EXT)
 
 -include $(DEPENDENCIES)
 
-.PHONY: install
-install:
+.PHONY: install_libraries
+install_libraries:
 	@install -v -Dm755 $(BUILD_DIR)/$(SHARED_LIB_NAME) -t $(LIB_INSTALL_PATH)/
 	@ln -v -s $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME) $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME)
 	@ln -v -s $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME) $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_LINKER_NAME)
 	@install -v -Dm644 $(BUILD_DIR)/$(STATIC_LIB_NAME) -t $(LIB_INSTALL_PATH)/
-	@install -v -Dm644 $(foreach INCLUDE_DIR,$(INCLUDE_DIRS),$(wildcard $(INCLUDE_DIR)/*)) -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
-	@ldconfig -v
+	@ldconfig
 
-.PHONY: uninstall
-uninstall:
+.PHONY: install_headers
+install_headers:
+	@install -v -Dm644 $(foreach INCLUDE_DIR,$(INCLUDE_DIRS),$(wildcard $(INCLUDE_DIR)/*)) -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
+
+.PHONY: install
+install: install_libraries install_headers
+
+.PHONY: uninstall_libraries
+uninstall_libraries:
 	@rm -v $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_LINKER_NAME)
 	@rm -v $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME)
 	@rm -v $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME)
 	@rm -v $(LIB_INSTALL_PATH)/$(STATIC_LIB_NAME)
+
+.PHONY: uninstall_headers
+uninstall_headers:
 	@rm -v -r $(HEADER_INSTALL_PATH)/$(LIB_NAME)
+
+.PHONY: uninstall
+uninstall: uninstall_libraries uninstall_headers
 
 .PHONY: clean
 clean:
