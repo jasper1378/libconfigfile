@@ -1,5 +1,5 @@
-#ifndef LIBCONFIGFILE_String_NODE
-#define LIBCONFIGFILE_String_NODE
+#ifndef LIBCONFIGFILE_STRING_NODE
+#define LIBCONFIGFILE_STRING_NODE
 
 #include "node.hpp"
 #include "node_types.hpp"

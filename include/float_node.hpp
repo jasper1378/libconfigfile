@@ -1,5 +1,5 @@
-#ifndef LIBCONFIGFILE_Float_NODE
-#define LIBCONFIGFILE_Float_NODE
+#ifndef LIBCONFIGFILE_FLOAT_NODE
+#define LIBCONFIGFILE_FLOAT_NODE
 
 #include "node.hpp"
 #include "node_types.hpp"

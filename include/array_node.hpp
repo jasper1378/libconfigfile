@@ -1,5 +1,5 @@
-#ifndef LIBCONFIGFILE_Array_NODE_HPP
-#define LIBCONFIGFILE_Array_NODE_HPP
+#ifndef LIBCONFIGFILE_ARRAY_NODE_HPP
+#define LIBCONFIGFILE_ARRAY_NODE_HPP
 
 #include "node.hpp"
 #include "node_ptr.hpp"
