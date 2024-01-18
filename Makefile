@@ -108,10 +108,10 @@ install_headers:
 	@install -v -Dm644 $(foreach INCLUDE_DIR,$(INCLUDE_INSTALL_DIRS),$(wildcard $(INCLUDE_DIR)/*)) -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
 
 .PHONY: uninstall
-uninstall: uninstall_libraries uninstall_headers
+uninstall: _uninstall_libraries _uninstall_headers
 
-.PHONY: uninstall_libraries
-uninstall_libraries: _uninstall_shared_library _uninstall_static_library
+.PHONY: _uninstall_libraries
+_uninstall_libraries: _uninstall_shared_library _uninstall_static_library
 
 .PHONY: _uninstall_shared_library
 _uninstall_shared_library:
@@ -123,8 +123,8 @@ _uninstall_shared_library:
 _uninstall_static_library:
 	@rm -v $(LIB_INSTALL_PATH)/$(STATIC_LIB_NAME)
 
-.PHONY: uninstall_headers
-uninstall_headers:
+.PHONY: _uninstall_headers
+_uninstall_headers:
 	@rm -v -r $(HEADER_INSTALL_PATH)/$(LIB_NAME)
 
 .PHONY: clean
