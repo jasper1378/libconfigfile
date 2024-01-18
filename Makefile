@@ -8,12 +8,13 @@ DEBUG_COMPILE_FLAGS := -Og -DDEBUG
 LINK_FLAGS :=
 RELEASE_LINK_FLAGS :=
 DEBUG_LINK_FLAGS :=
+LIBRARIES :=
 SOURCE_FILE_EXT := .cpp
 HEADER_FILE_EXT := .hpp
 SOURCE_DIRS := ./source
 INCLUDE_DIRS := ./include
+INCLUDE_INSTALL_DIRS := ./include_install
 SUBMODULE_DIR := ./submodules
-LIBRARIES :=
 INSTALL_PATH := /usr/local
 
 ##########
@@ -59,8 +60,19 @@ debug:
 	@$(MAKE) all --no-print-directory
 
 .PHONY: all
-all: $(BUILD_DIR)/$(SHARED_LIB_NAME) $(BUILD_DIR)/$(STATIC_LIB_NAME)
+all: _all
 
+.PHONY: _all
+_all: _build_libraries
+
+.PHONY: _build_libraries
+_build_libraries: _build_shared_library _build_static_library
+
+.PHONY: _build_shared_library
+_build_shared_library: $(BUILD_DIR)/$(SHARED_LIB_NAME)
+
+.PHONY: _build_static_library
+_build_static_library: $(BUILD_DIR)/$(STATIC_LIB_NAME)
 
 $(BUILD_DIR)/$(SHARED_LIB_NAME): $(OBJECTS)
 	$(CXX) $(OBJECTS) $(SUBMODULE_OBJECTS) $(LDFLAGS) -o $@
@@ -74,34 +86,46 @@ $(BUILD_DIR)/%$(SOURCE_FILE_EXT).o: %$(SOURCE_FILE_EXT)
 
 -include $(DEPENDENCIES)
 
-.PHONY: install_libraries
-install_libraries:
-	@install -v -Dm755 $(BUILD_DIR)/$(SHARED_LIB_NAME) -t $(LIB_INSTALL_PATH)/
-	@ln -v -s $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME) $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME)
-	@ln -v -s $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME) $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_LINKER_NAME)
-	@install -v -Dm644 $(BUILD_DIR)/$(STATIC_LIB_NAME) -t $(LIB_INSTALL_PATH)/
-	@ldconfig
-
-.PHONY: install_headers
-install_headers:
-	@install -v -Dm644 $(foreach INCLUDE_DIR,$(INCLUDE_DIRS),$(wildcard $(INCLUDE_DIR)/*)) -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
-
 .PHONY: install
 install: install_libraries install_headers
 
+.PHONY: install_libraries
+install_libraries: _install_shared_library _install_static_library
+	@ldconfig
+
+.PHONY: _install_shared_library
+_install_shared_library:
+	@install -v -Dm755 $(BUILD_DIR)/$(SHARED_LIB_NAME) -t $(LIB_INSTALL_PATH)/
+	@ln -v -s $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME) $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME)
+	@ln -v -s $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME) $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_LINKER_NAME)
+
+.PHONY: _install_static_library
+_install_static_library:
+	@install -v -Dm644 $(BUILD_DIR)/$(STATIC_LIB_NAME) -t $(LIB_INSTALL_PATH)/
+
+.PHONY: install_headers
+install_headers:
+	@install -v -Dm644 $(foreach INCLUDE_DIR,$(INCLUDE_INSTALL_DIRS),$(wildcard $(INCLUDE_DIR)/*)) -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
+
+.PHONY: uninstall
+uninstall: uninstall_libraries uninstall_headers
+
 .PHONY: uninstall_libraries
-uninstall_libraries:
+uninstall_libraries: _uninstall_shared_library _uninstall_static_library
+
+.PHONY: _uninstall_shared_library
+_uninstall_shared_library:
 	@rm -v $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_LINKER_NAME)
 	@rm -v $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME_SONAME)
 	@rm -v $(LIB_INSTALL_PATH)/$(SHARED_LIB_NAME)
+
+.PHONY: _uninstall_static_library
+_uninstall_static_library:
 	@rm -v $(LIB_INSTALL_PATH)/$(STATIC_LIB_NAME)
 
 .PHONY: uninstall_headers
 uninstall_headers:
 	@rm -v -r $(HEADER_INSTALL_PATH)/$(LIB_NAME)
-
-.PHONY: uninstall
-uninstall: uninstall_libraries uninstall_headers
 
 .PHONY: clean
 clean:
