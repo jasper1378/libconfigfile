@@ -87,10 +87,10 @@ $(BUILD_DIR)/%$(SOURCE_FILE_EXT).o: %$(SOURCE_FILE_EXT)
 -include $(DEPENDENCIES)
 
 .PHONY: install
-install: install_libraries install_headers
+install: _install_libraries _install_headers
 
-.PHONY: install_libraries
-install_libraries: _install_shared_library _install_static_library
+.PHONY: _install_libraries
+_install_libraries: _install_shared_library _install_static_library
 	@ldconfig
 
 .PHONY: _install_shared_library
@@ -103,8 +103,8 @@ _install_shared_library:
 _install_static_library:
 	@install -v -Dm644 $(BUILD_DIR)/$(STATIC_LIB_NAME) -t $(LIB_INSTALL_PATH)/
 
-.PHONY: install_headers
-install_headers:
+.PHONY: _install_headers
+_install_headers:
 	@install -v -Dm644 $(foreach INCLUDE_DIR,$(INCLUDE_INSTALL_DIRS),$(wildcard $(INCLUDE_DIR)/*)) -t $(HEADER_INSTALL_PATH)/$(LIB_NAME)
 
 .PHONY: uninstall
