@@ -19,7 +19,6 @@
 #include <cassert>
 #include <cctype>
 #include <charconv>
-#include <concepts>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
@@ -28,12 +27,12 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
-#include <vector>
 
 libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::parse(const std::string &identifier,
@@ -82,7 +81,7 @@ libconfigfile::parser::impl::parse(
 
 std::pair<std::string, libconfigfile::node_ptr<libconfigfile::node>>
 libconfigfile::parser::impl::parse_key_value(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
   std::pair<std::string, node_ptr<node>> ret_val{};
 
@@ -267,7 +266,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
 
 libconfigfile::node_ptr<libconfigfile::node>
 libconfigfile::parser::impl::parse_key_value_value(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
   bool first_loop{true};
   char cur_char{};
@@ -319,7 +318,7 @@ libconfigfile::parser::impl::parse_key_value_value(
 
 libconfigfile::node_ptr<libconfigfile::string_node>
 libconfigfile::parser::impl::parse_string_value(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
   bool in_string{false};
 
@@ -408,7 +407,7 @@ libconfigfile::parser::impl::parse_string_value(
 
 libconfigfile::node_ptr<libconfigfile::integer_node>
 libconfigfile::parser::impl::parse_integer_value(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
   static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
 
@@ -682,7 +681,7 @@ libconfigfile::parser::impl::parse_integer_value(
 
 libconfigfile::node_ptr<libconfigfile::float_node>
 libconfigfile::parser::impl::parse_float_value(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
   std::string sanitized_string{};
 
@@ -1212,7 +1211,7 @@ libconfigfile::parser::impl::parse_float_value(
 
 libconfigfile::node_ptr<libconfigfile::array_node>
 libconfigfile::parser::impl::parse_array_value(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
   node_ptr<libconfigfile::array_node> ret_val{make_node_ptr<array_node>()};
 
@@ -1346,7 +1345,7 @@ libconfigfile::parser::impl::parse_array_value(
 
 libconfigfile::node_ptr<libconfigfile::map_node>
 libconfigfile::parser::impl::parse_map_value(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/,
     const bool is_root_map /*= false*/) {
   node_ptr<map_node> ret_val{make_node_ptr<map_node>()};
@@ -1547,7 +1546,7 @@ libconfigfile::parser::impl::parse_map_value(
 }
 libconfigfile::node_ptr<libconfigfile::node>
 libconfigfile::parser::impl::call_appropriate_value_parse_func(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
 
   node_type value_type{identify_key_value_value_type(
@@ -2315,7 +2314,7 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
 
 libconfigfile::node_type
 libconfigfile::parser::impl::identify_key_value_value_type(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
 
   std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
@@ -2404,7 +2403,7 @@ libconfigfile::parser::impl::identify_key_value_value_type(
 
 libconfigfile::node_type
 libconfigfile::parser::impl::identify_key_value_numeric_value_type(
-    context &ctx, const std::string &possible_terminating_chars,
+    context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
 
   std::string gotten_chars{};
@@ -2484,7 +2483,8 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
 
 std::variant<std::string /*result*/,
              std::string::size_type /*invalid_escape_sequence_pos_count*/>
-libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
+libconfigfile::parser::impl::replace_escape_sequences(
+    const std::string_view str) {
   std::string result{};
   result.reserve(str.size());
 
@@ -2540,18 +2540,18 @@ libconfigfile::parser::impl::replace_escape_sequences(const std::string &str) {
 
 bool libconfigfile::parser::impl::is_whitespace(
     const char ch,
-    const std::string
-        &whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
+    const std::string_view
+        whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
   return ((whitespace_chars.find(ch)) != (std::string::npos));
 }
 
 bool libconfigfile::parser::impl::is_invalid_character_valid_provided(
-    const char ch, const std::string &valid_chars) {
+    const char ch, const std::string_view valid_chars) {
   return (valid_chars.find(ch) == std::string::npos);
 }
 
 bool libconfigfile::parser::impl::is_invalid_character_invalid_provided(
-    const char ch, const std::string &invalid_chars) {
+    const char ch, const std::string_view invalid_chars) {
   return (invalid_chars.find(ch) != std::string::npos);
 }
 
@@ -2562,7 +2562,7 @@ bool libconfigfile::parser::impl::case_insensitive_char_compare(
 }
 
 bool libconfigfile::parser::impl::case_insensitive_string_compare(
-    const std::string &str1, const std::string &str2) {
+    const std::string_view str1, const std::string_view str2) {
   if (str1.size() == str2.size()) {
     for (std::string::size_type i{0}; i < str1.size(); ++i) {
       if (std::tolower(static_cast<unsigned char>(str1[i])) !=
@@ -2578,7 +2578,7 @@ bool libconfigfile::parser::impl::case_insensitive_string_compare(
 
 std::string::size_type
 libconfigfile::parser::impl::case_insensitive_string_find(
-    const std::string &str, const std::string &to_find) {
+    const std::string_view str, const std::string_view to_find) {
   auto found_iter{std::search(str.begin(), str.end(), to_find.begin(),
                               to_find.end(), case_insensitive_char_compare)};
 
