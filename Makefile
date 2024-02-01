@@ -58,12 +58,10 @@ OBJECTS := $(SOURCES:%=$(BUILD_DIR)/%.o)
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
 .PHONY: release
-release:
-	@$(MAKE) all --no-print-directory
+release: _all
 
 .PHONY: debug
-debug:
-	@$(MAKE) all --no-print-directory
+debug: _all
 
 .PHONY: all
 all: _all
