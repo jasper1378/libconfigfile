@@ -1,6 +1,8 @@
 #ifndef LIBCONFIGFILE_NODE_TYPES_HPP
 #define LIBCONFIGFILE_NODE_TYPES_HPP
 
+#include <string>
+
 namespace libconfigfile {
 enum class node_type {
   // Look, I know the case of the enumerators is nasty and inconsistent with the
@@ -13,6 +15,8 @@ enum class node_type {
   Map,
   Null,
 };
+
+std::string node_type_to_str(const node_type type);
 
 } // namespace libconfigfile
 

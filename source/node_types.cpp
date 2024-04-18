@@ -1,10 +1,8 @@
-#include "misc.hpp"
-
 #include "node_types.hpp"
 
 #include <string>
 
-std::string libconfigfile::misc::node_ptr_type_to_str(const node_type type) {
+std::string libconfigfile::node_type_to_str(const node_type type) {
   switch (type) {
   case ::libconfigfile::node_type::String: {
     return "string";
