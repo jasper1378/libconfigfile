@@ -8,6 +8,7 @@
 #include "float_node.hpp"
 #include "integer_node.hpp"
 #include "map_node.hpp"
+#include "misc.hpp"
 #include "node.hpp"
 #include "node_ptr.hpp"
 #include "node_types.hpp"
