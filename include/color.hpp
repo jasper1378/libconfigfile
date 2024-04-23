@@ -228,10 +228,8 @@ std::optional<std::string>
 to_string(const t_color &color,
           const to_string_flags flags = to_string_flags::none) {
   std::string ret_val(to_string_buf_len<t_color>(flags), '0');
-  bool success{to_string(ret_val.data(), (ret_val.data() + ret_val.size()),
-                         color, flags)};
-  return ((success) ? (std::optional<std::string>{ret_val})
-                    : (std::optional<std::string>{std::nullopt}));
+  return to_string(ret_val.data(), (ret_val.data() + ret_val.size()), color,
+                   flags);
 }
 
 template <typename t_color>
@@ -240,9 +238,7 @@ std::optional<string_node>
 to_string_node(const t_color &color,
                const to_string_flags flags = to_string_flags::none) {
   std::optional<std::string> ret_val{to_string(color, flags)};
-  return ((ret_val.has_value())
-              ? (std::optional<string_node>{string_node{std::move(*ret_val)}})
-              : (std::optional<string_node>{std::nullopt}));
+  return string_node{to_string_node(color, flags)};
 }
 
 } // namespace rgb_model
