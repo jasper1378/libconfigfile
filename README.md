@@ -1,9 +1,11 @@
 # libconfigfile
 
 ## About
+
 libconfigfile is a C++ configuration file parsing library.
 
 ## Installation
+
 Acquire the sources
 ```
 $ git clone https://github.com/jasper1378/libconfigfile.git
@@ -19,6 +21,7 @@ $ make install
 ```
 
 ## Usage
+
 The Makefile will install both static and shared versions of the library, use whichever you prefer. Most users will just want to include `libconfigfile.hpp`, which itself includes all the other headers. All code in the library is found within the `libconfigfile` namespace.
 
 ### Configuration file syntax specification
@@ -67,4 +70,5 @@ To parse a color from a string, the `from_string()` (`char*` or `std::string`) o
 To serialize a color to string, the `to_string()` (`char*` or `std::string`) or `to_string_node()` (`string_node`) functions may be used. The `char*` overload of `to_string()` writes the result to its arguments and returns a `bool` indicating success. The `std::string` overload of `to_string()` and `to_string_node()` always returns the result successfuly. The behaviour of these functions may be modified by passing a flags argument of type `to_string_flags`. The following enumerators may be ORed together: `no_prefix` (the string is not prefixed with '#'), and `cap_digits` (the string contains capitalized digits). If serializing to a raw `char*`, it may be useful to determine the size of the required buffer ahead of time. This can be accomplished via `to_string_buf_len()`, which accepts the same flags as `to_string()`/`to_string_niode()` and returns the appropriate buffer size.
 
 ## License
+
 See [LICENSE](LICENSE) for details.
