@@ -48,7 +48,7 @@ bool libconfigfile::string_node::polymorphic_value_compare(
 
 std::string libconfigfile::string_node::serialize(
     [[maybe_unused]] int indent_level /*=0*/) const {
-  static const std::string need_to_replace{
+  static const std::string k_need_to_replace{
       character_constants::g_k_control_chars +
       character_constants::g_k_string_delimiter +
       character_constants::g_k_escape_leader};
@@ -61,7 +61,7 @@ std::string libconfigfile::string_node::serialize(
   std::string::size_type pos{0};
   std::string::size_type pos_prev{0};
   while (true) {
-    pos = this->find_first_of(need_to_replace, pos_prev);
+    pos = this->find_first_of(k_need_to_replace, pos_prev);
     if (pos == std::string::npos) {
       break;
     } else {
