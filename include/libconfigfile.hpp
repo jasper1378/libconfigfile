@@ -2,10 +2,10 @@
 #define LIBCONFIGFILE_LIBCONFIGFILE_HPP
 
 #include "array_node.hpp"
+#include "bits-and-bytes/define_enum_flag_operators/define_enum_flag_operators.hpp"
 #include "character_constants.hpp"
 #include "color.hpp"
 #include "constexpr_tolower_toupper.hpp"
-#include "define_enum_flag_operators.hpp"
 #include "error_messages.hpp"
 #include "float_node.hpp"
 #include "integer_node.hpp"
