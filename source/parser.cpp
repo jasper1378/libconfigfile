@@ -689,22 +689,22 @@ libconfigfile::parser::impl::parse_float_value(
       pos_count_at_start{ctx.line_count, ctx.char_count};
 
   static const std::unordered_map<std::string, float_node::base_t>
-      special_floats{{character_constants::g_k_float_infinity.second,
-                      character_constants::g_k_float_infinity.first},
-                     {(character_constants::g_k_num_positive_sign +
-                       character_constants::g_k_float_infinity.second),
-                      (character_constants::g_k_float_infinity.first)},
-                     {(character_constants::g_k_num_negative_sign +
-                       character_constants::g_k_float_infinity.second),
-                      (-character_constants::g_k_float_infinity.first)},
-                     {(character_constants::g_k_float_not_a_number.second),
-                      (character_constants::g_k_float_not_a_number.first)},
-                     {(character_constants::g_k_num_positive_sign +
-                       character_constants::g_k_float_not_a_number.second),
-                      (character_constants::g_k_float_not_a_number.first)},
-                     {(character_constants::g_k_num_negative_sign +
-                       character_constants::g_k_float_not_a_number.second),
-                      (-character_constants::g_k_float_not_a_number.first)}};
+      k_special_floats{{character_constants::g_k_float_infinity.second,
+                        character_constants::g_k_float_infinity.first},
+                       {(character_constants::g_k_num_positive_sign +
+                         character_constants::g_k_float_infinity.second),
+                        (character_constants::g_k_float_infinity.first)},
+                       {(character_constants::g_k_num_negative_sign +
+                         character_constants::g_k_float_infinity.second),
+                        (-character_constants::g_k_float_infinity.first)},
+                       {(character_constants::g_k_float_not_a_number.second),
+                        (character_constants::g_k_float_not_a_number.first)},
+                       {(character_constants::g_k_num_positive_sign +
+                         character_constants::g_k_float_not_a_number.second),
+                        (character_constants::g_k_float_not_a_number.first)},
+                       {(character_constants::g_k_num_negative_sign +
+                         character_constants::g_k_float_not_a_number.second),
+                        (-character_constants::g_k_float_not_a_number.first)}};
 
   enum class char_type {
     start,
@@ -1215,7 +1215,7 @@ libconfigfile::parser::impl::parse_array_value(
     char *actual_terminating_char /*= nullptr*/) {
   node_ptr<libconfigfile::array_node> ret_val{make_node_ptr<array_node>()};
 
-  static const std::string possible_terminating_chars_for_elements{
+  static const std::string k_possible_terminating_chars_for_elements{
       std::string{} + character_constants::g_k_array_element_separator +
       character_constants::g_k_array_closing_delimiter};
 
@@ -1287,7 +1287,7 @@ libconfigfile::parser::impl::parse_array_value(
           ctx.input_stream.unget();
           char element_actual_terminating_char{};
           ret_val->push_back(call_appropriate_value_parse_func(
-              ctx, possible_terminating_chars_for_elements,
+              ctx, k_possible_terminating_chars_for_elements,
               &element_actual_terminating_char));
           switch (element_actual_terminating_char) {
           case character_constants::g_k_array_element_separator: {
@@ -1316,7 +1316,7 @@ libconfigfile::parser::impl::parse_array_value(
           ctx.input_stream.unget();
           char element_actual_terminating_char{};
           ret_val->push_back(call_appropriate_value_parse_func(
-              ctx, possible_terminating_chars_for_elements,
+              ctx, k_possible_terminating_chars_for_elements,
               &element_actual_terminating_char));
           switch (element_actual_terminating_char) {
           case character_constants::g_k_array_element_separator: {
@@ -2144,7 +2144,7 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
   static_assert(character_constants::g_k_comment_cpp.size() == 2);
   static_assert(character_constants::g_k_comment_c_start.size() == 2);
   static_assert(character_constants::g_k_comment_c_end.size() == 2);
-  static constexpr char c_or_cpp_comment_leader{
+  static constexpr char k_c_or_cpp_comment_leader{
       character_constants::g_k_comment_cpp.front()};
 
   char cur_char{};
@@ -2168,7 +2168,7 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
     }
   } break;
 
-  case c_or_cpp_comment_leader: {
+  case k_c_or_cpp_comment_leader: {
     ctx.input_stream.get(cur_char);
     ++ctx.char_count;
     peek_char = (ctx.input_stream.peek());
