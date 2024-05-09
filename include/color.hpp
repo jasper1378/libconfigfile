@@ -32,11 +32,21 @@ concept concept_color =
 
 bool operator==(const rgb &color_1, const rgb &color_2);
 bool operator==(const rgba &color_1, const rgba &color_2);
-
-template <typename t_color_1, typename t_color_2>
-  requires(concept_color<t_color_1> && concept_color<t_color_2>)
-bool operator!=(const t_color_1 &color_1, const t_color_2 &color_2) {
+template <typename t_color>
+  requires concept_color<t_color>
+bool operator!=(const t_color &color_1, const t_color &color_2) {
   return !(color_1 == color_2);
+}
+
+rgb operator+(const rgb &color_1, const rgb &color_2);
+rgba operator+(const rgba &color_1, const rgba &color_2);
+template <typename t_color>
+t_color &operator+=(t_color &color_1, const t_color &color_2) {
+  color_1 = {color_1 + color_2};
+  return color_1;
+}
+namespace impl {
+channel_t add_channels(const channel_t channel_1, const channel_t channel_2);
 }
 
 enum class from_string_flags : unsigned int {
