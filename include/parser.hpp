@@ -103,7 +103,7 @@ replace_escape_sequences(const std::string_view str);
 
 bool is_whitespace(const char ch,
                    const std::string_view whitespace_chars =
-                       character_constants::g_k_whitespace_chars);
+                       character_constants::k_whitespace_chars);
 bool is_invalid_character_valid_provided(const char ch,
                                          const std::string_view valid_chars);
 bool is_invalid_character_invalid_provided(

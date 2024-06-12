@@ -3,6 +3,6 @@
 
 #include <string>
 
-static constexpr std::string g_k_version{"0"};
+static constexpr std::string k_version{"0"};
 
 #endif
