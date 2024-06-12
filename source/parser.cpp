@@ -125,7 +125,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -150,18 +150,18 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
           last_state = key_name_location::name_proper;
 
           if (is_invalid_character_valid_provided(
-                  cur_char, character_constants::g_k_valid_name_chars) ==
+                  cur_char, character_constants::k_valid_name_chars) ==
               true) {
             switch (cur_char) {
 
-            case character_constants::g_k_key_value_assign: {
+            case character_constants::k_key_value_assign: {
               throw syntax_error{error_messages::err_msg_1_2_4.message,
                                  error_messages::err_msg_1_2_4.category,
                                  ctx.identifier, ctx.line_count,
                                  ctx.char_count};
             } break;
 
-            case character_constants::g_k_key_value_terminate: {
+            case character_constants::k_key_value_terminate: {
               throw syntax_error{error_messages::err_msg_1_2_4.message,
                                  error_messages::err_msg_1_2_4.category,
                                  ctx.identifier, ctx.line_count,
@@ -192,9 +192,9 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
         if (is_whitespace(cur_char) == true) {
           last_state = key_name_location::trailing_whitespace;
         } else {
-          if (cur_char == character_constants::g_k_key_value_assign) {
+          if (cur_char == character_constants::k_key_value_assign) {
             last_state = key_name_location::equal_sign;
-          } else if (cur_char == character_constants::g_k_key_value_terminate) {
+          } else if (cur_char == character_constants::k_key_value_terminate) {
             throw syntax_error{error_messages::err_msg_1_2_5.message,
                                error_messages::err_msg_1_2_5.category,
                                ctx.identifier, ctx.line_count, ctx.char_count};
@@ -212,7 +212,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
                   pos_count_before_handled_comment_in_name_proper.second};
             } else {
               if (is_invalid_character_valid_provided(
-                      cur_char, character_constants::g_k_valid_name_chars) ==
+                      cur_char, character_constants::k_valid_name_chars) ==
                   true) {
                 throw syntax_error{error_messages::err_msg_1_2_1.message,
                                    error_messages::err_msg_1_2_1.category,
@@ -236,10 +236,10 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
         if (is_whitespace(cur_char) == true) {
           ;
         } else {
-          if (cur_char == character_constants::g_k_key_value_assign) {
+          if (cur_char == character_constants::k_key_value_assign) {
             last_state = key_name_location::equal_sign;
           } else {
-            if (cur_char == character_constants::g_k_key_value_terminate) {
+            if (cur_char == character_constants::k_key_value_terminate) {
               throw syntax_error{error_messages::err_msg_1_2_5.message,
                                  error_messages::err_msg_1_2_5.category,
                                  ctx.identifier, ctx.line_count,
@@ -280,7 +280,7 @@ libconfigfile::parser::impl::parse_key_value_value(
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -296,10 +296,10 @@ libconfigfile::parser::impl::parse_key_value_value(
                          ctx.line_count, ctx.char_count};
     } else if (is_whitespace(cur_char) == true) {
       continue;
-    } else if ((cur_char == character_constants::g_k_key_value_assign) &&
+    } else if ((cur_char == character_constants::k_key_value_assign) &&
                (first_loop == true)) {
       continue;
-      // } else if (cur_char == character_constants::g_k_key_value_terminate) {
+      // } else if (cur_char == character_constants::k_key_value_terminate) {
     } else if (possible_terminating_chars.find(cur_char) != std::string::npos) {
       if (actual_terminating_char != nullptr) {
         *actual_terminating_char = cur_char;
@@ -338,7 +338,7 @@ libconfigfile::parser::impl::parse_string_value(
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -365,9 +365,9 @@ libconfigfile::parser::impl::parse_string_value(
                              error_messages::err_msg_1_3_2.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
-          if (cur_char == character_constants::g_k_string_delimiter) {
+          if (cur_char == character_constants::k_string_delimiter) {
             in_string = false;
-          } else if (cur_char == character_constants::g_k_escape_leader) {
+          } else if (cur_char == character_constants::k_escape_leader) {
             ctx.input_stream.unget();
             --ctx.char_count;
             string_contents.push_back(handle_escape_sequence(ctx));
@@ -382,9 +382,9 @@ libconfigfile::parser::impl::parse_string_value(
           };
           break;
         } else if (is_whitespace(cur_char,
-                                 character_constants::g_k_whitespace_chars) ==
+                                 character_constants::k_whitespace_chars) ==
                    true) {
-        } else if (cur_char == character_constants::g_k_string_delimiter) {
+        } else if (cur_char == character_constants::k_string_delimiter) {
           in_string = true;
           last_opening_delimiter_pos_count = {ctx.line_count, ctx.char_count};
         } else {
@@ -409,7 +409,7 @@ libconfigfile::node_ptr<libconfigfile::integer_node>
 libconfigfile::parser::impl::parse_integer_value(
     context &ctx, const std::string_view possible_terminating_chars,
     char *actual_terminating_char /*= nullptr*/) {
-  static_assert(character_constants::g_k_num_sys_prefix_leader == '0');
+  static_assert(character_constants::k_num_sys_prefix_leader == '0');
 
   std::string actual_digits{};
   bool is_negative{false};
@@ -460,7 +460,7 @@ libconfigfile::parser::impl::parse_integer_value(
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -498,7 +498,7 @@ libconfigfile::parser::impl::parse_integer_value(
                          ctx.line_count, ctx.char_count};
     } else {
       switch (cur_char) {
-      case character_constants::g_k_num_digit_separator: {
+      case character_constants::k_num_digit_separator: {
         if ((last_char_was_digit == false) ||
             (ctx.input_stream.peek() == std::istream::traits_type::eof())) {
           throw syntax_error{error_messages::err_msg_1_4_2.message,
@@ -510,7 +510,7 @@ libconfigfile::parser::impl::parse_integer_value(
         }
       } break;
 
-      case character_constants::g_k_num_positive_sign: {
+      case character_constants::k_num_positive_sign: {
         if (first_loop == true) {
           is_negative = false;
           last_char_was_digit = false;
@@ -522,7 +522,7 @@ libconfigfile::parser::impl::parse_integer_value(
         }
       } break;
 
-      case character_constants::g_k_num_negative_sign: {
+      case character_constants::k_num_negative_sign: {
         if (first_loop == true) {
           is_negative = true;
           last_char_was_digit = false;
@@ -534,7 +534,7 @@ libconfigfile::parser::impl::parse_integer_value(
         }
       } break;
 
-      case character_constants::g_k_num_sys_prefix_leader: {
+      case character_constants::k_num_sys_prefix_leader: {
         if (any_digits_so_far == false) {
           last_char_was_digit = false;
           last_char_was_leading_zero = true;
@@ -689,22 +689,22 @@ libconfigfile::parser::impl::parse_float_value(
       pos_count_at_start{ctx.line_count, ctx.char_count};
 
   static const std::unordered_map<std::string, float_node::base_t>
-      k_special_floats{{character_constants::g_k_float_infinity.second,
-                        character_constants::g_k_float_infinity.first},
-                       {(character_constants::g_k_num_positive_sign +
-                         character_constants::g_k_float_infinity.second),
-                        (character_constants::g_k_float_infinity.first)},
-                       {(character_constants::g_k_num_negative_sign +
-                         character_constants::g_k_float_infinity.second),
-                        (-character_constants::g_k_float_infinity.first)},
-                       {(character_constants::g_k_float_not_a_number.second),
-                        (character_constants::g_k_float_not_a_number.first)},
-                       {(character_constants::g_k_num_positive_sign +
-                         character_constants::g_k_float_not_a_number.second),
-                        (character_constants::g_k_float_not_a_number.first)},
-                       {(character_constants::g_k_num_negative_sign +
-                         character_constants::g_k_float_not_a_number.second),
-                        (-character_constants::g_k_float_not_a_number.first)}};
+      k_special_floats{{character_constants::k_float_infinity.second,
+                        character_constants::k_float_infinity.first},
+                       {(character_constants::k_num_positive_sign +
+                         character_constants::k_float_infinity.second),
+                        (character_constants::k_float_infinity.first)},
+                       {(character_constants::k_num_negative_sign +
+                         character_constants::k_float_infinity.second),
+                        (-character_constants::k_float_infinity.first)},
+                       {(character_constants::k_float_not_a_number.second),
+                        (character_constants::k_float_not_a_number.first)},
+                       {(character_constants::k_num_positive_sign +
+                         character_constants::k_float_not_a_number.second),
+                        (character_constants::k_float_not_a_number.first)},
+                       {(character_constants::k_num_negative_sign +
+                         character_constants::k_float_not_a_number.second),
+                        (-character_constants::k_float_not_a_number.first)}};
 
   enum class char_type {
     start,
@@ -741,7 +741,7 @@ libconfigfile::parser::impl::parse_float_value(
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -785,9 +785,9 @@ libconfigfile::parser::impl::parse_float_value(
         switch (cur_char) {
 
         case libconfigfile::tolower<
-            character_constants::g_k_float_infinity.second.front()>():
+            character_constants::k_float_infinity.second.front()>():
         case libconfigfile::toupper<
-            character_constants::g_k_float_infinity.second.front()>(): {
+            character_constants::k_float_infinity.second.front()>(): {
           const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
               pos_count_at_start_of_special_float{ctx.line_count,
                                                   ctx.char_count};
@@ -797,7 +797,7 @@ libconfigfile::parser::impl::parse_float_value(
               (last_char == char_type::negative)) {
             std::string special_float_string{};
             special_float_string.reserve(
-                character_constants::g_k_float_infinity.second.size());
+                character_constants::k_float_infinity.second.size());
             special_float_string.push_back(cur_char);
 
             while (true) {
@@ -807,7 +807,7 @@ libconfigfile::parser::impl::parse_float_value(
                 if (ctx.input_stream.eof() == true) {
                   eof = true;
                   break;
-                } else if (cur_char == character_constants::g_k_newline) {
+                } else if (cur_char == character_constants::k_newline) {
                   ++ctx.line_count;
                   ctx.char_count = 0;
                   continue;
@@ -834,15 +834,15 @@ libconfigfile::parser::impl::parse_float_value(
 
             if (case_insensitive_string_compare(
                     special_float_string,
-                    character_constants::g_k_float_infinity.second) == true) {
+                    character_constants::k_float_infinity.second) == true) {
               node_ptr<float_node> ret_val{nullptr};
 
               if (last_char == char_type::negative) {
                 ret_val = make_node_ptr<float_node>(
-                    -(character_constants::g_k_float_infinity.first));
+                    -(character_constants::k_float_infinity.first));
               } else {
                 ret_val = make_node_ptr<float_node>(
-                    character_constants::g_k_float_infinity.first);
+                    character_constants::k_float_infinity.first);
               }
 
               return ret_val;
@@ -863,9 +863,9 @@ libconfigfile::parser::impl::parse_float_value(
         } break;
 
         case libconfigfile::tolower<
-            character_constants::g_k_float_not_a_number.second.front()>():
+            character_constants::k_float_not_a_number.second.front()>():
         case libconfigfile::toupper<
-            character_constants::g_k_float_not_a_number.second.front()>(): {
+            character_constants::k_float_not_a_number.second.front()>(): {
           const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
               pos_count_at_start_of_special_float{ctx.line_count,
                                                   ctx.char_count};
@@ -875,7 +875,7 @@ libconfigfile::parser::impl::parse_float_value(
               (last_char == char_type::negative)) {
             std::string special_float_string{};
             special_float_string.reserve(
-                character_constants::g_k_float_not_a_number.second.size());
+                character_constants::k_float_not_a_number.second.size());
             special_float_string.push_back(cur_char);
 
             while (true) {
@@ -885,7 +885,7 @@ libconfigfile::parser::impl::parse_float_value(
                 if (ctx.input_stream.eof() == true) {
                   eof = true;
                   break;
-                } else if (cur_char == character_constants::g_k_newline) {
+                } else if (cur_char == character_constants::k_newline) {
                   ++ctx.line_count;
                   ctx.char_count = 0;
                   continue;
@@ -912,16 +912,16 @@ libconfigfile::parser::impl::parse_float_value(
 
             if (case_insensitive_string_compare(
                     special_float_string,
-                    character_constants::g_k_float_not_a_number.second) ==
+                    character_constants::k_float_not_a_number.second) ==
                 true) {
               node_ptr<float_node> ret_val{nullptr};
 
               if (last_char == char_type::negative) {
                 ret_val = make_node_ptr<float_node>(
-                    -(character_constants::g_k_float_not_a_number.first));
+                    -(character_constants::k_float_not_a_number.first));
               } else {
                 ret_val = make_node_ptr<float_node>(
-                    character_constants::g_k_float_not_a_number.first);
+                    character_constants::k_float_not_a_number.first);
               }
 
               return ret_val;
@@ -941,7 +941,7 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_num_positive_sign: {
+        case character_constants::k_num_positive_sign: {
           if (last_char == char_type::start) {
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
@@ -952,7 +952,7 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_num_negative_sign: {
+        case character_constants::k_num_negative_sign: {
           if (last_char == char_type::start) {
             last_char = char_type::negative;
             sanitized_string.push_back(cur_char);
@@ -963,7 +963,7 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_num_digit_separator: {
+        case character_constants::k_num_digit_separator: {
           if (last_char == char_type::digit) {
             if (numeral_system_decimal.is_digit(
                     static_cast<char>(ctx.input_stream.peek()))) {
@@ -981,7 +981,7 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_float_decimal_point: {
+        case character_constants::k_float_decimal_point: {
           if (last_char == char_type::digit) {
             if (numeral_system_decimal.is_digit(
                     static_cast<char>(ctx.input_stream.peek()))) {
@@ -1001,13 +1001,13 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_float_exponent_sign_lower:
-        case character_constants::g_k_float_exponent_sign_upper: {
+        case character_constants::k_float_exponent_sign_lower:
+        case character_constants::k_float_exponent_sign_upper: {
           if (last_char == char_type::digit) {
             const char next_char{static_cast<char>(ctx.input_stream.peek())};
             if (((numeral_system_decimal.is_digit(next_char))) ||
-                (next_char == character_constants::g_k_num_positive_sign) ||
-                (next_char == character_constants::g_k_num_negative_sign)) {
+                (next_char == character_constants::k_num_positive_sign) ||
+                (next_char == character_constants::k_num_negative_sign)) {
               last_char = char_type::exponent;
               cur_location = num_location::exponent;
               sanitized_string.push_back(cur_char);
@@ -1040,19 +1040,19 @@ libconfigfile::parser::impl::parse_float_value(
       case num_location::fractional: {
         switch (cur_char) {
 
-        case character_constants::g_k_num_positive_sign: {
+        case character_constants::k_num_positive_sign: {
           throw syntax_error{error_messages::err_msg_1_5_12.message,
                              error_messages::err_msg_1_5_12.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
-        case character_constants::g_k_num_negative_sign: {
+        case character_constants::k_num_negative_sign: {
           throw syntax_error{error_messages::err_msg_1_5_11.message,
                              error_messages::err_msg_1_5_11.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
-        case character_constants::g_k_num_digit_separator: {
+        case character_constants::k_num_digit_separator: {
           if (last_char == char_type::digit) {
             if (numeral_system_decimal.is_digit(
                     static_cast<char>(ctx.input_stream.peek()))) {
@@ -1070,19 +1070,19 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_float_decimal_point: {
+        case character_constants::k_float_decimal_point: {
           throw syntax_error{error_messages::err_msg_1_5_2.message,
                              error_messages::err_msg_1_5_2.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
-        case character_constants::g_k_float_exponent_sign_lower:
-        case character_constants::g_k_float_exponent_sign_upper: {
+        case character_constants::k_float_exponent_sign_lower:
+        case character_constants::k_float_exponent_sign_upper: {
           if (last_char == char_type::digit) {
             const char next_char{static_cast<char>(ctx.input_stream.peek())};
             if ((numeral_system_decimal.is_digit(next_char)) ||
-                (next_char == character_constants::g_k_num_positive_sign) ||
-                (next_char == character_constants::g_k_num_negative_sign)) {
+                (next_char == character_constants::k_num_positive_sign) ||
+                (next_char == character_constants::k_num_negative_sign)) {
               last_char = char_type::exponent;
               cur_location = num_location::exponent;
               sanitized_string.push_back(cur_char);
@@ -1115,7 +1115,7 @@ libconfigfile::parser::impl::parse_float_value(
       case num_location::exponent: {
         switch (cur_char) {
 
-        case character_constants::g_k_num_positive_sign: {
+        case character_constants::k_num_positive_sign: {
           if (last_char == char_type::exponent) {
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
@@ -1126,7 +1126,7 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_num_negative_sign: {
+        case character_constants::k_num_negative_sign: {
           if (last_char == char_type::exponent) {
             last_char = char_type::positive;
             sanitized_string.push_back(cur_char);
@@ -1137,7 +1137,7 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_num_digit_separator: {
+        case character_constants::k_num_digit_separator: {
           if (last_char == char_type::digit) {
             if (numeral_system_decimal.is_digit(
                     static_cast<char>(ctx.input_stream.peek()))) {
@@ -1155,14 +1155,14 @@ libconfigfile::parser::impl::parse_float_value(
           }
         } break;
 
-        case character_constants::g_k_float_decimal_point: {
+        case character_constants::k_float_decimal_point: {
           throw syntax_error{error_messages::err_msg_1_5_4.message,
                              error_messages::err_msg_1_5_4.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } break;
 
-        case character_constants::g_k_float_exponent_sign_lower:
-        case character_constants::g_k_float_exponent_sign_upper: {
+        case character_constants::k_float_exponent_sign_lower:
+        case character_constants::k_float_exponent_sign_upper: {
           throw syntax_error{error_messages::err_msg_1_5_3.message,
                              error_messages::err_msg_1_5_3.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
@@ -1192,7 +1192,7 @@ libconfigfile::parser::impl::parse_float_value(
 
   float_node::base_t ret_val_value_buf{};
   if (std::from_chars(((sanitized_string.front() ==
-                        character_constants::g_k_num_positive_sign)
+                        character_constants::k_num_positive_sign)
                            ? (sanitized_string.data() + 1)
                            : (sanitized_string.data())),
                       sanitized_string.data() + sanitized_string.size(),
@@ -1216,8 +1216,8 @@ libconfigfile::parser::impl::parse_array_value(
   node_ptr<libconfigfile::array_node> ret_val{make_node_ptr<array_node>()};
 
   static const std::string k_possible_terminating_chars_for_elements{
-      std::string{} + character_constants::g_k_array_element_separator +
-      character_constants::g_k_array_closing_delimiter};
+      std::string{} + character_constants::k_array_element_separator +
+      character_constants::k_array_closing_delimiter};
 
   enum class char_type {
     leading_whitespace,
@@ -1238,7 +1238,7 @@ libconfigfile::parser::impl::parse_array_value(
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1265,7 +1265,7 @@ libconfigfile::parser::impl::parse_array_value(
       switch (last_char_type) {
 
       case char_type::leading_whitespace: {
-        if (cur_char == character_constants::g_k_array_opening_delimiter) {
+        if (cur_char == character_constants::k_array_opening_delimiter) {
           last_char_type = char_type::opening_delimiter;
         } else {
           throw syntax_error{error_messages::err_msg_1_6_1.message,
@@ -1275,10 +1275,10 @@ libconfigfile::parser::impl::parse_array_value(
       } break;
 
       case char_type::opening_delimiter: {
-        if (cur_char == character_constants::g_k_array_closing_delimiter) {
+        if (cur_char == character_constants::k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char ==
-                   character_constants::g_k_array_element_separator) {
+                   character_constants::k_array_element_separator) {
           throw syntax_error{error_messages::err_msg_1_2_5.message,
                              error_messages::err_msg_1_2_5.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
@@ -1290,10 +1290,10 @@ libconfigfile::parser::impl::parse_array_value(
               ctx, k_possible_terminating_chars_for_elements,
               &element_actual_terminating_char));
           switch (element_actual_terminating_char) {
-          case character_constants::g_k_array_element_separator: {
+          case character_constants::k_array_element_separator: {
             last_char_type = char_type::element_separator;
           } break;
-          case character_constants::g_k_array_closing_delimiter: {
+          case character_constants::k_array_closing_delimiter: {
             last_char_type = char_type::closing_delimiter;
           } break;
           default: {
@@ -1304,10 +1304,10 @@ libconfigfile::parser::impl::parse_array_value(
       } break;
 
       case char_type::element_separator: {
-        if (cur_char == character_constants::g_k_array_closing_delimiter) {
+        if (cur_char == character_constants::k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
         } else if (cur_char ==
-                   character_constants::g_k_array_element_separator) {
+                   character_constants::k_array_element_separator) {
           throw syntax_error{error_messages::err_msg_1_2_5.message,
                              error_messages::err_msg_1_2_5.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
@@ -1319,10 +1319,10 @@ libconfigfile::parser::impl::parse_array_value(
               ctx, k_possible_terminating_chars_for_elements,
               &element_actual_terminating_char));
           switch (element_actual_terminating_char) {
-          case character_constants::g_k_array_element_separator: {
+          case character_constants::k_array_element_separator: {
             last_char_type = char_type::element_separator;
           } break;
-          case character_constants::g_k_array_closing_delimiter: {
+          case character_constants::k_array_closing_delimiter: {
             last_char_type = char_type::closing_delimiter;
           } break;
           default: {
@@ -1428,7 +1428,7 @@ libconfigfile::parser::impl::parse_map_value(
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1456,14 +1456,14 @@ libconfigfile::parser::impl::parse_map_value(
       continue;
     } else {
       if ((is_root_map == true) &&
-          (cur_char != character_constants::g_k_directive_leader)) {
+          (cur_char != character_constants::k_directive_leader)) {
         last_non_whitespace_char_line_pos_count = ctx.line_count;
       }
 
       switch (last_char_type) {
 
       case char_type::leading_whitespace: {
-        if (cur_char == character_constants::g_k_map_opening_delimiter) {
+        if (cur_char == character_constants::k_map_opening_delimiter) {
           last_char_type = char_type::opening_delimiter;
         } else {
           throw syntax_error{error_messages::err_msg_1_7_1.message,
@@ -1473,14 +1473,14 @@ libconfigfile::parser::impl::parse_map_value(
       } break;
 
       case char_type::opening_delimiter: {
-        if ((cur_char == character_constants::g_k_map_closing_delimiter) &&
+        if ((cur_char == character_constants::k_map_closing_delimiter) &&
             (is_root_map == false)) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char == character_constants::g_k_key_value_terminate) {
+        } else if (cur_char == character_constants::k_key_value_terminate) {
           throw syntax_error{error_messages::err_msg_1_2_7.message,
                              error_messages::err_msg_1_2_7.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
-        } else if (cur_char == character_constants::g_k_directive_leader) {
+        } else if (cur_char == character_constants::k_directive_leader) {
           handle_directive();
         } else {
           const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
@@ -1489,7 +1489,7 @@ libconfigfile::parser::impl::parse_map_value(
           --ctx.char_count;
 
           std::pair<std::string, node_ptr<node>> new_key_value{parse_key_value(
-              ctx, std::string{character_constants::g_k_key_value_terminate})};
+              ctx, std::string{character_constants::k_key_value_terminate})};
 
           if (ret_val->contains(new_key_value.first) == true) {
             throw syntax_error{error_messages::err_msg_1_9_5.message,
@@ -1504,14 +1504,14 @@ libconfigfile::parser::impl::parse_map_value(
       } break;
 
       case char_type::member_separator: {
-        if ((cur_char == character_constants::g_k_map_closing_delimiter) &&
+        if ((cur_char == character_constants::k_map_closing_delimiter) &&
             (is_root_map == false)) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char == character_constants::g_k_key_value_terminate) {
+        } else if (cur_char == character_constants::k_key_value_terminate) {
           throw syntax_error{error_messages::err_msg_1_2_7.message,
                              error_messages::err_msg_1_2_7.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
-        } else if (cur_char == character_constants::g_k_directive_leader) {
+        } else if (cur_char == character_constants::k_directive_leader) {
           handle_directive();
         } else {
           const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
@@ -1520,7 +1520,7 @@ libconfigfile::parser::impl::parse_map_value(
           --ctx.char_count;
 
           std::pair<std::string, node_ptr<node>> new_key_value{parse_key_value(
-              ctx, std::string{character_constants::g_k_key_value_terminate})};
+              ctx, std::string{character_constants::k_key_value_terminate})};
 
           if (ret_val->contains(new_key_value.first) == true) {
             throw syntax_error{error_messages::err_msg_1_9_5.message,
@@ -1591,7 +1591,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
       start_pos_count{ctx.line_count, ctx.char_count};
 
   std::string name{};
-  name.reserve(character_constants::g_k_max_directive_name_length);
+  name.reserve(character_constants::k_max_directive_name_length);
 
   enum class name_location {
     directive_leader,
@@ -1620,7 +1620,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1638,10 +1638,10 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
                            error_messages::err_msg_1_8_3.category,
                            ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
-        if (cur_char == character_constants::g_k_directive_leader) {
+        if (cur_char == character_constants::k_directive_leader) {
           ;
         } else if (is_whitespace(cur_char,
-                                 character_constants::g_k_whitespace_chars) ==
+                                 character_constants::k_whitespace_chars) ==
                    true) {
           last_state = name_location::leading_whitespace;
           ;
@@ -1665,7 +1665,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
                            ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char,
-                          character_constants::g_k_whitespace_chars) == true) {
+                          character_constants::k_whitespace_chars) == true) {
           ;
         } else {
           if (ctx.line_count != start_pos_count.first) {
@@ -1685,7 +1685,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
         last_state = name_location::done;
       } else {
         if (is_whitespace(cur_char,
-                          character_constants::g_k_whitespace_chars) == true) {
+                          character_constants::k_whitespace_chars) == true) {
           last_state = name_location::done;
         } else {
           if (ctx.line_count != start_pos_count.first) {
@@ -1713,9 +1713,9 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
 
   directive directive_func_to_call{directive::null};
 
-  if (name == character_constants::g_k_version_directive_name) {
+  if (name == character_constants::k_version_directive_name) {
     directive_func_to_call = directive::version;
-  } else if (name == character_constants::g_k_include_directive_name) {
+  } else if (name == character_constants::k_include_directive_name) {
     directive_func_to_call = directive::include;
   } else {
     throw syntax_error{error_messages::err_msg_1_8_1.message,
@@ -1769,7 +1769,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1787,9 +1787,9 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
                            ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char,
-                          character_constants::g_k_whitespace_chars) == true) {
+                          character_constants::k_whitespace_chars) == true) {
           ;
-        } else if (cur_char == character_constants::g_k_string_delimiter) {
+        } else if (cur_char == character_constants::k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
             throw syntax_error{error_messages::err_msg_1_8_2.message,
                                error_messages::err_msg_1_8_2.category,
@@ -1816,7 +1816,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
                              error_messages::err_msg_1_8_2.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
-          if (cur_char == character_constants::g_k_string_delimiter) {
+          if (cur_char == character_constants::k_string_delimiter) {
             last_state = args_location::closing_delimiter;
             start_of_version_str_pos_count = {ctx.line_count, ctx.char_count};
           } else {
@@ -1839,7 +1839,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
                              error_messages::err_msg_1_8_2.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
-          if (cur_char == character_constants::g_k_string_delimiter) {
+          if (cur_char == character_constants::k_string_delimiter) {
             last_state = args_location::closing_delimiter;
           } else {
             version_str.push_back(cur_char);
@@ -1858,7 +1858,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::g_k_whitespace_chars) ==
+                            character_constants::k_whitespace_chars) ==
               true) {
             last_state = args_location::trailing_whitespace;
           } else {
@@ -1880,7 +1880,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::g_k_whitespace_chars) ==
+                            character_constants::k_whitespace_chars) ==
               true) {
             ;
           } else {
@@ -1903,7 +1903,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
                        error_messages::err_msg_1_8_12.category, ctx.identifier,
                        ctx.line_count, ctx.char_count};
   } else {
-    if (version_str == g_k_version) {
+    if (version_str == k_version) {
       return;
     } else {
       throw syntax_error{error_messages::err_msg_1_8_10.message,
@@ -1949,7 +1949,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -1968,9 +1968,9 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
                            ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
         if (is_whitespace(cur_char,
-                          character_constants::g_k_whitespace_chars) == true) {
+                          character_constants::k_whitespace_chars) == true) {
           ;
-        } else if (cur_char == character_constants::g_k_string_delimiter) {
+        } else if (cur_char == character_constants::k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
             throw syntax_error{error_messages::err_msg_1_8_2.message,
                                error_messages::err_msg_1_8_2.category,
@@ -1997,10 +1997,10 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
                              error_messages::err_msg_1_8_2.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
-          if (cur_char == character_constants::g_k_string_delimiter) {
+          if (cur_char == character_constants::k_string_delimiter) {
             last_state = args_location::closing_delimiter;
             start_of_file_path_str_pos_count = {ctx.line_count, ctx.char_count};
-          } else if (cur_char == character_constants::g_k_escape_leader) {
+          } else if (cur_char == character_constants::k_escape_leader) {
             last_char_was_escape_leader = true;
             file_path_str.push_back(cur_char);
             last_state = args_location::file_path;
@@ -2025,7 +2025,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
                              error_messages::err_msg_1_8_2.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
         } else {
-          if (cur_char == character_constants::g_k_string_delimiter) {
+          if (cur_char == character_constants::k_string_delimiter) {
             if (last_char_was_escape_leader == true) {
               last_char_was_escape_leader = false;
               file_path_str.push_back(cur_char);
@@ -2034,7 +2034,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
               last_char_was_escape_leader = false;
               last_state = args_location::closing_delimiter;
             }
-          } else if (cur_char == character_constants::g_k_escape_leader) {
+          } else if (cur_char == character_constants::k_escape_leader) {
             last_char_was_escape_leader = true;
             file_path_str.push_back(cur_char);
           } else {
@@ -2055,7 +2055,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::g_k_whitespace_chars) ==
+                            character_constants::k_whitespace_chars) ==
               true) {
             last_state = args_location::trailing_whitespace;
           } else {
@@ -2077,7 +2077,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::g_k_whitespace_chars) ==
+                            character_constants::k_whitespace_chars) ==
               true) {
             ;
           } else {
@@ -2139,20 +2139,20 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
 }
 
 bool libconfigfile::parser::impl::handle_comments(context &ctx) {
-  static_assert(character_constants::g_k_comment_cpp.front() ==
-                character_constants::g_k_comment_c_start.front());
-  static_assert(character_constants::g_k_comment_cpp.size() == 2);
-  static_assert(character_constants::g_k_comment_c_start.size() == 2);
-  static_assert(character_constants::g_k_comment_c_end.size() == 2);
+  static_assert(character_constants::k_comment_cpp.front() ==
+                character_constants::k_comment_c_start.front());
+  static_assert(character_constants::k_comment_cpp.size() == 2);
+  static_assert(character_constants::k_comment_c_start.size() == 2);
+  static_assert(character_constants::k_comment_c_end.size() == 2);
   static constexpr char k_c_or_cpp_comment_leader{
-      character_constants::g_k_comment_cpp.front()};
+      character_constants::k_comment_cpp.front()};
 
   char cur_char{};
   char peek_char{static_cast<char>(ctx.input_stream.peek())};
 
   switch (peek_char) {
 
-  case character_constants::g_k_comment_script: {
+  case character_constants::k_comment_script: {
     ctx.input_stream.get(cur_char);
     ++ctx.char_count;
 
@@ -2161,7 +2161,7 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
       ++ctx.char_count;
       if (ctx.input_stream.eof() == true) {
         return true;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ctx.input_stream.unget();
         return true;
       }
@@ -2174,7 +2174,7 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
     peek_char = (ctx.input_stream.peek());
 
     switch (peek_char) {
-    case character_constants::g_k_comment_cpp.back(): {
+    case character_constants::k_comment_cpp.back(): {
       ctx.input_stream.get(cur_char);
       ++ctx.char_count;
 
@@ -2183,7 +2183,7 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
         ++ctx.char_count;
         if (ctx.input_stream.eof() == true) {
           return true;
-        } else if (cur_char == character_constants::g_k_newline) {
+        } else if (cur_char == character_constants::k_newline) {
           ctx.input_stream.unget();
           return true;
         }
@@ -2191,7 +2191,7 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
 
     } break;
 
-    case character_constants::g_k_comment_c_start.back(): {
+    case character_constants::k_comment_c_start.back(): {
       ctx.input_stream.get(cur_char);
       ++ctx.char_count;
       while (true) {
@@ -2201,12 +2201,12 @@ bool libconfigfile::parser::impl::handle_comments(context &ctx) {
           throw syntax_error{error_messages::err_msg_1_1_1.message,
                              error_messages::err_msg_1_1_1.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
-        } else if (cur_char == character_constants::g_k_newline) {
+        } else if (cur_char == character_constants::k_newline) {
           ++ctx.line_count;
           ctx.char_count = 0;
-        } else if (cur_char == character_constants::g_k_comment_c_end.front()) {
+        } else if (cur_char == character_constants::k_comment_c_end.front()) {
           if (static_cast<char>(ctx.input_stream.peek()) ==
-              character_constants::g_k_comment_c_end.back()) {
+              character_constants::k_comment_c_end.back()) {
             ctx.input_stream.get();
             ++ctx.char_count;
             return true;
@@ -2236,7 +2236,7 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
     ++ctx.char_count;
   }
 
-  if (escape_leader_char == character_constants::g_k_escape_leader) {
+  if (escape_leader_char == character_constants::k_escape_leader) {
     char escape_char_1{};
     ctx.input_stream.get(escape_char_1);
 
@@ -2244,21 +2244,21 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
       throw syntax_error{error_messages::err_msg_1_9_1.message,
                          error_messages::err_msg_1_9_1.category, ctx.identifier,
                          ctx.line_count, ctx.char_count};
-    } else if (escape_char_1 == character_constants::g_k_newline) {
+    } else if (escape_char_1 == character_constants::k_newline) {
       throw syntax_error{error_messages::err_msg_1_9_1.message,
                          error_messages::err_msg_1_9_1.category, ctx.identifier,
                          ctx.line_count, ctx.char_count};
     } else {
       ++ctx.char_count;
 
-      if (escape_char_1 == character_constants::g_k_hex_escape_char) {
+      if (escape_char_1 == character_constants::k_hex_escape_char) {
         char hex_digit_1{};
         ctx.input_stream.get(hex_digit_1);
         if (ctx.input_stream.eof() == true) {
           throw syntax_error{error_messages::err_msg_1_9_1.message,
                              error_messages::err_msg_1_9_1.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
-        } else if (hex_digit_1 == character_constants::g_k_newline) {
+        } else if (hex_digit_1 == character_constants::k_newline) {
           throw syntax_error{error_messages::err_msg_1_9_1.message,
                              error_messages::err_msg_1_9_1.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
@@ -2272,7 +2272,7 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
           throw syntax_error{error_messages::err_msg_1_9_1.message,
                              error_messages::err_msg_1_9_1.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
-        } else if (hex_digit_2 == character_constants::g_k_newline) {
+        } else if (hex_digit_2 == character_constants::k_newline) {
           throw syntax_error{error_messages::err_msg_1_9_1.message,
                              error_messages::err_msg_1_9_1.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
@@ -2295,9 +2295,9 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
                              ctx.identifier, ctx.line_count, ctx.char_count};
         }
       } else {
-        if (character_constants::g_k_basic_escape_chars.contains(
+        if (character_constants::k_basic_escape_chars.contains(
                 escape_char_1)) {
-          return character_constants::g_k_basic_escape_chars.at(escape_char_1);
+          return character_constants::k_basic_escape_chars.at(escape_char_1);
         } else {
           throw syntax_error{error_messages::err_msg_1_9_2.message,
                              error_messages::err_msg_1_9_2.category,
@@ -2341,7 +2341,7 @@ libconfigfile::parser::impl::identify_key_value_value_type(
       if (ctx.input_stream.eof() == true) {
         eof = true;
         break;
-      } else if (cur_char == character_constants::g_k_newline) {
+      } else if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -2365,7 +2365,7 @@ libconfigfile::parser::impl::identify_key_value_value_type(
 
       if (is_whitespace(cur_char) == true) {
         continue;
-      } else if (cur_char == character_constants::g_k_key_value_terminate) {
+      } else if (cur_char == character_constants::k_key_value_terminate) {
         const std::pair<decltype(ctx.line_count), decltype(ctx.char_count)>
             pos_count_at_error{ctx.line_count, ctx.char_count};
 
@@ -2379,15 +2379,15 @@ libconfigfile::parser::impl::identify_key_value_value_type(
         reset_context();
 
         switch (cur_char) {
-        case character_constants::g_k_map_opening_delimiter: {
+        case character_constants::k_map_opening_delimiter: {
           return node_type::Map;
         } break;
 
-        case character_constants::g_k_array_opening_delimiter: {
+        case character_constants::k_array_opening_delimiter: {
           return node_type::Array;
         } break;
 
-        case character_constants::g_k_string_delimiter: {
+        case character_constants::k_string_delimiter: {
           return node_type::String;
         } break;
 
@@ -2417,7 +2417,7 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
       break;
     } else {
       gotten_chars.push_back(cur_char);
-      if (cur_char == character_constants::g_k_newline) {
+      if (cur_char == character_constants::k_newline) {
         ++ctx.line_count;
         ctx.char_count = 0;
         continue;
@@ -2449,22 +2449,22 @@ libconfigfile::parser::impl::identify_key_value_numeric_value_type(
   }};
 
   if ((case_insensitive_string_find(
-           gotten_chars, character_constants::g_k_float_infinity.second) !=
+           gotten_chars, character_constants::k_float_infinity.second) !=
        (std::string::npos)) ||
       (case_insensitive_string_find(
-           gotten_chars, character_constants::g_k_float_not_a_number.second) !=
+           gotten_chars, character_constants::k_float_not_a_number.second) !=
        (std::string::npos))) {
     return cleanup_and_return(node_type::Float);
   } else {
-    if ((gotten_chars.find(character_constants::g_k_float_decimal_point)) !=
+    if ((gotten_chars.find(character_constants::k_float_decimal_point)) !=
         (std::string::npos)) {
       return cleanup_and_return(node_type::Float);
     } else {
       if (((gotten_chars.find(
-               character_constants::g_k_float_exponent_sign_lower)) !=
+               character_constants::k_float_exponent_sign_lower)) !=
            (std::string::npos)) ||
           ((gotten_chars.find(
-               character_constants::g_k_float_exponent_sign_upper)) !=
+               character_constants::k_float_exponent_sign_upper)) !=
            (std::string::npos))) {
         if (((gotten_chars.find(numeral_system_hexadecimal.prefix)) !=
              (std::string::npos)) ||
@@ -2489,11 +2489,11 @@ libconfigfile::parser::impl::replace_escape_sequences(
   result.reserve(str.size());
 
   for (std::string::size_type cur_char{0}; cur_char < str.size(); ++cur_char) {
-    if (str[cur_char] == character_constants::g_k_escape_leader) {
+    if (str[cur_char] == character_constants::k_escape_leader) {
       std::string::size_type const escape_char_pos_count{cur_char + 1};
       if (escape_char_pos_count < str.size()) {
         const char escape_char{str[escape_char_pos_count]};
-        if (escape_char == character_constants::g_k_hex_escape_char) {
+        if (escape_char == character_constants::k_hex_escape_char) {
           std::string::size_type const hex_digit_pos_count_1{
               escape_char_pos_count + 1};
           std::string::size_type const hex_digit_pos_count_2{
@@ -2519,10 +2519,10 @@ libconfigfile::parser::impl::replace_escape_sequences(
             return cur_char;
           }
         } else {
-          if (character_constants::g_k_basic_escape_chars.contains(
+          if (character_constants::k_basic_escape_chars.contains(
                   escape_char)) {
             result.push_back(
-                character_constants::g_k_basic_escape_chars.at(escape_char));
+                character_constants::k_basic_escape_chars.at(escape_char));
             cur_char = escape_char_pos_count;
           } else {
             return cur_char;
@@ -2541,7 +2541,7 @@ libconfigfile::parser::impl::replace_escape_sequences(
 bool libconfigfile::parser::impl::is_whitespace(
     const char ch,
     const std::string_view
-        whitespace_chars /*= character_constants::g_k_whitespace_chars*/) {
+        whitespace_chars /*= character_constants::k_whitespace_chars*/) {
   return ((whitespace_chars.find(ch)) != (std::string::npos));
 }
 

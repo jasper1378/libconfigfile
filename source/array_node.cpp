@@ -50,16 +50,16 @@ bool libconfigfile::array_node::polymorphic_value_compare(
 std::string libconfigfile::array_node::serialize(
     [[maybe_unused]] int indent_level /*=0*/) const {
   std::string ret_val;
-  ret_val += character_constants::g_k_array_opening_delimiter;
+  ret_val += character_constants::k_array_opening_delimiter;
   for (auto p{this->begin()}; p != this->end(); ++p) {
     ret_val += (*p)->serialize();
 
     if ((p + 1) != this->end()) {
-      ret_val += character_constants::g_k_array_element_separator;
+      ret_val += character_constants::k_array_element_separator;
     }
   }
 
-  ret_val += character_constants::g_k_array_closing_delimiter;
+  ret_val += character_constants::k_array_closing_delimiter;
 
   return ret_val;
 }

@@ -49,14 +49,14 @@ bool libconfigfile::string_node::polymorphic_value_compare(
 std::string libconfigfile::string_node::serialize(
     [[maybe_unused]] int indent_level /*=0*/) const {
   static const std::string k_need_to_replace{
-      character_constants::g_k_control_chars +
-      character_constants::g_k_string_delimiter +
-      character_constants::g_k_escape_leader};
+      character_constants::k_control_chars +
+      character_constants::k_string_delimiter +
+      character_constants::k_escape_leader};
 
   std::string ret_val;
   ret_val.reserve(this->size() + 2);
 
-  ret_val += character_constants::g_k_string_delimiter;
+  ret_val += character_constants::k_string_delimiter;
 
   std::string::size_type pos{0};
   std::string::size_type pos_prev{0};
@@ -66,17 +66,17 @@ std::string libconfigfile::string_node::serialize(
       break;
     } else {
       ret_val += this->substr(pos_prev, (pos - pos_prev));
-      ret_val += character_constants::g_k_escape_leader;
+      ret_val += character_constants::k_escape_leader;
 
       switch (this->operator[](pos)) {
-      case character_constants::g_k_string_delimiter: {
-        ret_val += character_constants::g_k_string_delimiter;
+      case character_constants::k_string_delimiter: {
+        ret_val += character_constants::k_string_delimiter;
       } break;
-      case character_constants::g_k_escape_leader: {
-        ret_val += character_constants::g_k_escape_leader;
+      case character_constants::k_escape_leader: {
+        ret_val += character_constants::k_escape_leader;
       } break;
       default: {
-        ret_val += character_constants::g_k_control_chars_codes.at(
+        ret_val += character_constants::k_control_chars_codes.at(
             this->operator[](pos));
       } break;
       }
@@ -86,7 +86,7 @@ std::string libconfigfile::string_node::serialize(
   }
   ret_val += this->substr(pos_prev);
 
-  ret_val += character_constants::g_k_string_delimiter;
+  ret_val += character_constants::k_string_delimiter;
 
   return ret_val;
 }

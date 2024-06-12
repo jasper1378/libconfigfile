@@ -16,7 +16,7 @@ libconfigfile::integer_node::integer_node()
 
 libconfigfile::integer_node::integer_node(
     const base_t value,
-    const numeral_system *num_sys /*= &character_constants::g_k_dec_num_sys*/)
+    const numeral_system *num_sys /*= &character_constants::k_dec_num_sys*/)
     : m_value{value}, m_num_sys{num_sys} {}
 
 libconfigfile::integer_node::integer_node(const integer_node &other)
@@ -59,19 +59,19 @@ std::string libconfigfile::integer_node::serialize(
   } break;
 
   case numeral_system_binary.base: {
-    ret_val += character_constants::g_k_num_sys_prefix_leader;
+    ret_val += character_constants::k_num_sys_prefix_leader;
     ret_val += m_num_sys->prefix;
     ret_val += std::format("{:b}", m_value);
   } break;
 
   case numeral_system_octal.base: {
-    ret_val += character_constants::g_k_num_sys_prefix_leader;
+    ret_val += character_constants::k_num_sys_prefix_leader;
     ret_val += m_num_sys->prefix;
     ret_val += std::format("{:o}", m_value);
   } break;
 
   case numeral_system_hexadecimal.base: {
-    ret_val += character_constants::g_k_num_sys_prefix_leader;
+    ret_val += character_constants::k_num_sys_prefix_leader;
     ret_val += m_num_sys->prefix;
     ret_val += std::format("{:x}", m_value);
   } break;
