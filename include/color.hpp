@@ -3,7 +3,7 @@
 
 #include "string_node.hpp"
 
-#include "bits-and-bytes/define_enum_flag_operators/define_enum_flag_operators.hpp"
+#include "bits-and-bytes/enum_flag_operators.hpp"
 
 #include <cstdint>
 #include <optional>

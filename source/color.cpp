@@ -1,6 +1,6 @@
 #include "color.hpp"
 
-#include "bits-and-bytes/overflow_arithmetic/overflow_arithmetic.hpp"
+#include "bits-and-bytes/overflow_arithmetic.hpp"
 
 #include <limits>
 
