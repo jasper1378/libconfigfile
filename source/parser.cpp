@@ -15,6 +15,8 @@
 #include "syntax_error.hpp"
 #include "version.hpp"
 
+#include "bits-and-bytes/unreachable_error.hpp"
+
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -150,8 +152,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
           last_state = key_name_location::name_proper;
 
           if (is_invalid_character_valid_provided(
-                  cur_char, character_constants::k_valid_name_chars) ==
-              true) {
+                  cur_char, character_constants::k_valid_name_chars) == true) {
             switch (cur_char) {
 
             case character_constants::k_key_value_assign: {
@@ -256,7 +257,7 @@ std::string libconfigfile::parser::impl::parse_key_value_key(context &ctx) {
     } break;
 
     case key_name_location::equal_sign: {
-      throw std::runtime_error{"impossible!"};
+      throw bits_and_bytes::unreachable_error{};
     } break;
     }
   }
@@ -912,8 +913,7 @@ libconfigfile::parser::impl::parse_float_value(
 
             if (case_insensitive_string_compare(
                     special_float_string,
-                    character_constants::k_float_not_a_number.second) ==
-                true) {
+                    character_constants::k_float_not_a_number.second) == true) {
               node_ptr<float_node> ret_val{nullptr};
 
               if (last_char == char_type::negative) {
@@ -1277,8 +1277,7 @@ libconfigfile::parser::impl::parse_array_value(
       case char_type::opening_delimiter: {
         if (cur_char == character_constants::k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char ==
-                   character_constants::k_array_element_separator) {
+        } else if (cur_char == character_constants::k_array_element_separator) {
           throw syntax_error{error_messages::err_msg_1_2_5.message,
                              error_messages::err_msg_1_2_5.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
@@ -1297,7 +1296,7 @@ libconfigfile::parser::impl::parse_array_value(
             last_char_type = char_type::closing_delimiter;
           } break;
           default: {
-            throw std::runtime_error{"impossible!"};
+            throw bits_and_bytes::unreachable_error{};
           } break;
           }
         }
@@ -1306,8 +1305,7 @@ libconfigfile::parser::impl::parse_array_value(
       case char_type::element_separator: {
         if (cur_char == character_constants::k_array_closing_delimiter) {
           last_char_type = char_type::closing_delimiter;
-        } else if (cur_char ==
-                   character_constants::k_array_element_separator) {
+        } else if (cur_char == character_constants::k_array_element_separator) {
           throw syntax_error{error_messages::err_msg_1_2_5.message,
                              error_messages::err_msg_1_2_5.category,
                              ctx.identifier, ctx.line_count, ctx.char_count};
@@ -1326,7 +1324,7 @@ libconfigfile::parser::impl::parse_array_value(
             last_char_type = char_type::closing_delimiter;
           } break;
           default: {
-            throw std::runtime_error{"impossible!"};
+            throw bits_and_bytes::unreachable_error{};
           } break;
           }
         }
@@ -1392,7 +1390,7 @@ libconfigfile::parser::impl::parse_map_value(
 
       switch (dir_res.first) {
       case directive::null: {
-        throw std::runtime_error{"impossible!"};
+        throw bits_and_bytes::unreachable_error{};
       } break;
 
       case directive::version: {
@@ -1579,7 +1577,7 @@ libconfigfile::parser::impl::call_appropriate_value_parse_func(
   } break;
 
   default: {
-    throw std::runtime_error{"impossible!"};
+    throw bits_and_bytes::unreachable_error{};
   } break;
   }
 }
@@ -1664,8 +1662,8 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
                            error_messages::err_msg_1_8_3.category,
                            ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
-        if (is_whitespace(cur_char,
-                          character_constants::k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char, character_constants::k_whitespace_chars) ==
+            true) {
           ;
         } else {
           if (ctx.line_count != start_pos_count.first) {
@@ -1684,8 +1682,8 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
       if (eof == true) {
         last_state = name_location::done;
       } else {
-        if (is_whitespace(cur_char,
-                          character_constants::k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char, character_constants::k_whitespace_chars) ==
+            true) {
           last_state = name_location::done;
         } else {
           if (ctx.line_count != start_pos_count.first) {
@@ -1706,7 +1704,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     } break;
 
     case name_location::done: {
-      throw std::runtime_error{"impossible!"};
+      throw bits_and_bytes::unreachable_error{};
     } break;
     }
   }
@@ -1732,7 +1730,7 @@ libconfigfile::parser::impl::parse_directive(context &ctx) {
     return {directive::include, parse_include_directive(ctx)};
   } break;
   default: {
-    throw std::runtime_error{"impossible!"};
+    throw bits_and_bytes::unreachable_error{};
   } break;
   }
 }
@@ -1786,8 +1784,8 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
                            error_messages::err_msg_1_8_13.category,
                            ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
-        if (is_whitespace(cur_char,
-                          character_constants::k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char, character_constants::k_whitespace_chars) ==
+            true) {
           ;
         } else if (cur_char == character_constants::k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
@@ -1858,8 +1856,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::k_whitespace_chars) ==
-              true) {
+                            character_constants::k_whitespace_chars) == true) {
             last_state = args_location::trailing_whitespace;
           } else {
             throw syntax_error{error_messages::err_msg_1_8_11.message,
@@ -1880,8 +1877,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::k_whitespace_chars) ==
-              true) {
+                            character_constants::k_whitespace_chars) == true) {
             ;
           } else {
             throw syntax_error{error_messages::err_msg_1_8_11.message,
@@ -1893,7 +1889,7 @@ void libconfigfile::parser::impl::parse_version_directive(context &ctx) {
     } break;
 
     case args_location::done: {
-      throw std::runtime_error{"impossible!"};
+      throw bits_and_bytes::unreachable_error{};
     } break;
     }
   }
@@ -1967,8 +1963,8 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
                            error_messages::err_msg_1_8_7.category,
                            ctx.identifier, ctx.line_count, ctx.char_count};
       } else {
-        if (is_whitespace(cur_char,
-                          character_constants::k_whitespace_chars) == true) {
+        if (is_whitespace(cur_char, character_constants::k_whitespace_chars) ==
+            true) {
           ;
         } else if (cur_char == character_constants::k_string_delimiter) {
           if (start_pos_count.first != ctx.line_count) {
@@ -2055,8 +2051,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::k_whitespace_chars) ==
-              true) {
+                            character_constants::k_whitespace_chars) == true) {
             last_state = args_location::trailing_whitespace;
           } else {
             throw syntax_error{error_messages::err_msg_1_8_9.message,
@@ -2077,8 +2072,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
           --ctx.char_count;
         } else {
           if (is_whitespace(cur_char,
-                            character_constants::k_whitespace_chars) ==
-              true) {
+                            character_constants::k_whitespace_chars) == true) {
             ;
           } else {
             throw syntax_error{error_messages::err_msg_1_8_9.message,
@@ -2090,7 +2084,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     } break;
 
     case args_location::done: {
-      throw std::runtime_error{"impossible!"};
+      throw bits_and_bytes::unreachable_error{};
     } break;
     }
   }
@@ -2132,7 +2126,7 @@ libconfigfile::parser::impl::parse_include_directive(context &ctx) {
     } break;
 
     default: {
-      throw std::runtime_error{"impossible!"};
+      throw bits_and_bytes::unreachable_error{};
     } break;
     }
   }
@@ -2295,8 +2289,7 @@ char libconfigfile::parser::impl::handle_escape_sequence(context &ctx) {
                              ctx.identifier, ctx.line_count, ctx.char_count};
         }
       } else {
-        if (character_constants::k_basic_escape_chars.contains(
-                escape_char_1)) {
+        if (character_constants::k_basic_escape_chars.contains(escape_char_1)) {
           return character_constants::k_basic_escape_chars.at(escape_char_1);
         } else {
           throw syntax_error{error_messages::err_msg_1_9_2.message,
@@ -2519,8 +2512,7 @@ libconfigfile::parser::impl::replace_escape_sequences(
             return cur_char;
           }
         } else {
-          if (character_constants::k_basic_escape_chars.contains(
-                  escape_char)) {
+          if (character_constants::k_basic_escape_chars.contains(escape_char)) {
             result.push_back(
                 character_constants::k_basic_escape_chars.at(escape_char));
             cur_char = escape_char_pos_count;
