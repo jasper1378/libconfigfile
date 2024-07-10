@@ -6,18 +6,30 @@ libconfigfile is a C++ configuration file parsing library.
 
 ## Installation
 
-Acquire the sources
+### 1a. Acquire the sources (git repository).
+
 ```
 $ git clone https://github.com/jasper1378/libconfigfile.git
 $ cd libconfigfile
+$ git submodule update --init --recursive
+$ autoreconf -i
 ```
-Build
+
+### 1b. Acquire the sources (distribution tarball).
+
 ```
+$ tar -xvf libconfigfile.tar.gz
+$ cd libconfigfile
+```
+
+### 2. Configure, build, and install.
+
+```
+$ mkdir build
+$ cd build
+$ ../configure # try `--help` for options
 $ make
-```
-Install
-```
-$ make install
+$ sudo make install
 ```
 
 ## Usage
