@@ -1,3 +1,3 @@
-[submodule "submodules/bits-and-bytes"]
-	path = submodules/bits-and-bytes
+[submodule "submods/bits-and-bytes"]
+	path = submods/bits-and-bytes
 	url = https://github.com/jasper1378/bits-and-bytes
