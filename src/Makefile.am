@@ -28,4 +28,4 @@ libconfigfile_la_SOURCES =            \
 	syntax_error.cpp              \
 	syntax_error.hpp              \
 	version.hpp
-libconfigfile_la_CPPFLAGS = -I$(top_srcdir)/submodules/bits-and-bytes/include
+libconfigfile_la_CPPFLAGS = -I$(top_srcdir)/submods/bits-and-bytes/include
