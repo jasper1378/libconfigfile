@@ -37,5 +37,5 @@ AC_CHECK_TYPES([ptrdiff_t])
 
 # Output files.
 AC_CONFIG_FILES([Makefile src/Makefile include/libconfigfile/Makefile])
-AC_CONFIG_SUBDIRS([submods/bits-and-bytes])
+AC_CONFIG_SUBDIRS([deps/bits-and-bytes])
 AC_OUTPUT
