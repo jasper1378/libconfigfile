@@ -36,6 +36,6 @@ AC_CHECK_TYPES([ptrdiff_t])
 # Check for library functions.
 
 # Output files.
-AC_CONFIG_FILES([Makefile src/Makefile include/libconfigfile/Makefile])
+AC_CONFIG_FILES([Makefile deps/Makefile src/Makefile include/libconfigfile/Makefile])
 AC_CONFIG_SUBDIRS([deps/bits-and-bytes])
 AC_OUTPUT
