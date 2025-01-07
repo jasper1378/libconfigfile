@@ -73,7 +73,7 @@ While calling `libconfigfile::parse()`, errors resulting in the parser itself (s
 
 ### Color sub-library
 
-Libconfigfile allows contains auxiliary functionality for parsing and serializing colors. This can be found within the `libconfigfile::color` namespace.
+Libconfigfile contains auxiliary functionality for parsing and serializing colors. This can be found within the `libconfigfile::color` namespace.
 
 The two primary data types to be aware of are `rgb` and `rgba`. The `rgb` struct encapsulates a color specified by red, green, and blue channels. The `rgba` struct inherits from the former but contains an additional alpha channel representing opacity. The type of a channel is an unsigned integer (e.g. `uint8_t`). Colors of the same type are equality comparable. `rgb` and `rgba` colors may be inter-converted using the `convert()` function. The textual format of a color takes the form of an RGB (or RGBA) hex triplet.
 
